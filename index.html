@@ -1084,15 +1084,26 @@ async function aiSearch(query, freelancers){
         max_tokens: 200,
         messages: [{
           role: 'user',
-          content: `Du bist eine Suchmaschine für eine Freelancer-Plattform namens Helpefy.
-Suche: "${query}"
+          content: `Du bist eine intelligente Suchmaschine für Helpefy, eine Freelancer-Plattform.
 
-Freelancer-Liste:
+Deine Aufgabe: Verstehe was der Nutzer BRAUCHT und finde passende Freelancer – auch wenn die Worte nicht exakt übereinstimmen.
+
+Beispiele für semantisches Verstehen:
+- "garten arbeiter" → Gärtner
+- "jemand zum putzen" → Reinigungskraft  
+- "elektriker" → IT & Digital ODER Handwerker mit Elektrik
+- "nachhilfelehrer mathe" → Nachhilfelehrerin
+- "umzugshelfer" → Umzugsprofi
+- "wlan probleme" → IT-Expertin
+
+Suchanfrage: "${query}"
+
+Verfügbare Freelancer:
 ${freelancerList}
 
-Antworte NUR mit den Indizes der passenden Freelancer als JSON-Array, z.B.: [0,2,4]
-Wenn kein Freelancer passt, antworte mit: []
-Wähle alle aus die zur Suche passen könnten.`
+Antworte NUR mit JSON-Array der passenden Indizes, z.B.: [0,2,4]
+Leeres Array [] nur wenn wirklich niemand passt.
+Sei großzügig – lieber zu viele als zu wenige Ergebnisse.`
         }]
       })
     });
@@ -1419,7 +1430,7 @@ async function searchJobs(){
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:150,
-        messages:[{role:'user',content:`Du bist eine Job-Suchmaschine. Suche: "${q}"\n\nJobs:\n${jobList}\n\nAntworte NUR mit JSON-Array der passenden Indizes z.B. [0,2]. Leeres Array [] wenn nichts passt.`}]
+        messages:[{role:'user',content:`Du bist eine intelligente Job-Suchmaschine für Helpefy. Verstehe was gesucht wird – auch umgangssprachlich oder mit Tippfehlern.\n\nBeispiele: "gartenarbeiten" → Garten-Jobs, "wohnung sauber machen" → Reinigungs-Jobs, "möbel aufbauen" → Handwerk/Umzug-Jobs\n\nSuche: "${q}"\n\nJobs:\n${jobList}\n\nAntworte NUR mit JSON-Array der passenden Indizes z.B. [0,2]. Sei großzügig.`}]
       })
     });
     const data=await res.json();
