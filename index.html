@@ -299,7 +299,7 @@ let currentProfile = null;
   </div>
   <div class="nav-center">
     <a class="nav-link" onclick="showView('home')">Freelancer finden</a>
-    <a class="nav-link" onclick="switchMode('jobs');showView('home')">Jobs posten</a>
+    <a class="nav-link" onclick="if(!currentUser){openModal('auth');}else{switchMode('jobs');showView('home');}">Jobs posten</a>
     <a class="nav-link" onclick="showView('dashboard')">Dashboard</a>
     <a class="nav-link" onclick="showView('chat')">Nachrichten</a>
   </div>
@@ -769,11 +769,32 @@ async function loadProfile(){
     document.getElementById('dashName').textContent = data.full_name || currentUser.email;
     document.getElementById('dashRole').textContent = data.role === 'freelancer' ? 'Freelancer' : 'Kunde';
     document.getElementById('dashGreet').textContent = `Willkommen, ${data.full_name?.split(' ')[0] || ''}! 👋`;
-    document.getElementById('dashEmail').textContent = data.email;
-    document.getElementById('dashFullName').textContent = data.full_name;
-    document.getElementById('dashAvatar').textContent = (data.full_name||'?').charAt(0).toUpperCase();
+    document.getElementById('dashEmail').textContent = data.email || currentUser.email;
+    document.getElementById('dashFullName').textContent = data.full_name || '–';
+    document.getElementById('dashAvatar').textContent = (data.full_name||currentUser.email||'?').charAt(0).toUpperCase();
     document.getElementById('settingsName').value = data.full_name || '';
-    document.getElementById('settingsEmail').value = data.email || '';
+    document.getElementById('settingsEmail').value = data.email || currentUser.email || '';
+  }
+  // Aufträge aus Supabase laden
+  const {data:orders} = await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
+  if(orders && orders.length > 0){
+    // Stats updaten
+    const total = orders.reduce((s,o)=>s+(o.preis||0),0);
+    document.querySelectorAll('.dsc-n')[0].textContent = orders.length;
+    document.querySelectorAll('.dsc-n')[1].textContent = total.toFixed(0)+'€';
+    // Aufträge-Tab füllen
+    const ordersEl = document.getElementById('dash-orders');
+    if(ordersEl){
+      const statusBadge = (s)=>{
+        if(s==='bezahlt') return '<span class="badge badge-green">Bezahlt ✓</span>';
+        if(s==='bestätigt') return '<span class="badge badge-blue">Bestätigt</span>';
+        return '<span class="badge badge-yellow">Offen</span>';
+      };
+      ordersEl.innerHTML = `<div class="dash-title">Meine Aufträge</div><div class="dash-sub">${orders.length} Aufträge insgesamt</div>
+        <div class="dcard" style="max-width:100%">
+          ${orders.map(o=>`<div class="oi"><div class="oi-icon">📋</div><div class="oi-info"><div class="oi-title">${o.titel||'Auftrag'}</div><div class="oi-meta">${o.datum||''} · ${(o.preis||0).toFixed(2)} €</div></div>${statusBadge(o.status)}</div>`).join('')}
+        </div>`;
+    }
   }
 }
 
@@ -846,9 +867,34 @@ function renderJobs(){
     </div>`).join('');
 }
 function renderSearch(q){
-  document.getElementById('rQuery').textContent=q;
-  document.getElementById('rCount').textContent=FL.length;
-  document.getElementById('searchGrid').innerHTML=FL.map((f,i)=>flCard(f,i)).join('');
+  const query = (q||'').toLowerCase().trim();
+  let results = FL;
+  if(query && query !== 'alle'){
+    results = FL.filter((f,i)=>{
+      return (
+        f.name.toLowerCase().includes(query) ||
+        f.role.toLowerCase().includes(query) ||
+        f.tags.some(t=>t.toLowerCase().includes(query)) ||
+        f.services.some(s=>s.toLowerCase().includes(query)) ||
+        f.bio.toLowerCase().includes(query) ||
+        f.loc.toLowerCase().includes(query)
+      );
+    });
+  }
+  document.getElementById('rQuery').textContent=q||'Alle';
+  document.getElementById('rCount').textContent=results.length;
+  const indices = results.map(f=>FL.indexOf(f));
+  if(results.length===0){
+    document.getElementById('searchGrid').innerHTML=`
+      <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)">
+        <div style="font-size:3rem;margin-bottom:1rem">🔍</div>
+        <div style="font-size:1rem;font-weight:600;margin-bottom:0.5rem">Keine Ergebnisse für "${q}"</div>
+        <div style="font-size:0.85rem">Versuche einen anderen Suchbegriff oder wähle eine Kategorie.</div>
+        <button class="btn-red" style="margin-top:1rem" onclick="renderSearch('')">Alle anzeigen</button>
+      </div>`;
+  } else {
+    document.getElementById('searchGrid').innerHTML=indices.map(i=>flCard(FL[i],i)).join('');
+  }
 }
 function renderSaved(){
   const g=document.getElementById('savedGrid');
@@ -892,7 +938,21 @@ function doSearch(){
 }
 function setSearch(q){document.getElementById('heroSearch').value=q;doSearch();}
 function catClick(cat,el){document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('active'));el.classList.add('active');setSearch(cat);}
-function togglePill(el){el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));el.classList.add('active');}
+function togglePill(el){
+  el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const txt = el.textContent.trim();
+  let results = [...FL];
+  if(txt.includes('verfügbar')||txt.includes('Verfügbar')){
+    results = FL.filter(f=>f.avail);
+  } else if(txt.includes('Bewertung')){
+    results = [...FL].sort((a,b)=>b.rating-a.rating);
+  } else if(txt.includes('Günstigste')){
+    results = [...FL].sort((a,b)=>a.price-b.price);
+  }
+  const grid = document.getElementById('homeGrid')||document.getElementById('searchGrid');
+  if(grid) grid.innerHTML = results.map(f=>flCard(f,FL.indexOf(f))).join('');
+}
 
 // ── BOOKING ──
 function calcPrice(){
@@ -972,14 +1032,18 @@ function switchDash(tab,el){
 
 // ── CHAT ──
 function sendMsg(){
+  if(!currentUser){showToast('Bitte zuerst anmelden!','error');openModal('auth');return;}
   const input=document.getElementById('chatInput'); const text=input.value.trim();
   if(!text) return;
   const msgs=document.getElementById('chatMsgs');
+  const initial=(currentProfile?.full_name||currentUser.email||'M').charAt(0).toUpperCase();
   const d=document.createElement('div'); d.className='msg me';
-  d.innerHTML=`<div class="msg-av">${currentUser?currentProfile?.full_name?.charAt(0)||'M':'M'}</div><div><div class="bubble">${text}</div><div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+  d.innerHTML=`<div class="msg-av">${initial}</div><div><div class="bubble">${text}</div><div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
   msgs.appendChild(d); input.value=''; msgs.scrollTop=msgs.scrollHeight;
+  // Nachricht in Supabase speichern
+  sb.from('nachrichten').insert({von_user_id:currentUser.id,inhalt:text,created_at:new Date().toISOString()});
   setTimeout(()=>{
-    const replies=['Danke! 😊','Ich melde mich kurz.','Klingt super!','Bis dann! 👋'];
+    const replies=['Danke! Ich melde mich gleich. 😊','Klingt super, passt gut!','Ich bin morgen früh verfügbar!','Bis dann! 👋','Perfekt, danke für die Info!'];
     const r=document.createElement('div'); r.className='msg';
     r.innerHTML=`<div class="msg-av">👩</div><div><div class="bubble">${replies[Math.floor(Math.random()*replies.length)]}</div><div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
     msgs.appendChild(r); msgs.scrollTop=msgs.scrollHeight;
