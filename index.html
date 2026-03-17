@@ -1005,12 +1005,17 @@ async function renderSearch(q){
   document.getElementById('rQuery').textContent = q||'Alle';
   document.getElementById('rCount').textContent = results.length;
   
+  // Standort-Info anzeigen
+  const radius = document.getElementById('radiusSlider')?.value || 25;
+  const locInfo = userCity ? ` · 📍 ${userCity} · ${radius} km Umkreis` : '';
+  document.getElementById('rQuery').textContent = (q||'Alle') + locInfo;
+
   if(results.length===0){
     document.getElementById('searchGrid').innerHTML=`
       <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)">
         <div style="font-size:3rem;margin-bottom:1rem">🔍</div>
         <div style="font-size:1rem;font-weight:600;margin-bottom:0.5rem">Keine Ergebnisse für "${q}"</div>
-        <div style="font-size:0.85rem">Versuche einen anderen Suchbegriff.</div>
+        <div style="font-size:0.85rem">Versuche einen anderen Suchbegriff oder einen größeren Umkreis.</div>
         <button class="btn-red" style="margin-top:1rem" onclick="renderSearch('')">Alle anzeigen</button>
       </div>`;
   } else {
@@ -1460,24 +1465,50 @@ function selectLocation(val, suggId, input){
   const sugg = document.getElementById(suggId);
   if(sugg) sugg.style.display='none';
 }
+let userLat = null, userLon = null, userCity = '';
+
 function getMyLocation(){
   if(!navigator.geolocation){ showToast('Standort nicht verfügbar','error'); return; }
-  const btn = document.getElementById('locBtn');
-  btn.textContent = '📍 Wird ermittelt...';
+  document.getElementById('locSpinner').style.display='inline';
+  document.getElementById('locText').textContent=' Wird ermittelt...';
   navigator.geolocation.getCurrentPosition(async pos=>{
-    const {latitude:lat, longitude:lon} = pos.coords;
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-    const data = await res.json();
-    const city = data.address.city||data.address.town||data.address.village||'';
-    btn.textContent = '📍 '+city;
-    // In Suchfeld eintragen
-    const si = document.getElementById('heroSearch');
-    if(si && !si.value) si.placeholder = `Suche in ${city}...`;
-    showToast('Standort: '+city,'success');
-  }, ()=>{
-    btn.textContent='📍 Standort';
-    showToast('Standort-Zugriff verweigert','error');
-  });
+    userLat = pos.coords.latitude;
+    userLon = pos.coords.longitude;
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
+      const data = await res.json();
+      userCity = data.address.city||data.address.town||data.address.village||data.address.municipality||'Dein Standort';
+    } catch(e){ userCity = 'Dein Standort'; }
+    document.getElementById('locSpinner').style.display='none';
+    document.getElementById('locText').textContent='📍 '+userCity;
+    document.getElementById('cityLabel').textContent='in '+userCity+' und Umgebung';
+    document.getElementById('heroSearch').placeholder='Was brauchst du in '+userCity+'?';
+    showToast('📍 Standort: '+userCity,'success');
+  }, (err)=>{
+    document.getElementById('locSpinner').style.display='none';
+    document.getElementById('locText').textContent='📍 Standort';
+    if(err.code===1) showToast('Bitte Standort-Zugriff erlauben','error');
+    else showToast('Standort konnte nicht ermittelt werden','error');
+  },{enableHighAccuracy:true,timeout:8000});
+}
+
+// Beim Laden automatisch Standort ermitteln
+function autoDetectLocation(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    userLat = pos.coords.latitude;
+    userLon = pos.coords.longitude;
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
+      const data = await res.json();
+      userCity = data.address.city||data.address.town||data.address.village||'';
+      if(userCity){
+        document.getElementById('locText').textContent='📍 '+userCity;
+        document.getElementById('cityLabel').textContent='in '+userCity+' und Umgebung';
+        document.getElementById('heroSearch').placeholder='Was brauchst du in '+userCity+'?';
+      }
+    } catch(e){}
+  }, ()=>{}, {timeout:5000});
 }
 // Klick außerhalb schließt Dropdown
 document.addEventListener('click', e=>{
@@ -1519,6 +1550,8 @@ async function init(){
   history.replaceState({view:startView},'',window.location.pathname);
   showView(startView, false);
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
+  // Standort automatisch ermitteln
+  setTimeout(autoDetectLocation, 500);
 }
 init();
 </script>
