@@ -784,12 +784,15 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
   <div class="modal">
     <button class="modal-close" onclick="closeModal('angebot')">✕</button>
     <div class="modal-title">📝 Angebot senden</div>
-    <div class="modal-sub">Beschreibe kurz warum du der Richtige für diesen Job bist.</div>
-    <div class="fg"><label>Dein Angebot / Nachricht</label>
-      <textarea id="angebotText" placeholder="z.B. Ich bin verfügbar und habe 5 Jahre Erfahrung in diesem Bereich..." style="min-height:100px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
+    <div id="angebot-job-info" style="background:var(--light);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:var(--muted)"></div>
+    <div class="fg"><label>Deine Nachricht an den Kunden</label>
+      <textarea id="angebotText" placeholder="z.B. Ich bin verfügbar und habe 5 Jahre Erfahrung. Ich kann den Job am Wochenende erledigen..." style="min-height:100px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
     </div>
     <div class="fg"><label>Dein Preis (€)</label>
       <input type="number" id="angebotPreis" placeholder="z.B. 80">
+    </div>
+    <div class="fg"><label>Verfügbar ab</label>
+      <input type="date" id="angebotDatum">
     </div>
     <div id="angebot-error" class="error-msg"></div>
     <button class="form-submit" onclick="submitAngebot()">Angebot absenden →</button>
@@ -1008,18 +1011,15 @@ async function loadProfile(){
     document.getElementById('settingsName').value=name;
     document.getElementById('settingsEmail').value=data.email||currentUser.email;
   }
+  // Load all orders (as kunde AND as freelancer receiving offers)
   const {data:orders}=await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
   if(orders&&orders.length){
-    const total=orders.reduce((s,o)=>s+(o.preis||0),0);
+    const total=orders.filter(o=>o.status==='bezahlt').reduce((s,o)=>s+(o.preis||0),0);
     const dscNs=document.querySelectorAll('.dsc-n');
     if(dscNs[0]) dscNs[0].textContent=orders.length;
     if(dscNs[1]) dscNs[1].textContent=total.toFixed(0)+'€';
-    const ordersEl=document.getElementById('dash-orders');
-    if(ordersEl){
-      const badge=s=>{if(s==='bezahlt')return'<span class="badge badge-green">Bezahlt ✓</span>';if(s==='bestätigt')return'<span class="badge badge-blue">Bestätigt</span>';return'<span class="badge badge-yellow">Offen</span>';};
-      ordersEl.innerHTML=`<div class="dash-title">Meine Aufträge</div><div class="dcard" style="max-width:100%">${orders.map(o=>`<div class="oi"><div class="oi-icon">📋</div><div class="oi-info"><div class="oi-title">${o.titel||'Auftrag'}</div><div class="oi-meta">${o.datum||''} · ${(o.preis||0).toFixed(2)} €</div></div>${badge(o.status)}</div>`).join('')}</div>`;
-    }
   }
+  await renderDashOrders();
 }
 
 async function saveSettings(){
@@ -1364,6 +1364,7 @@ function switchDash(tab,el){
     if(e) e.style.display=t===tab?'block':'none';
   });
   if(tab==='saved') renderSaved();
+  if(tab==='orders') renderDashOrders();
 }
 
 // ── CHAT ──
@@ -1666,11 +1667,74 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.search-bar')&&!e.target.closest('.search-sugg')) document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
 });
 
+// ── DASHBOARD ORDERS ──
+async function renderDashOrders(){
+  if(!currentUser) return;
+  const ordersEl=document.getElementById('dash-orders');
+  if(!ordersEl) return;
+
+  const {data:orders}=await sb.from('auftraege')
+    .select('*')
+    .eq('kunde_id',currentUser.id)
+    .order('created_at',{ascending:false});
+
+  const badge=s=>{
+    if(s==='bezahlt') return '<span class="badge badge-green">Bezahlt ✓</span>';
+    if(s==='angenommen') return '<span class="badge badge-green">Angenommen ✓</span>';
+    if(s==='bestätigt') return '<span class="badge badge-blue">Bestätigt</span>';
+    if(s==='angebot_gesendet') return '<span class="badge badge-yellow">Angebot ausstehend</span>';
+    if(s==='abgelehnt') return '<span class="badge" style="background:#fee2e2;color:#991b1b">Abgelehnt</span>';
+    return '<span class="badge badge-yellow">Offen</span>';
+  };
+
+  if(!orders||!orders.length){
+    ordersEl.innerHTML=`<div class="dash-title">Meine Aufträge</div><div class="dash-sub">Noch keine Aufträge oder Angebote vorhanden.</div>`;
+    return;
+  }
+
+  ordersEl.innerHTML=`
+    <div class="dash-title">Meine Aufträge & Angebote</div>
+    <div class="dcard" style="max-width:100%">
+      ${orders.map(o=>`
+        <div class="oi">
+          <div class="oi-icon">${o.status==='bezahlt'||o.status==='angenommen'?'✅':'📋'}</div>
+          <div class="oi-info">
+            <div class="oi-title">${o.titel||'Auftrag'}</div>
+            <div class="oi-meta">${o.datum?new Date(o.datum).toLocaleDateString('de'):''} ${o.preis?'· '+o.preis.toFixed(2)+' €':''}</div>
+            ${o.beschreibung&&o.beschreibung!=='Buchung über Helpefy'?`<div class="oi-meta" style="font-style:italic;margin-top:0.2rem">"${o.beschreibung.slice(0,60)}..."</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
+            ${badge(o.status)}
+            ${o.status==='angebot_gesendet'?`
+              <div style="display:flex;gap:0.35rem;margin-top:0.25rem">
+                <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.25rem 0.6rem;background:var(--green);color:white;border:none;border-radius:6px;font-size:0.72rem;cursor:pointer;font-family:Inter,sans-serif">✓ Annehmen</button>
+                <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.25rem 0.6rem;background:#fee2e2;color:#991b1b;border:none;border-radius:6px;font-size:0.72rem;cursor:pointer;font-family:Inter,sans-serif">✕ Ablehnen</button>
+              </div>`:''
+            }
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+async function updateAuftrag(id, status){
+  await sb.from('auftraege').update({status}).eq('id',id);
+  showToast(status==='angenommen'?'Auftrag angenommen! ✅':'Auftrag abgelehnt.','success');
+  renderDashOrders();
+}
+
 // ── ANGEBOT ──
+let currentJobData = null;
 function applyForJob(btn){
   if(!currentUser){openModal('auth');return;}
+  // Get job info from card
+  const card = btn.closest('.job-card');
+  const title = card?.querySelector('.job-title')?.textContent||'Job';
+  const budget = card?.querySelector('.job-budget')?.textContent||'';
+  currentJobData = {title, budget};
+  document.getElementById('angebot-job-info').innerHTML = `<strong>📋 ${title}</strong>${budget?' · Budget: '+budget:''}`;
   document.getElementById('angebotText').value='';
   document.getElementById('angebotPreis').value='';
+  document.getElementById('angebotDatum').value=new Date().toISOString().split('T')[0];
   document.getElementById('angebot-error').style.display='none';
   openModal('angebot');
 }
@@ -1678,16 +1742,28 @@ function applyForJob(btn){
 async function submitAngebot(){
   const text=document.getElementById('angebotText').value.trim();
   const preis=document.getElementById('angebotPreis').value;
+  const datum=document.getElementById('angebotDatum').value;
   const err=document.getElementById('angebot-error');
   if(!text){err.style.display='block';err.textContent='Bitte schreib eine Nachricht.';return;}
-  // Save as message in nachrichten
-  const {error}=await sb.from('nachrichten').insert({
-    von_user_id:currentUser.id,
-    inhalt:`📋 Angebot: ${text}${preis?' | Preis: '+preis+' €':''}`,
+  const btn=document.querySelector('#modal-angebot .form-submit');
+  btn.disabled=true; btn.textContent='Wird gesendet...';
+  // Save to auftraege as pending offer
+  const {error}=await sb.from('auftraege').insert({
+    kunde_id:currentUser.id,
+    titel:currentJobData?.title||'Job-Angebot',
+    beschreibung:text,
+    kategorie:'Angebot',
+    preis:parseFloat(preis)||0,
+    datum:datum||null,
+    status:'angebot_gesendet',
     created_at:new Date().toISOString()
   });
+  btn.disabled=false; btn.textContent='Angebot absenden →';
+  if(error){err.style.display='block';err.textContent='Fehler: '+error.message;return;}
   closeModal('angebot');
-  showToast('Angebot gesendet! 🎉','success');
+  showToast('Angebot erfolgreich gesendet! 🎉','success');
+  // Refresh dashboard orders if open
+  if(document.getElementById('view-dashboard').classList.contains('active')) loadProfile();
 }
 
 // ── HELPERS ──
