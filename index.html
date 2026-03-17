@@ -338,7 +338,7 @@ let currentProfile = null;
         <input id="heroSearch" placeholder="Was brauchst du? (KI-gestützte Suche)" onkeydown="if(event.key==='Enter')doSearch()">
         <div class="ai-badge">KI</div>
         <div class="search-divider"></div>
-        <button class="loc-btn">📍 Berlin · 10 km</button>
+        <button class="loc-btn" id="locBtn2" onclick="getMyLocation()"><span id="locText2">📍 Standort</span></button>
         <button class="search-btn" onclick="doSearch()">Suchen</button>
       </div>
     </div>
@@ -468,7 +468,7 @@ let currentProfile = null;
         <div class="footer-col"><h4>Für Freelancer</h4><ul><li>Registrieren</li><li>Jobs finden</li><li>Einnahmen</li></ul></div>
         <div class="footer-col"><h4>Unternehmen</h4><ul><li>Über uns</li><li>Datenschutz</li><li>Impressum</li></ul></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 Helpefy GmbH · Berlin</span><span>DSGVO-konform · 15% Provision</span></div>
+      <div class="footer-bottom"><span>© 2026 Helpefy GmbH · Deutschland</span><span>DSGVO-konform · 15% Provision</span></div>
     </div>
   </footer>
 </div>
@@ -691,7 +691,7 @@ let currentProfile = null;
       <div class="fg"><label>Vollständiger Name</label><input type="text" id="regName" placeholder="Max Mustermann"></div>
       <div class="fg"><label>E-Mail</label><input type="email" id="regEmail" placeholder="max@beispiel.de"></div>
       <div class="fg"><label>Passwort</label><input type="password" id="regPassword" placeholder="Mindestens 6 Zeichen"></div>
-      <div class="fg"><label>Standort</label><input type="text" id="regLocation" placeholder="Berlin, Deutschland"></div>
+      <div class="fg"><label>Standort</label><input type="text" id="regLocation" placeholder="Stadt eingeben..." autocomplete="off" oninput="searchLocation(this.value,'regLocSugg')"></div>
       <div id="reg-fl-extra" style="display:none">
         <div class="fg"><label>Kategorie</label><select id="regKategorie"><option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option><option>Garten</option><option>Umzug</option><option>Lernen</option></select></div>
         <div class="fg"><label>Stundenlohn (€)</label><input type="number" id="regPreis" placeholder="25"></div>
@@ -1481,6 +1481,8 @@ function getMyLocation(){
     } catch(e){ userCity = 'Dein Standort'; }
     document.getElementById('locSpinner').style.display='none';
     document.getElementById('locText').textContent='📍 '+userCity;
+    const lb2 = document.getElementById('locText2');
+    if(lb2) lb2.textContent='📍 '+userCity;
     document.getElementById('cityLabel').textContent='in '+userCity+' und Umgebung';
     document.getElementById('heroSearch').placeholder='Was brauchst du in '+userCity+'?';
     showToast('📍 Standort: '+userCity,'success');
@@ -1504,6 +1506,8 @@ function autoDetectLocation(){
       userCity = data.address.city||data.address.town||data.address.village||'';
       if(userCity){
         document.getElementById('locText').textContent='📍 '+userCity;
+        const lb2 = document.getElementById('locText2');
+        if(lb2) lb2.textContent='📍 '+userCity;
         document.getElementById('cityLabel').textContent='in '+userCity+' und Umgebung';
         document.getElementById('heroSearch').placeholder='Was brauchst du in '+userCity+'?';
       }
