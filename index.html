@@ -414,11 +414,23 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
         <div>
           <div class="eyebrow">Aktuelle Jobs</div>
           <div class="section-title">Jobs in deiner Nähe</div>
-          <div class="filter-row">
-            <button class="fpill active" onclick="togglePill(this)">Alle</button>
-            <button class="fpill" onclick="togglePill(this)">🔥 Dringend</button>
-            <button class="fpill" onclick="togglePill(this)">💰 Gut bezahlt</button>
+          <div style="position:relative;margin-bottom:1.25rem">
+            <div class="search-bar">
+              <span>🔍</span>
+              <input id="jobSearchInput" placeholder="Jobs suchen z.B. Reinigung, Handwerk..."
+                onkeydown="if(event.key==='Enter'){hideAllSugg();searchJobs();}"
+                oninput="showJobSuggestions(this)"
+                autocomplete="off">
+              <button class="search-btn" onclick="searchJobs()">Suchen</button>
+            </div>
+            <div id="jobSugg" class="search-sugg" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:100;margin-top:4px"></div>
           </div>
+          <div class="filter-row">
+            <button class="fpill active" onclick="filterJobs('alle',this)">Alle</button>
+            <button class="fpill" onclick="filterJobs('dringend',this)">🔥 Dringend</button>
+            <button class="fpill" onclick="filterJobs('bezahlt',this)">💰 Gut bezahlt</button>
+          </div>
+          <div id="jobCount" style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem"></div>
           <div class="job-grid" id="jobGrid"></div>
         </div>
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:1.5rem;position:sticky;top:80px;" id="jobPostForm">
@@ -1057,8 +1069,45 @@ async function renderHome(){
   document.getElementById('homeGrid').innerHTML=all.map((f,i)=>flCard(f,i)).join('');
 }
 
+async function aiSearch(query, freelancers){
+  // Use Claude API to understand the query and find matching freelancers
+  try {
+    const freelancerList = freelancers.map((f,i) =>
+      `[${i}] ${f.name} – ${f.role} | Tags: ${(f.tags||[]).join(', ')} | Services: ${(f.services||[]).join(', ')} | Bio: ${(f.bio||'').slice(0,80)}`
+    ).join('\n');
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: `Du bist eine Suchmaschine für eine Freelancer-Plattform namens Helpefy.
+Suche: "${query}"
+
+Freelancer-Liste:
+${freelancerList}
+
+Antworte NUR mit den Indizes der passenden Freelancer als JSON-Array, z.B.: [0,2,4]
+Wenn kein Freelancer passt, antworte mit: []
+Wähle alle aus die zur Suche passen könnten.`
+        }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '[]';
+    const match = text.match(/\[[\d,\s]*\]/);
+    if(match) return JSON.parse(match[0]);
+  } catch(e) { console.log('AI search fallback:', e); }
+  return null; // null = fallback to normal search
+}
+
 async function renderSearch(q){
-  const query=(q||'').toLowerCase().trim();
+  const query=(q||'').trim();
+  
+  // Load real freelancers from Supabase
   const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').limit(50);
   let all=[...FL];
   if(realFL&&realFL.length){
@@ -1066,27 +1115,50 @@ async function renderSearch(q){
     all=[...rc,...FL];
   }
   window.ALL_FL=all;
+
   let results=all;
-  if(query&&query!=='alle'){
-    const terms=expandQuery(query);
-    results=all.filter(f=>{
-      const fields=[f.name,f.role,...(f.tags||[]),...(f.services||[]),f.bio||'',f.loc||''].map(s=>s.toLowerCase());
-      return terms.some(t=>fields.some(field=>field.includes(t)));
-    });
+
+  if(query && query.toLowerCase()!=='alle'){
+    // Show loading state
+    document.getElementById('searchGrid').innerHTML=`
+      <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">
+        <div style="font-size:1.5rem;margin-bottom:0.5rem">🤖</div>
+        <div style="font-size:0.9rem">KI sucht passende Freelancer...</div>
+      </div>`;
+    document.getElementById('rQuery').textContent=query;
+    document.getElementById('rCount').textContent='...';
+
+    // Try AI search first
+    const aiIndices = await aiSearch(query, all);
+
+    if(aiIndices !== null){
+      // AI returned results
+      results = aiIndices.map(i => all[i]).filter(Boolean);
+    } else {
+      // Fallback to keyword search
+      const terms=expandQuery(query.toLowerCase());
+      results=all.filter(f=>{
+        const fields=[f.name,f.role,...(f.tags||[]),...(f.services||[]),f.bio||'',f.loc||''].map(s=>s.toLowerCase());
+        return terms.some(t=>fields.some(field=>field.includes(t)));
+      });
+    }
   }
-  // Umkreis nur wenn aktiviert
+
+  // Radius filter if active
   const radiusRow=document.getElementById('radiusRowSearch');
   if(userLat&&userLon&&radiusRow&&radiusRow.style.display==='flex'){
     const r=parseInt(document.getElementById('radiusSliderSearch')?.value||25);
     results=results.filter(f=>!f.lat||!f.lon||getDistanceKm(userLat,userLon,f.lat,f.lon)<=r);
   }
+
   const locInfo=userCity?` · 📍 ${userCity}`:'';
   document.getElementById('rQuery').textContent=(q||'Alle')+locInfo;
   document.getElementById('rCount').textContent=results.length;
+
   if(!results.length){
-    document.getElementById('searchGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem">🔍</div><div style="font-weight:600;margin:1rem 0">Keine Ergebnisse für "${q}"</div><button class="btn-red" onclick="renderSearch('')">Alle anzeigen</button></div>`;
+    document.getElementById('searchGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem">🔍</div><div style="font-weight:600;margin:1rem 0">Keine Ergebnisse für "${q}"</div><div style="font-size:0.85rem;margin-bottom:1rem">Versuche einen anderen Begriff wie "Putzen", "Elektriker" oder "Mathe"</div><button class="btn-red" onclick="renderSearch('')">Alle anzeigen</button></div>`;
   } else {
-    document.getElementById('searchGrid').innerHTML=results.map((f,i)=>flCard(f,i)).join('');
+    document.getElementById('searchGrid').innerHTML=results.map((f,i)=>flCard(f,all.indexOf(f))).join('');
   }
 }
 
@@ -1289,11 +1361,87 @@ async function sendMsg(){
 }
 
 // ── JOBS ──
+let allJobsCache = [];
+
+function renderJobGrid(jobs){
+  const grid=document.getElementById('jobGrid');
+  const cnt=document.getElementById('jobCount');
+  if(cnt) cnt.textContent=jobs.length+' Jobs gefunden';
+  if(!grid) return;
+  if(!jobs.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)"><div style="font-size:2.5rem">📋</div><div style="font-weight:600;margin:0.5rem 0">Keine Jobs gefunden</div><button class="btn-red" style="margin-top:0.5rem" onclick="loadRealJobs()">Alle anzeigen</button></div>`;
+    return;
+  }
+  grid.innerHTML=jobs.map(j=>`<div class="job-card">
+    <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
+    <div class="job-title">${j.title}</div>
+    <div class="job-desc">${j.desc}</div>
+    <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
+    <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="currentUser?showView('chat'):openModal('auth')">Angebot senden</button></div>
+  </div>`).join('');
+}
+
+function filterJobs(type, el){
+  if(el){
+    el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
+    el.classList.add('active');
+  }
+  let results=[...allJobsCache];
+  if(type==='dringend') results=results.filter(j=>j.urgent);
+  else if(type==='bezahlt') results=results.filter(j=>j.budget&&j.budget!=='Verhandelbar');
+  renderJobGrid(results);
+}
+
+function showJobSuggestions(input){
+  const q=input.value.toLowerCase();
+  const sugg=document.getElementById('jobSugg');
+  if(!sugg||q.length<2){if(sugg)sugg.style.display='none';return;}
+  const cats=['Reinigung','Handwerk','IT & Digital','Garten','Umzug','Lernen','Kreativ','Beauty','Tiere','Transport','Events','Sonstiges'];
+  const matches=cats.filter(c=>c.toLowerCase().includes(q));
+  if(!matches.length){sugg.style.display='none';return;}
+  sugg.innerHTML=matches.map(c=>`<div class="sugg-item" onclick="document.getElementById('jobSearchInput').value='${c}';document.getElementById('jobSugg').style.display='none';searchJobs()">🔍 <strong>${c}</strong></div>`).join('');
+  sugg.style.display='block';
+}
+
+async function searchJobs(){
+  const q=document.getElementById('jobSearchInput')?.value?.trim()||'';
+  hideAllSugg();
+  if(!q){renderJobGrid(allJobsCache);return;}
+
+  const grid=document.getElementById('jobGrid');
+  if(grid) grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)"><div style="font-size:1.5rem">🤖</div><div style="font-size:0.9rem;margin-top:0.5rem">KI sucht passende Jobs...</div></div>`;
+
+  try{
+    const jobList=allJobsCache.map((j,i)=>`[${i}] ${j.title} | Kategorie: ${j.cat} | ${j.desc.slice(0,60)}`).join('\n');
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:150,
+        messages:[{role:'user',content:`Du bist eine Job-Suchmaschine. Suche: "${q}"\n\nJobs:\n${jobList}\n\nAntworte NUR mit JSON-Array der passenden Indizes z.B. [0,2]. Leeres Array [] wenn nichts passt.`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'[]';
+    const match=text.match(/\[[\d,\s]*\]/);
+    const indices=match?JSON.parse(match[0]):[];
+    renderJobGrid(indices.map(i=>allJobsCache[i]).filter(Boolean));
+  }catch(e){
+    // Fallback keyword search
+    const results=allJobsCache.filter(j=>
+      j.title.toLowerCase().includes(q.toLowerCase())||
+      j.cat.toLowerCase().includes(q.toLowerCase())||
+      j.desc.toLowerCase().includes(q.toLowerCase())
+    );
+    renderJobGrid(results);
+  }
+}
+
 async function loadRealJobs(){
   const {data:jobs}=await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
-  const allJ=[...(jobs||[]).map(j=>({cat:j.kategorie||'Sonstiges',title:j.titel,desc:j.beschreibung,loc:j.standort||'Deutschland',date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',urgent:j.dringend,offers:0,poster:j.profiles?.full_name||'Anonym'})),...JOBS];
-  const grid=document.getElementById('jobGrid');
-  if(grid) grid.innerHTML=allJ.map(j=>`<div class="job-card"><div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div><div class="job-title">${j.title}</div><div class="job-desc">${j.desc}</div><div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div><div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="currentUser?showView('chat'):openModal('auth')">Angebot senden</button></div></div>`).join('');
+  allJobsCache=[...(jobs||[]).map(j=>({cat:j.kategorie||'Sonstiges',title:j.titel,desc:j.beschreibung,loc:j.standort||'Deutschland',date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',urgent:j.dringend,offers:0,poster:j.profiles?.full_name||'Anonym'})),...JOBS];
+  renderJobGrid(allJobsCache);
 }
 
 async function postJob2(){
