@@ -267,6 +267,14 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
 .footer-col ul li:hover{color:white;}
 .footer-bottom{border-top:1px solid #2a2a2a;padding-top:1.5rem;display:flex;justify-content:space-between;font-size:0.78rem;color:#555;}
 
+/* LOCATION AUTOCOMPLETE */
+.loc-sugg{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--shadow2);z-index:999;max-height:200px;overflow-y:auto;margin-top:2px;}
+.loc-item{padding:0.65rem 1rem;cursor:pointer;font-size:0.85rem;border-bottom:1px solid var(--border);transition:background 0.15s;}
+.loc-item:last-child{border-bottom:none;}
+.loc-item:hover{background:var(--light2);}
+.loc-item strong{color:var(--dark);}
+.loc-item span{color:var(--muted);font-size:0.78rem;}
+
 /* TOAST */
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--dark);color:white;padding:0.85rem 1.25rem;border-radius:10px;font-size:0.875rem;z-index:1000;display:none;animation:slideIn 0.3s ease;}
 .toast.show{display:block;}
@@ -420,8 +428,12 @@ let currentProfile = null;
             <div class="fg"><label>Budget min (€)</label><input type="number" id="jobBudgetMin" placeholder="50"></div>
             <div class="fg"><label>Budget max (€)</label><input type="number" id="jobBudgetMax" placeholder="100"></div>
           </div>
-          <div class="fg"><label>Standort</label><input type="text" id="jobStandort" placeholder="z.B. Berlin Mitte"></div>
-          <div class="fg"><label>Wann?</label><input type="text" id="jobDatum" placeholder="z.B. Diese Woche, 25. März..."></div>
+          <div class="fg" style="position:relative">
+  <label>Standort</label>
+  <input type="text" id="jobStandort" placeholder="Stadt oder PLZ eingeben..." autocomplete="off" oninput="searchLocation(this.value,'jobLocSugg')">
+  <div id="jobLocSugg" class="loc-sugg" style="display:none"></div>
+</div>
+          <div class="fg"><label>Wann?</label><input type="date" id="jobDatum"></div>
           <div class="fg" style="display:flex;align-items:center;gap:0.5rem;flex-direction:row">
             <input type="checkbox" id="jobDringend" style="width:auto">
             <label style="font-size:0.82rem;color:var(--text);margin:0">🔥 Dringend</label>
@@ -1419,6 +1431,58 @@ async function loadRealJobs(){
       <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="currentUser?showView('chat'):openModal('auth')">Angebot senden</button></div>
     </div>`).join('');
 }
+
+// ── LOCATION ──
+let locTimer = null;
+async function searchLocation(q, suggId){
+  const sugg = document.getElementById(suggId);
+  if(!sugg) return;
+  if(!q || q.length < 2){ sugg.style.display='none'; return; }
+  clearTimeout(locTimer);
+  locTimer = setTimeout(async()=>{
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&format=json&limit=5&addressdetails=1`);
+      const data = await res.json();
+      if(!data.length){ sugg.style.display='none'; return; }
+      sugg.innerHTML = data.map(d=>{
+        const city = d.address.city||d.address.town||d.address.village||d.address.municipality||d.display_name.split(',')[0];
+        const state = d.address.state||'';
+        return `<div class="loc-item" onclick="selectLocation('${city}, ${state}','${suggId}',this.closest('.fg').querySelector('input'))">
+          <strong>${city}</strong> <span>${state}</span>
+        </div>`;
+      }).join('');
+      sugg.style.display='block';
+    } catch(e){ sugg.style.display='none'; }
+  }, 300);
+}
+function selectLocation(val, suggId, input){
+  if(input) input.value = val;
+  const sugg = document.getElementById(suggId);
+  if(sugg) sugg.style.display='none';
+}
+function getMyLocation(){
+  if(!navigator.geolocation){ showToast('Standort nicht verfügbar','error'); return; }
+  const btn = document.getElementById('locBtn');
+  btn.textContent = '📍 Wird ermittelt...';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const {latitude:lat, longitude:lon} = pos.coords;
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+    const data = await res.json();
+    const city = data.address.city||data.address.town||data.address.village||'';
+    btn.textContent = '📍 '+city;
+    // In Suchfeld eintragen
+    const si = document.getElementById('heroSearch');
+    if(si && !si.value) si.placeholder = `Suche in ${city}...`;
+    showToast('Standort: '+city,'success');
+  }, ()=>{
+    btn.textContent='📍 Standort';
+    showToast('Standort-Zugriff verweigert','error');
+  });
+}
+// Klick außerhalb schließt Dropdown
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.fg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
+});
 
 // ── HELPERS ──
 function showError(el,msg){el.style.display='block';el.textContent=msg;}
