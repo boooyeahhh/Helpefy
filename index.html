@@ -658,6 +658,30 @@ let currentProfile = null;
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- ZAHLUNGSMODAL -->
+<div class="modal-overlay" id="modal-payment">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('payment')">✕</button>
+    <div class="modal-title">💳 Zahlung bestätigen</div>
+    <div class="modal-sub" id="paymentSummary">Buchungsdetails...</div>
+    <div style="background:var(--light);border-radius:10px;padding:1rem;margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:0.2rem 0;color:var(--muted)"><span id="pay-label">–</span><span id="pay-sub">–</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:0.2rem 0;color:var(--muted)"><span>Helpefy Service (15%)</span><span id="pay-fee">–</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:600;padding:0.5rem 0 0;border-top:1px solid var(--border);margin-top:0.25rem"><span>Gesamt</span><span id="pay-total" style="color:var(--red)">–</span></div>
+    </div>
+    <div class="fg"><label>Zahlungsmethode</label><select id="payMethod"><option value="card">💳 Kreditkarte</option><option value="apple">🍎 Apple Pay</option><option value="paypal">🅿️ PayPal</option></select></div>
+    <div class="fg"><label>Karteninhaber</label><input type="text" id="cardName" placeholder="Max Mustermann"></div>
+    <div class="fg"><label>Kartennummer</label><input type="text" id="cardNum" placeholder="1234 5678 9012 3456" maxlength="19"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div class="fg"><label>Ablaufdatum</label><input type="text" placeholder="MM/JJ" maxlength="5"></div>
+      <div class="fg"><label>CVV</label><input type="text" placeholder="123" maxlength="3"></div>
+    </div>
+    <div id="pay-error" class="error-msg"></div>
+    <button class="form-submit" id="payBtn" onclick="confirmPayment()">Jetzt bezahlen →</button>
+    <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.5rem">🔒 Sichere Zahlung · SSL verschlüsselt</p>
+  </div>
+</div>
+
 <script>
 // ── DEMO DATA ──
 const FL = [
@@ -770,8 +794,8 @@ function updateNav(){
   }
 }
 
-// ── VIEWS ──
-function showView(n){
+// ── VIEWS mit Browser-Zurück-Button Fix ──
+function showView(n, pushState=true){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+n).classList.add('active');
   window.scrollTo(0,0);
@@ -779,7 +803,22 @@ function showView(n){
   if(n==='search') renderSearch(document.getElementById('searchInput')?.value||'Alle');
   if(n==='dashboard'){if(!currentUser){openModal('auth');return;}loadProfile();}
   if(n==='dashboard') renderSaved();
+  // Browser History updaten
+  if(pushState){
+    const titles = {home:'Helpefy – Startseite',search:'Helpefy – Suche',profile:'Helpefy – Profil',dashboard:'Helpefy – Dashboard',chat:'Helpefy – Nachrichten',success:'Helpefy – Buchung erfolgreich'};
+    history.pushState({view:n},'','/'+( n==='home'?'':n));
+    document.title = titles[n]||'Helpefy';
+  }
 }
+
+// Browser Zurück-Button
+window.addEventListener('popstate', function(e){
+  if(e.state && e.state.view){
+    showView(e.state.view, false);
+  } else {
+    showView('home', false);
+  }
+});
 
 function switchMode(mode,el){
   curMode=mode;
@@ -865,22 +904,59 @@ function calcPrice(){
   document.getElementById('pbTotal').textContent=`${total.toFixed(2)} €`;
 }
 async function doBook(){
-  if(!currentUser){openModal('auth');return;}
-  const ref='HLF-2026-'+String(Math.floor(Math.random()*90000)+10000);
-  // Save to Supabase
+  // Login prüfen
+  if(!currentUser){
+    showToast('Bitte zuerst anmelden!','error');
+    openModal('auth');
+    return;
+  }
+  // Datum prüfen
+  const datum = document.getElementById('bDate').value;
+  if(!datum){showToast('Bitte ein Datum wählen!','error');return;}
+  // Zahlungsmodal öffnen mit Buchungsdetails
   const f=FL[curFL];
+  const h=parseInt(document.getElementById('bHours').value);
+  const sub=f.price*h;
+  const fee=+(sub*0.15).toFixed(2);
+  const total=+(sub+fee).toFixed(2);
+  document.getElementById('paymentSummary').textContent=f.name+' · '+datum+' · '+h+' Std';
+  document.getElementById('pay-label').textContent=f.price+' € × '+h+' Std';
+  document.getElementById('pay-sub').textContent=sub.toFixed(2)+' €';
+  document.getElementById('pay-fee').textContent=fee.toFixed(2)+' €';
+  document.getElementById('pay-total').textContent=total.toFixed(2)+' €';
+  openModal('payment');
+}
+
+async function confirmPayment(){
+  const name=document.getElementById('cardName').value.trim();
+  const num=document.getElementById('cardNum').value.trim();
+  const err=document.getElementById('pay-error');
+  const btn=document.getElementById('payBtn');
+  if(!name||!num){
+    err.style.display='block';
+    err.textContent='Bitte alle Zahlungsfelder ausfüllen.';
+    return;
+  }
+  btn.disabled=true; btn.textContent='Zahlung wird verarbeitet...';
+  // Buchung in Supabase speichern
+  const f=FL[curFL];
+  const h=parseInt(document.getElementById('bHours').value);
   await sb.from('auftraege').insert({
     kunde_id:currentUser.id,
     titel:f.role,
     beschreibung:'Buchung über Helpefy',
     kategorie:f.tags[0],
-    preis:f.price*parseInt(document.getElementById('bHours').value),
+    preis:f.price*h,
+    provision:+(f.price*h*0.15).toFixed(2),
     datum:document.getElementById('bDate').value,
-    status:'bestätigt'
+    status:'bezahlt'
   });
+  const ref='HLF-2026-'+String(Math.floor(Math.random()*90000)+10000);
+  closeModal('payment');
   document.getElementById('bookRef').textContent=ref;
+  btn.disabled=false; btn.textContent='Jetzt bezahlen →';
   showView('success');
-  showToast('Buchung erfolgreich! 🎉','success');
+  showToast('Buchung & Zahlung erfolgreich! 🎉','success');
 }
 
 // ── DASHBOARD ──
@@ -943,7 +1019,12 @@ async function init(){
     if(currentUser){await loadProfile();updateNav();}
     else{currentProfile=null;updateNav();}
   });
-  renderHome();
+  // URL beim ersten Laden prüfen
+  const path = window.location.pathname.replace('/','') || 'home';
+  const validViews = ['home','search','profile','dashboard','chat'];
+  const startView = validViews.includes(path) ? path : 'home';
+  history.replaceState({view:startView},'',window.location.pathname);
+  showView(startView, false);
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
 }
 init();
