@@ -303,6 +303,7 @@ const SUPABASE_KEY = 'sb_publishable_sHnuja7A8iJBwvkA5zRDbg_9zkfHJ_i';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
+let curMode = 'freelancer';
 let currentProfile = null;
 </script>
 
@@ -340,13 +341,30 @@ let currentProfile = null;
       <p class="hero-sub">Täglich neue Jobs von Kunden in deiner Umgebung</p>
     </div>
     <div class="search-outer">
-      <div class="search-bar">
-        <span>🔍</span>
-        <input id="heroSearch" placeholder="Was brauchst du? (KI-gestützte Suche)" onkeydown="if(event.key==='Enter')doSearch()">
-        <div class="ai-badge">KI</div>
-        <div class="search-divider"></div>
-        <button class="loc-btn" id="locBtn2" onclick="getMyLocation()"><span id="locText2">📍 Standort</span></button>
-        <button class="search-btn" onclick="doSearch()">Suchen</button>
+      <div style="position:relative">
+        <div class="search-bar">
+          <span>🔍</span>
+          <input id="heroSearch" placeholder="Was brauchst du? z.B. Elektriker, Reinigung..."
+            onkeydown="if(event.key==='Enter'){hideAllSugg();doSearch();}"
+            oninput="showSearchSuggestions(this,'heroSugg')"
+            autocomplete="off">
+          <div class="ai-badge">KI</div>
+          <div class="search-divider"></div>
+          <button class="loc-btn" id="locBtn" onclick="getMyLocation()">
+            <span id="locSpinner" style="display:none">⏳</span>
+            <span id="locText">📍 Standort</span>
+          </button>
+          <button class="search-btn" onclick="hideAllSugg();doSearch()">Suchen</button>
+        </div>
+        <div id="heroSugg" class="search-sugg" style="display:none"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem;justify-content:center;font-size:0.82rem;color:var(--muted)">
+        <span>📍 Umkreis:</span>
+        <input type="range" id="radiusSlider" min="5" max="100" value="25" step="5"
+          style="width:130px;accent-color:var(--red)"
+          oninput="document.getElementById('radiusVal').textContent=this.value+' km'">
+        <span id="radiusVal" style="font-weight:600;color:var(--red)">25 km</span>
+        <span id="cityLabel" style="color:var(--muted);font-size:0.78rem"></span>
       </div>
     </div>
     <div class="search-tags">
@@ -760,7 +778,7 @@ const JOBS = [
 ];
 
 let curFL = 0;
-let curMode = 'freelancer';
+
 
 // ── AUTH ──
 async function doLogin(){
@@ -771,14 +789,18 @@ async function doLogin(){
   if(!email||!pass){showError(err,'Bitte E-Mail und Passwort eingeben.');return;}
   btn.disabled=true; btn.textContent='Anmelden...';
   const {data,error} = await sb.auth.signInWithPassword({email,password:pass});
-  if(error){showError(err,error.message);btn.disabled=false;btn.textContent='Anmelden';return;}
+  if(error){
+    const msg = error.message==='Invalid login credentials'?'Falsche E-Mail oder Passwort.':error.message;
+    showError(err,msg);
+    btn.disabled=false; btn.textContent='Anmelden';
+    return;
+  }
   currentUser = data.user;
   closeModal('auth');
   await loadProfile();
   updateNav();
   showView('dashboard');
   showToast('Erfolgreich angemeldet! 👋','success');
-  }catch(e){console.error('Login error:',e);showToast('Anmeldefehler – bitte neu versuchen','error');}
 }
 
 async function doRegister(){
@@ -914,17 +936,26 @@ window.addEventListener('popstate', function(e){
   }
 });
 
-function switchMode(mode,el){
-  curMode=mode;
-  if(el){document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
-  else{document.getElementById('tab-'+mode)?.classList.add('active');document.getElementById('tab-'+(mode==='freelancer'?'jobs':'freelancer'))?.classList.remove('active');}
-  document.getElementById('hero-freelancer').style.display=mode==='freelancer'?'block':'none';
-  document.getElementById('hero-jobs').style.display=mode==='jobs'?'block':'none';
-  document.getElementById('section-freelancer').style.display=mode==='freelancer'?'block':'none';
-  document.getElementById('section-jobs').style.display=mode==='jobs'?'block':'none';
+function switchMode(mode, el){
+  curMode = mode;
+  // Toggle Tabs
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  else {
+    const tab = document.getElementById('tab-'+mode);
+    if(tab) tab.classList.add('active');
+  }
+  // Hero Content
+  const hf = document.getElementById('hero-freelancer');
+  const hj = document.getElementById('hero-jobs');
+  const sf = document.getElementById('section-freelancer');
+  const sj = document.getElementById('section-jobs');
+  if(hf) hf.style.display = mode==='freelancer' ? 'block' : 'none';
+  if(hj) hj.style.display = mode==='jobs' ? 'block' : 'none';
+  if(sf) sf.style.display = mode==='freelancer' ? 'block' : 'none';
+  if(sj) sj.style.display = mode==='jobs' ? 'block' : 'none';
   if(mode==='jobs'){
-    renderJobs();loadRealJobs();
-    // Login-Hinweis im Job-Formular zeigen/verstecken
+    renderJobs(); loadRealJobs();
     const hint = document.getElementById('job-login-hint');
     if(hint) hint.style.display = currentUser ? 'none' : 'block';
   }
@@ -1712,22 +1743,22 @@ function autoDetectLocation(){
       userCity = data.address.city||data.address.town||data.address.village||'';
       if(userCity){
         document.getElementById('locText').textContent='📍 '+userCity;
-        const lb2 = document.getElementById('locText2');
-        if(lb2) lb2.textContent='📍 '+userCity;
-        const ls = document.getElementById('locTextSearch');
-        if(ls) ls.textContent=userCity;
-        const cls = document.getElementById('cityLabelSearch');
-        if(cls) cls.textContent='in '+userCity;
-        document.getElementById('cityLabel').textContent='in '+userCity+' und Umgebung';
-        document.getElementById('heroSearch').placeholder='Was brauchst du in '+userCity+'?';
+        ['locText2','locText'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='📍 '+userCity;});
+        const ls=document.getElementById('locTextSearch'); if(ls) ls.textContent=userCity;
+        const cls=document.getElementById('cityLabelSearch'); if(cls) cls.textContent='in '+userCity;
+        const cl=document.getElementById('cityLabel'); if(cl) cl.textContent='in '+userCity+' und Umgebung';
+        const hs=document.getElementById('heroSearch'); if(hs) hs.placeholder='Was brauchst du in '+userCity+'?';
       }
     } catch(e){}
   }, ()=>{}, {timeout:5000});
 }
 // Klick außerhalb schließt Dropdown
+function hideAllSugg(){
+  document.querySelectorAll('.search-sugg, .loc-sugg').forEach(s=>s.style.display='none');
+}
 document.addEventListener('click', e=>{
   if(!e.target.closest('.fg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
-  if(!e.target.closest('.search-outer') && !e.target.closest('#view-search > div')) {
+  if(!e.target.closest('.search-outer') && !e.target.closest('[id^="view-search"] > div')){
     document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
   }
 });
