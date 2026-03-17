@@ -762,7 +762,17 @@ let currentProfile = null;
 </div>
 
 <script>
-// ── DEMO DATA ──
+// ── CONFIG ──
+const SUPABASE_URL = 'https://hkrkqqzpmpoyoocrbxra.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_sHnuja7A8iJBwvkA5zRDbg_9zkfHJ_i';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null, currentProfile = null;
+let curMode = 'freelancer', curFL = 0;
+let userLat = null, userLon = null, userCity = '';
+let activeChatUserId = null, chatSubscription = null;
+let locTimer = null;
+
 const FL = [
   {name:"Maria K.",emoji:"👩",role:"Profi-Reinigungskraft",tags:["Wohnungsreinigung","Büroreinigung","Fensterputzen"],price:27,rating:4.9,reviews:48,loc:"2,1 km entfernt",avail:true,bio:"Ich reinige seit 8 Jahren professionell Wohnungen und Büros. Sehr gründlich, pünktlich und zuverlässig.",services:["Wohnungsreinigung","Büroreinigung","Fensterputzen","Einzugsreinigung","Frühjahrsputz"],revs:[{n:"Anna M.",r:5,d:"12.03.2026",t:"Maria hat unsere Wohnung top gereinigt!"},{n:"Peter K.",r:5,d:"28.02.2026",t:"Sehr zuverlässig und gründlich."}]},
   {name:"Thomas B.",emoji:"👨",role:"Handwerker & Sanitär",tags:["Wasserhahn","Elektrik","Möbelmontage"],price:45,rating:4.8,reviews:62,loc:"3,4 km entfernt",avail:true,bio:"Gelernter Handwerker mit 15 Jahren Erfahrung. Schnell, zuverlässig und fair.",services:["Wasserhahn reparieren","Möbelmontage","Elektroarbeiten","Fliesen"],revs:[{n:"Klaus R.",r:5,d:"15.03.2026",t:"Thomas hat unseren Wasserhahn blitzschnell repariert!"}]},
@@ -771,7 +781,6 @@ const FL = [
   {name:"Sara L.",emoji:"👩‍💻",role:"IT-Expertin",tags:["PC-Hilfe","WLAN","Software"],price:40,rating:5.0,reviews:41,loc:"Online möglich",avail:true,bio:"IT-Spezialistin. Helfe bei PC, WLAN, Software. Auch Remote!",services:["PC einrichten","WLAN","Viren entfernen","Software"],revs:[{n:"Heinrich B.",r:5,d:"22.03.2026",t:"Sara hat in 30 Min mein Problem gelöst!"}]},
   {name:"Anna H.",emoji:"👩‍🏫",role:"Nachhilfelehrerin",tags:["Mathe","Englisch","Abitur"],price:35,rating:4.9,reviews:55,loc:"Online / vor Ort",avail:true,bio:"Studentin Mathe Master. Nachhilfe für alle Stufen bis Abitur.",services:["Mathe","Physik","Englisch","Abitur Vorbereitung"],revs:[{n:"Familie Braun",r:5,d:"19.03.2026",t:"Note von 4 auf 2 gebracht!"}]}
 ];
-
 const JOBS = [
   {cat:"Reinigung",title:"Wohnungsreinigung 3-Zimmer",desc:"Gründliche Reinigung meiner 80m² Wohnung. Alle Mittel vorhanden.",loc:"Berlin Mitte",date:"Heute",budget:"60–90 €",urgent:true,offers:3},
   {cat:"Handwerk",title:"Wasserhahn reparieren",desc:"Wasserhahn tropft seit 2 Wochen. Brauche schnelle Hilfe.",loc:"Berlin Prenzlauer Berg",date:"Diese Woche",budget:"50–80 €",urgent:false,offers:5},
@@ -781,323 +790,361 @@ const JOBS = [
   {cat:"Lernen",title:"Mathe Nachhilfe Abitur",desc:"2x pro Woche, 2 Stunden. Online bevorzugt.",loc:"Online",date:"Ab sofort",budget:"35–45 €/Std",urgent:false,offers:8}
 ];
 
-let curFL = 0;
+// ── SYNONYMS ──
+const SYNONYMS = {
+  'elektro':['Elektrik','Elektronik','Elektriker'],'elektriker':['Elektrik','Elektronik'],
+  'strom':['Elektrik'],'steckdose':['Elektrik'],'kabel':['Elektrik'],
+  'it':['IT-Expertin','IT & Digital','PC','WLAN','Software'],
+  'computer':['IT & Digital','PC'],'pc':['IT & Digital','PC-Hilfe'],
+  'laptop':['IT & Digital','PC-Hilfe'],'internet':['IT & Digital','WLAN'],
+  'wlan':['IT & Digital','WLAN'],'wifi':['WLAN'],'drucker':['IT & Digital'],
+  'putzen':['Profi-Reinigungskraft','Wohnungsreinigung','Reinigung'],
+  'sauber':['Reinigung'],'reinigung':['Profi-Reinigungskraft','Wohnungsreinigung'],
+  'fenster':['Fensterputzen'],'putzkraft':['Profi-Reinigungskraft'],
+  'haushalt':['Profi-Reinigungskraft','Haushalt'],
+  'handwerk':['Handwerker','Sanitär','Reparatur'],
+  'reparatur':['Handwerker & Sanitär'],'wasserhahn':['Handwerker & Sanitär','Sanitär'],
+  'klempner':['Handwerker & Sanitär','Sanitär'],'montage':['Möbelmontage'],
+  'ikea':['Möbelmontage'],'möbel':['Möbelmontage'],'bohren':['Handwerker'],
+  'maler':['Handwerk'],'streichen':['Handwerk'],'fliesen':['Handwerk'],
+  'umzug':['Umzugsprofi','Transport'],'transport':['Umzugsprofi'],
+  'tragen':['Umzugsprofi'],'transporter':['Umzugsprofi'],
+  'garten':['Profi-Gärtner','Rasen','Hecken'],'rasen':['Profi-Gärtner'],
+  'mähen':['Profi-Gärtner'],'hecke':['Profi-Gärtner'],
+  'pflanzen':['Profi-Gärtner'],'blumen':['Profi-Gärtner'],
+  'nachhilfe':['Nachhilfelehrerin','Mathe','Englisch'],
+  'mathe':['Nachhilfelehrerin'],'englisch':['Nachhilfelehrerin'],
+  'schule':['Nachhilfelehrerin'],'abitur':['Nachhilfelehrerin'],
+  'hausaufgaben':['Nachhilfelehrerin'],'lehrer':['Nachhilfelehrerin'],
+  'hund':['Tiere','Hundesitter'],'katze':['Tiere'],'gassi':['Tiere'],
+  'friseur':['Beauty'],'haare':['Beauty'],'massage':['Beauty'],
+  'party':['Events'],'hochzeit':['Events'],'foto':['Events','Kreativ'],
+  'design':['Kreativ'],'logo':['Kreativ'],'website':['IT & Digital','Kreativ'],
+};
 
+function expandQuery(q){
+  const ql = q.toLowerCase().trim();
+  let terms = new Set([ql]);
+  if(SYNONYMS[ql]) SYNONYMS[ql].forEach(s=>terms.add(s.toLowerCase()));
+  Object.keys(SYNONYMS).forEach(k=>{
+    if(k.includes(ql)){
+      terms.add(k);
+      SYNONYMS[k].forEach(s=>terms.add(s.toLowerCase()));
+    }
+  });
+  return [...terms];
+}
+
+function getSuggestions(q){
+  if(!q||q.length<2) return [];
+  const ql = q.toLowerCase();
+  let out = new Set();
+  Object.keys(SYNONYMS).forEach(k=>{
+    if(k.startsWith(ql)&&k!==ql) out.add(k.charAt(0).toUpperCase()+k.slice(1));
+  });
+  FL.forEach(f=>{
+    if(f.role.toLowerCase().includes(ql)) out.add(f.role);
+    f.tags.forEach(t=>{if(t.toLowerCase().includes(ql))out.add(t);});
+  });
+  return [...out].slice(0,6);
+}
+
+function showSearchSuggestions(input, id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const s = getSuggestions(input.value);
+  if(!s.length){el.style.display='none';return;}
+  el.innerHTML = s.map(x=>`<div class="sugg-item" onclick="selectSuggestion('${x}','${input.id}','${id}')">🔍 <strong>${x}</strong></div>`).join('');
+  el.style.display='block';
+}
+
+function selectSuggestion(val,inputId,suggId){
+  document.getElementById(inputId).value=val;
+  document.getElementById(suggId).style.display='none';
+  doSearch();
+}
+
+function hideAllSugg(){
+  document.querySelectorAll('.search-sugg,.loc-sugg').forEach(s=>s.style.display='none');
+}
 
 // ── AUTH ──
 async function doLogin(){
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPassword').value;
-  const btn = document.getElementById('loginBtn');
-  const err = document.getElementById('login-error');
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPassword').value;
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('login-error');
   if(!email||!pass){showError(err,'Bitte E-Mail und Passwort eingeben.');return;}
   btn.disabled=true; btn.textContent='Anmelden...';
-  const {data,error} = await sb.auth.signInWithPassword({email,password:pass});
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){
-    const msg = error.message==='Invalid login credentials'?'Falsche E-Mail oder Passwort.':error.message;
-    showError(err,msg);
-    btn.disabled=false; btn.textContent='Anmelden';
-    return;
+    showError(err,error.message.includes('Invalid')?'Falsche E-Mail oder Passwort.':error.message);
+    btn.disabled=false; btn.textContent='Anmelden'; return;
   }
-  currentUser = data.user;
+  currentUser=data.user;
   closeModal('auth');
-  await loadProfile();
-  updateNav();
+  await loadProfile(); updateNav();
   showView('dashboard');
-  showToast('Erfolgreich angemeldet! 👋','success');
+  showToast('Willkommen zurück! 👋','success');
 }
 
 async function doRegister(){
-  const name = document.getElementById('regName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const pass = document.getElementById('regPassword').value;
-  const loc = document.getElementById('regLocation').value.trim();
-  const isFL = document.getElementById('reg-fl-extra').style.display !== 'none';
-  const btn = document.getElementById('regBtn');
-  const err = document.getElementById('reg-error');
-  const suc = document.getElementById('reg-success');
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPassword').value;
+  const loc=document.getElementById('regLocation').value.trim();
+  const isFL=document.getElementById('reg-fl-extra').style.display!=='none';
+  const btn=document.getElementById('regBtn');
+  const err=document.getElementById('reg-error');
+  const suc=document.getElementById('reg-success');
   if(!name||!email||!pass){showError(err,'Bitte alle Felder ausfüllen.');return;}
-  if(pass.length<6){showError(err,'Passwort muss mindestens 6 Zeichen haben.');return;}
+  if(pass.length<6){showError(err,'Passwort mind. 6 Zeichen.');return;}
   btn.disabled=true; btn.textContent='Konto erstellen...';
-  const {data,error} = await sb.auth.signUp({
-    email, password:pass,
-    options:{data:{full_name:name,role:isFL?'freelancer':'kunde',location:loc}}
-  });
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role:isFL?'freelancer':'kunde',location:loc}}});
   if(error){showError(err,error.message);btn.disabled=false;btn.textContent='Konto erstellen';return;}
-  // Save profile
   if(data.user){
-    await sb.from('profiles').upsert({
-      id:data.user.id, email, full_name:name,
-      role:isFL?'freelancer':'kunde', created_at:new Date().toISOString()
-    });
-    // Wenn Freelancer: auch in freelancers Tabelle speichern
+    await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,role:isFL?'freelancer':'kunde',created_at:new Date().toISOString()});
     if(isFL){
-      const kat = document.getElementById('regKategorie').value;
-      const preis = parseFloat(document.getElementById('regPreis').value)||25;
-      await sb.from('freelancers').insert({
-        user_id: data.user.id,
-        kategorie: kat,
-        stundenlohn: preis,
-        standort: loc,
-        verfuegbar: true,
-        beschreibung: `${name} – ${kat} Experte auf Helpefy.`,
-        created_at: new Date().toISOString()
-      });
+      const kat=document.getElementById('regKategorie').value;
+      const preis=parseFloat(document.getElementById('regPreis').value)||25;
+      await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,created_at:new Date().toISOString()});
     }
   }
-  err.style.display='none';
-  suc.style.display='block';
-  suc.textContent='✅ Konto erstellt! Bitte bestätige deine E-Mail.';
+  err.style.display='none'; suc.style.display='block';
+  suc.textContent='✅ Konto erstellt! Du kannst dich jetzt anmelden.';
   btn.disabled=false; btn.textContent='Konto erstellen';
 }
 
 async function doLogout(){
   await sb.auth.signOut();
-  currentUser = null; currentProfile = null;
-  updateNav();
-  showView('home');
-  showToast('Erfolgreich abgemeldet.','success');
+  currentUser=null; currentProfile=null;
+  updateNav(); showView('home');
+  showToast('Abgemeldet.','success');
 }
 
 async function loadProfile(){
   if(!currentUser) return;
-  const {data} = await sb.from('profiles').select('*').eq('id',currentUser.id).single();
-  currentProfile = data;
+  const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  currentProfile=data;
   if(data){
-    document.getElementById('dashName').textContent = data.full_name || currentUser.email;
-    document.getElementById('dashRole').textContent = data.role === 'freelancer' ? 'Freelancer' : 'Kunde';
-    document.getElementById('dashGreet').textContent = `Willkommen, ${data.full_name?.split(' ')[0] || ''}! 👋`;
-    document.getElementById('dashEmail').textContent = data.email || currentUser.email;
-    document.getElementById('dashFullName').textContent = data.full_name || '–';
-    document.getElementById('dashAvatar').textContent = (data.full_name||currentUser.email||'?').charAt(0).toUpperCase();
-    document.getElementById('settingsName').value = data.full_name || '';
-    document.getElementById('settingsEmail').value = data.email || currentUser.email || '';
+    const name=data.full_name||currentUser.email;
+    document.getElementById('dashName').textContent=name;
+    document.getElementById('dashRole').textContent=data.role==='freelancer'?'Freelancer':'Kunde';
+    document.getElementById('dashGreet').textContent=`Willkommen, ${name.split(' ')[0]}! 👋`;
+    document.getElementById('dashEmail').textContent=data.email||currentUser.email;
+    document.getElementById('dashFullName').textContent=name;
+    document.getElementById('dashAvatar').textContent=name.charAt(0).toUpperCase();
+    document.getElementById('settingsName').value=name;
+    document.getElementById('settingsEmail').value=data.email||currentUser.email;
   }
-  // Aufträge aus Supabase laden
-  const {data:orders} = await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
-  if(orders && orders.length > 0){
-    // Stats updaten
-    const total = orders.reduce((s,o)=>s+(o.preis||0),0);
-    document.querySelectorAll('.dsc-n')[0].textContent = orders.length;
-    document.querySelectorAll('.dsc-n')[1].textContent = total.toFixed(0)+'€';
-    // Aufträge-Tab füllen
-    const ordersEl = document.getElementById('dash-orders');
+  const {data:orders}=await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
+  if(orders&&orders.length){
+    const total=orders.reduce((s,o)=>s+(o.preis||0),0);
+    const dscNs=document.querySelectorAll('.dsc-n');
+    if(dscNs[0]) dscNs[0].textContent=orders.length;
+    if(dscNs[1]) dscNs[1].textContent=total.toFixed(0)+'€';
+    const ordersEl=document.getElementById('dash-orders');
     if(ordersEl){
-      const statusBadge = (s)=>{
-        if(s==='bezahlt') return '<span class="badge badge-green">Bezahlt ✓</span>';
-        if(s==='bestätigt') return '<span class="badge badge-blue">Bestätigt</span>';
-        return '<span class="badge badge-yellow">Offen</span>';
-      };
-      ordersEl.innerHTML = `<div class="dash-title">Meine Aufträge</div><div class="dash-sub">${orders.length} Aufträge insgesamt</div>
-        <div class="dcard" style="max-width:100%">
-          ${orders.map(o=>`<div class="oi"><div class="oi-icon">📋</div><div class="oi-info"><div class="oi-title">${o.titel||'Auftrag'}</div><div class="oi-meta">${o.datum||''} · ${(o.preis||0).toFixed(2)} €</div></div>${statusBadge(o.status)}</div>`).join('')}
-        </div>`;
+      const badge=s=>{if(s==='bezahlt')return'<span class="badge badge-green">Bezahlt ✓</span>';if(s==='bestätigt')return'<span class="badge badge-blue">Bestätigt</span>';return'<span class="badge badge-yellow">Offen</span>';};
+      ordersEl.innerHTML=`<div class="dash-title">Meine Aufträge</div><div class="dcard" style="max-width:100%">${orders.map(o=>`<div class="oi"><div class="oi-icon">📋</div><div class="oi-info"><div class="oi-title">${o.titel||'Auftrag'}</div><div class="oi-meta">${o.datum||''} · ${(o.preis||0).toFixed(2)} €</div></div>${badge(o.status)}</div>`).join('')}</div>`;
     }
   }
 }
 
 async function saveSettings(){
   if(!currentUser) return;
-  const name = document.getElementById('settingsName').value;
+  const name=document.getElementById('settingsName').value;
   await sb.from('profiles').update({full_name:name}).eq('id',currentUser.id);
-  showToast('Einstellungen gespeichert!','success');
+  showToast('Gespeichert!','success');
 }
 
 function updateNav(){
-  const nr = document.getElementById('navRight');
+  const nr=document.getElementById('navRight');
   if(currentUser){
-    const initial = (currentProfile?.full_name || currentUser.email).charAt(0).toUpperCase();
-    nr.innerHTML = `<div class="user-nav"><span style="font-size:0.82rem;color:var(--muted)">${currentProfile?.full_name||currentUser.email}</span><div class="user-badge" onclick="showView('dashboard')">${initial}</div></div>`;
+    const n=(currentProfile?.full_name||currentUser.email);
+    const init=n.charAt(0).toUpperCase();
+    nr.innerHTML=`<div class="user-nav"><span style="font-size:0.82rem;color:var(--muted)">${n}</span><div class="user-badge" onclick="showView('dashboard')">${init}</div></div>`;
   } else {
-    nr.innerHTML = `<button class="btn-ghost" onclick="openModal('auth')">Anmelden</button><button class="btn-red" onclick="openModal('auth')">Registrieren</button>`;
+    nr.innerHTML=`<button class="btn-ghost" onclick="openModal('auth')">Anmelden</button><button class="btn-red" onclick="openModal('auth')">Registrieren</button>`;
   }
 }
 
-// ── VIEWS mit Browser-Zurück-Button Fix ──
-function showView(n, pushState=true){
+// ── VIEWS ──
+function showView(n, push=true){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-'+n).classList.add('active');
+  const el=document.getElementById('view-'+n);
+  if(!el) return;
+  el.classList.add('active');
   window.scrollTo(0,0);
   if(n==='home') renderHome();
-  if(n==='search') renderSearch(document.getElementById('searchInput')?.value||'Alle');
   if(n==='dashboard'){if(!currentUser){openModal('auth');return;}loadProfile();}
-  if(n==='dashboard') renderSaved();
   if(n==='chat'){if(!currentUser){openModal('auth');return;}loadChatUsers();}
-  // Browser History updaten
-  if(pushState){
-    const titles = {home:'Helpefy – Startseite',search:'Helpefy – Suche',profile:'Helpefy – Profil',dashboard:'Helpefy – Dashboard',chat:'Helpefy – Nachrichten',success:'Helpefy – Buchung erfolgreich'};
-    history.pushState({view:n},'','/'+( n==='home'?'':n));
-    document.title = titles[n]||'Helpefy';
+  if(push){
+    const titles={home:'Helpefy',search:'Helpefy – Suche',profile:'Helpefy – Profil',dashboard:'Helpefy – Dashboard',chat:'Helpefy – Nachrichten',success:'Helpefy – Buchung'};
+    history.pushState({view:n},'','/'+(n==='home'?'':n));
+    document.title=titles[n]||'Helpefy';
   }
 }
 
-// Browser Zurück-Button
-window.addEventListener('popstate', function(e){
-  if(e.state && e.state.view){
-    showView(e.state.view, false);
-  } else {
-    showView('home', false);
-  }
+window.addEventListener('popstate',e=>{
+  if(e.state&&e.state.view) showView(e.state.view,false);
+  else showView('home',false);
 });
 
-function switchMode(mode, el){
-  curMode = mode;
-  // Toggle Tabs
-  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
+function switchMode(mode,el){
+  curMode=mode;
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
   if(el) el.classList.add('active');
-  else {
-    const tab = document.getElementById('tab-'+mode);
-    if(tab) tab.classList.add('active');
-  }
-  // Hero Content
-  const hf = document.getElementById('hero-freelancer');
-  const hj = document.getElementById('hero-jobs');
-  const sf = document.getElementById('section-freelancer');
-  const sj = document.getElementById('section-jobs');
-  if(hf) hf.style.display = mode==='freelancer' ? 'block' : 'none';
-  if(hj) hj.style.display = mode==='jobs' ? 'block' : 'none';
-  if(sf) sf.style.display = mode==='freelancer' ? 'block' : 'none';
-  if(sj) sj.style.display = mode==='jobs' ? 'block' : 'none';
-  if(mode==='jobs'){
-    renderJobs(); loadRealJobs();
-    const hint = document.getElementById('job-login-hint');
-    if(hint) hint.style.display = currentUser ? 'none' : 'block';
-  }
+  else document.getElementById('tab-'+mode)?.classList.add('active');
+  document.getElementById('hero-freelancer').style.display=mode==='freelancer'?'block':'none';
+  document.getElementById('hero-jobs').style.display=mode==='jobs'?'block':'none';
+  document.getElementById('section-freelancer').style.display=mode==='freelancer'?'block':'none';
+  document.getElementById('section-jobs').style.display=mode==='jobs'?'block':'none';
+  if(mode==='jobs'){loadRealJobs();const h=document.getElementById('job-login-hint');if(h)h.style.display=currentUser?'none':'block';}
 }
 
 // ── RENDER ──
 async function renderHome(){
-  // Echte Freelancer aus Supabase laden
-  const {data:realFL} = await sb.from('freelancers')
-    .select('*, profiles(full_name, email)')
-    .eq('verfuegbar', true)
-    .limit(20);
-  
-  let allFL = [...FL]; // Demo-Daten zuerst
-  
-  if(realFL && realFL.length > 0){
-    const realCards = realFL.map((f,i) => ({
-      name: f.profiles?.full_name || 'Freelancer',
-      emoji: '👤',
-      role: f.kategorie || 'Dienstleister',
-      tags: [f.kategorie || 'Service'],
-      price: f.stundenlohn || 25,
-      rating: f.bewertung_schnitt || 5.0,
-      reviews: f.auftraege_count || 0,
-      loc: f.standort || 'Deutschland',
-      avail: f.verfuegbar,
-      bio: f.beschreibung || 'Professioneller Freelancer auf Helpefy.',
-      services: [f.kategorie || 'Service'],
-      revs: [],
-      real: true,
-      id: f.id
-    }));
-    allFL = [...realCards, ...FL];
+  const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').eq('verfuegbar',true).limit(20);
+  let all=[...FL];
+  if(realFL&&realFL.length){
+    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
+    all=[...rc,...FL];
   }
-  
-  window.ALL_FL = allFL;
-  document.getElementById('homeGrid').innerHTML = allFL.map((f,i)=>flCard(f,i)).join('');
+  window.ALL_FL=all;
+  document.getElementById('homeGrid').innerHTML=all.map((f,i)=>flCard(f,i)).join('');
 }
-async function renderJobs(){
-  const grid = document.getElementById('jobGrid');
-  if(!grid) return;
 
-  // Echte Jobs aus DB
-  const {data:dbJobs} = await sb.from('jobs')
-    .select('*, profiles(full_name)')
-    .eq('status','offen')
-    .order('created_at',{ascending:false})
-    .limit(20);
-
-  let html = '';
-
-  if(dbJobs && dbJobs.length > 0){
-    dbJobs.forEach(j => {
-      html += `<div class="job-card">
-        <div class="job-header">
-          <span class="job-cat">${j.kategorie||'Sonstiges'}</span>
-          ${j.dringend?'<span class="job-urgent">🔥 Dringend</span>':''}
-        </div>
-        <div class="job-title">${j.titel}</div>
-        <div class="job-desc">${j.beschreibung}</div>
-        <div class="job-meta">
-          <span class="jmet">📍 ${j.standort||'Deutschland'}</span>
-          <span class="jmet">📅 ${j.datum||'Flexibel'}</span>
-          <span class="jmet">👤 ${j.profiles?.full_name||'Anonym'}</span>
-        </div>
-        <div class="job-footer">
-          <div class="job-budget">${j.budget_min||'?'}–${j.budget_max||'?'} €</div>
-          <button class="apply-btn" onclick="applyJob('${j.id}','${j.kunde_id}')">Angebot senden</button>
-        </div>
-      </div>`;
+async function renderSearch(q){
+  const query=(q||'').toLowerCase().trim();
+  const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').limit(50);
+  let all=[...FL];
+  if(realFL&&realFL.length){
+    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
+    all=[...rc,...FL];
+  }
+  window.ALL_FL=all;
+  let results=all;
+  if(query&&query!=='alle'){
+    const terms=expandQuery(query);
+    results=all.filter(f=>{
+      const fields=[f.name,f.role,...(f.tags||[]),...(f.services||[]),f.bio||'',f.loc||''].map(s=>s.toLowerCase());
+      return terms.some(t=>fields.some(field=>field.includes(t)));
     });
   }
-
-  // Demo Jobs
-  JOBS.forEach(j => {
-    html += `<div class="job-card">
-      <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
-      <div class="job-title">${j.title}</div>
-      <div class="job-desc">${j.desc}</div>
-      <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span><span class="jmet">💬 ${j.offers} Angebote</span></div>
-      <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="openModal('auth')">Angebot senden</button></div>
-    </div>`;
-  });
-
-  grid.innerHTML = html || '<div style="text-align:center;padding:2rem;color:var(--muted)">Noch keine Jobs vorhanden.</div>';
+  // Umkreis nur wenn aktiviert
+  const radiusRow=document.getElementById('radiusRowSearch');
+  if(userLat&&userLon&&radiusRow&&radiusRow.style.display==='flex'){
+    const r=parseInt(document.getElementById('radiusSliderSearch')?.value||25);
+    results=results.filter(f=>!f.lat||!f.lon||getDistanceKm(userLat,userLon,f.lat,f.lon)<=r);
+  }
+  const locInfo=userCity?` · 📍 ${userCity}`:'';
+  document.getElementById('rQuery').textContent=(q||'Alle')+locInfo;
+  document.getElementById('rCount').textContent=results.length;
+  if(!results.length){
+    document.getElementById('searchGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem">🔍</div><div style="font-weight:600;margin:1rem 0">Keine Ergebnisse für "${q}"</div><button class="btn-red" onclick="renderSearch('')">Alle anzeigen</button></div>`;
+  } else {
+    document.getElementById('searchGrid').innerHTML=results.map((f,i)=>flCard(f,i)).join('');
+  }
 }
 
-async function applyJob(jobId, kundeId){
-  if(!currentUser){openModal('auth');return;}
-  showView('chat');
-  await loadChatUsers();
-  if(kundeId) await openChat(kundeId, 'Auftraggeber');
+function renderSaved(){
+  const g=document.getElementById('savedGrid');
+  if(g) g.innerHTML=FL.slice(0,3).map((f,i)=>flCard(f,i)).join('');
 }
 
-async function startChat(userId){
-  showView('chat');
-  await loadChatUsers();
-  if(userId) await openChat(userId, 'Nutzer');
+function flCard(f,i){
+  return `<div class="fl-card" onclick="openProfileByData(${i})">
+    <div class="fl-img"><span style="font-size:4rem">${f.emoji||'👤'}</span>${f.avail?'<div class="avail-badge"><div class="avail-dot"></div>Verfügbar</div>':''}</div>
+    <div class="fl-body">
+      <div class="fl-top"><div class="fl-name">${f.name}</div><div class="fl-price">${f.price} €<span>/Std</span></div></div>
+      <div class="fl-role">${f.role}</div>
+      <div class="fl-tags">${(f.tags||[]).map(t=>`<span class="fl-tag">${t}</span>`).join('')}</div>
+      <div class="fl-footer"><span style="font-size:0.78rem">★ ${f.rating} (${f.reviews})</span><span style="font-size:0.72rem;color:var(--muted)">📍 ${f.loc}</span><button class="book-btn" onclick="event.stopPropagation();openProfileByData(${i})">Buchen</button></div>
+    </div></div>`;
+}
+
+function openProfileByData(i){
+  const all=window.ALL_FL||FL;
+  const f=all[i];
+  if(!f) return;
+  curFL=i; window._curFL=f;
+  document.getElementById('pEmoji').textContent=f.emoji||'👤';
+  document.getElementById('pName').textContent=f.name;
+  document.getElementById('pRole').textContent=f.role;
+  document.getElementById('pRating').textContent=f.rating;
+  document.getElementById('pRevCount').textContent=f.reviews;
+  document.getElementById('pLoc').textContent=f.loc;
+  document.getElementById('pRatBig').textContent=f.rating;
+  document.getElementById('pJobs').textContent=f.reviews;
+  document.getElementById('pBio').textContent=f.bio;
+  document.getElementById('bPrice').textContent=f.price;
+  document.getElementById('bAvail').textContent=f.avail?'✅ Verfügbar heute':'⏳ Nächste Woche';
+  document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pServices').innerHTML=(f.services||[f.role]).map(s=>`<span class="sp">${s}</span>`).join('');
+  document.getElementById('pRevTitle').textContent=`Bewertungen (${f.reviews})`;
+  document.getElementById('pReviews').innerHTML=(f.revs||[]).length?f.revs.map(r=>`<div class="review-item"><div class="ri-header"><span class="ri-name">${r.n}</span><span class="ri-stars">${'★'.repeat(r.r)}</span></div><div class="ri-text">${r.t}</div></div>`).join(''):'<div style="color:var(--muted);font-size:0.85rem">Noch keine Bewertungen.</div>';
+  calcPrice(); showView('profile');
+}
+
+// ── SEARCH ──
+function doSearch(){
+  const v=document.getElementById('heroSearch')?.value||document.getElementById('searchInput')?.value||'';
+  hideAllSugg();
+  showView('search');
+  setTimeout(()=>{
+    const si=document.getElementById('searchInput');
+    if(si) si.value=v;
+    renderSearch(v||'');
+  },50);
+}
+function setSearch(q){const h=document.getElementById('heroSearch');if(h)h.value=q;doSearch();}
+function catClick(cat,el){document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('active'));el.classList.add('active');setSearch(cat);}
+function togglePill(el){
+  el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const txt=el.textContent.trim();
+  const all=window.ALL_FL||FL;
+  let r=[...all];
+  if(txt.includes('verfügbar')||txt.includes('Verfügbar')) r=r.filter(f=>f.avail);
+  else if(txt.includes('Bewertung')) r.sort((a,b)=>b.rating-a.rating);
+  else if(txt.includes('Günstig')) r.sort((a,b)=>a.price-b.price);
+  const g=document.getElementById('searchGrid');
+  if(g) g.innerHTML=r.map((f,i)=>flCard(f,all.indexOf(f))).join('');
+}
+function toggleRadius(){
+  const r=document.getElementById('radiusRow');
+  if(r) r.style.display=r.style.display==='none'?'flex':'none';
+}
+function toggleRadiusSearch(){
+  const r=document.getElementById('radiusRowSearch');
+  if(r) r.style.display=r.style.display==='none'?'flex':'none';
 }
 
 // ── BOOKING ──
-function calcPriceFor(f){
-  const h=parseInt(document.getElementById('bHours').value)||1;
-  const sub=f.price*h; const fee=+(sub*0.15).toFixed(2); const total=+(sub+fee).toFixed(2);
-  document.getElementById('pbLabel').textContent=`${f.price} € × ${h} Std`;
-  document.getElementById('pbSub').textContent=`${sub.toFixed(2)} €`;
-  document.getElementById('pbFee').textContent=`${fee.toFixed(2)} €`;
-  document.getElementById('pbTotal').textContent=`${total.toFixed(2)} €`;
-}
 function calcPrice(){
-  const f=window._curFLdata||FL[curFL]; const h=parseInt(document.getElementById('bHours').value);
-  const sub=f.price*h; const fee=+(sub*0.15).toFixed(2); const total=+(sub+fee).toFixed(2);
+  const f=window._curFL||FL[curFL];
+  if(!f) return;
+  const h=parseInt(document.getElementById('bHours').value)||1;
+  const sub=f.price*h,fee=+(sub*0.15).toFixed(2),total=+(sub+fee).toFixed(2);
   document.getElementById('pbLabel').textContent=`${f.price} € × ${h} Std`;
   document.getElementById('pbSub').textContent=`${sub.toFixed(2)} €`;
   document.getElementById('pbFee').textContent=`${fee.toFixed(2)} €`;
   document.getElementById('pbTotal').textContent=`${total.toFixed(2)} €`;
 }
+
 async function doBook(){
-  // Login prüfen
-  if(!currentUser){
-    showToast('Bitte zuerst anmelden!','error');
-    openModal('auth');
-    return;
-  }
-  // Datum prüfen
-  const datum = document.getElementById('bDate').value;
+  if(!currentUser){showToast('Bitte zuerst anmelden!','error');openModal('auth');return;}
+  const datum=document.getElementById('bDate').value;
   if(!datum){showToast('Bitte ein Datum wählen!','error');return;}
-  // Zahlungsmodal öffnen mit Buchungsdetails
-  const f=window._curFLdata||FL[curFL];
-  const h=parseInt(document.getElementById('bHours').value);
-  const sub=f.price*h;
-  const fee=+(sub*0.15).toFixed(2);
-  const total=+(sub+fee).toFixed(2);
-  document.getElementById('paymentSummary').textContent=f.name+' · '+datum+' · '+h+' Std';
-  document.getElementById('pay-label').textContent=f.price+' € × '+h+' Std';
-  document.getElementById('pay-sub').textContent=sub.toFixed(2)+' €';
-  document.getElementById('pay-fee').textContent=fee.toFixed(2)+' €';
-  document.getElementById('pay-total').textContent=total.toFixed(2)+' €';
+  const f=window._curFL||FL[curFL];
+  const h=parseInt(document.getElementById('bHours').value)||1;
+  const sub=f.price*h,fee=+(sub*0.15).toFixed(2),total=+(sub+fee).toFixed(2);
+  document.getElementById('paymentSummary').textContent=`${f.name} · ${datum} · ${h} Std`;
+  document.getElementById('pay-label').textContent=`${f.price} € × ${h} Std`;
+  document.getElementById('pay-sub').textContent=`${sub.toFixed(2)} €`;
+  document.getElementById('pay-fee').textContent=`${fee.toFixed(2)} €`;
+  document.getElementById('pay-total').textContent=`${total.toFixed(2)} €`;
   openModal('payment');
 }
 
@@ -1106,31 +1153,17 @@ async function confirmPayment(){
   const num=document.getElementById('cardNum').value.trim();
   const err=document.getElementById('pay-error');
   const btn=document.getElementById('payBtn');
-  if(!name||!num){
-    err.style.display='block';
-    err.textContent='Bitte alle Zahlungsfelder ausfüllen.';
-    return;
-  }
-  btn.disabled=true; btn.textContent='Zahlung wird verarbeitet...';
-  // Buchung in Supabase speichern
-  const f=window._curFLdata||FL[curFL];
-  const h=parseInt(document.getElementById('bHours').value);
-  await sb.from('auftraege').insert({
-    kunde_id:currentUser.id,
-    titel:f.role,
-    beschreibung:'Buchung über Helpefy',
-    kategorie:f.tags[0],
-    preis:f.price*h,
-    provision:+(f.price*h*0.15).toFixed(2),
-    datum:document.getElementById('bDate').value,
-    status:'bezahlt'
-  });
+  if(!name||!num){err.style.display='block';err.textContent='Bitte alle Felder ausfüllen.';return;}
+  btn.disabled=true; btn.textContent='Wird verarbeitet...';
+  const f=window._curFL||FL[curFL];
+  const h=parseInt(document.getElementById('bHours').value)||1;
+  await sb.from('auftraege').insert({kunde_id:currentUser.id,titel:f.role,beschreibung:'Buchung über Helpefy',kategorie:f.tags[0],preis:f.price*h,provision:+(f.price*h*0.15).toFixed(2),datum:document.getElementById('bDate').value,status:'bezahlt'});
   const ref='HLF-2026-'+String(Math.floor(Math.random()*90000)+10000);
   closeModal('payment');
   document.getElementById('bookRef').textContent=ref;
   btn.disabled=false; btn.textContent='Jetzt bezahlen →';
   showView('success');
-  showToast('Buchung & Zahlung erfolgreich! 🎉','success');
+  showToast('Buchung erfolgreich! 🎉','success');
 }
 
 // ── DASHBOARD ──
@@ -1145,39 +1178,27 @@ function switchDash(tab,el){
 }
 
 // ── CHAT ──
-let activeChatUserId = null;
-let chatSubscription = null;
-
 async function loadChatUsers(){
   if(!currentUser) return;
-  // Lade alle User mit denen man chatten kann
-  const {data:users} = await sb.from('profiles').select('*').neq('id', currentUser.id);
-  const chatList = document.getElementById('chatUserList');
-  if(chatList && users){
-    chatList.innerHTML = users.map(u=>`
-      <div class="ci" onclick="openChat('${u.id}','${u.full_name||u.email}')">
-        <div class="ci-av">${(u.full_name||u.email).charAt(0).toUpperCase()}</div>
-        <div class="ci-info">
-          <div class="ci-name">${u.full_name||u.email}</div>
-          <div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}</div>
-        </div>
-      </div>`).join('');
+  const {data:users}=await sb.from('profiles').select('*').neq('id',currentUser.id);
+  const chatList=document.getElementById('chatUserList');
+  if(chatList&&users){
+    chatList.innerHTML=users.map(u=>`<div class="ci" onclick="openChat('${u.id}','${u.full_name||u.email}')"><div class="ci-av">${(u.full_name||u.email||'?').charAt(0).toUpperCase()}</div><div class="ci-info"><div class="ci-name">${u.full_name||u.email}</div><div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}</div></div></div>`).join('');
   }
 }
 
 async function openChat(userId, userName){
-  activeChatUserId = userId;
-  document.querySelector('.chat-name').textContent = userName;
-  document.querySelector('.chat-status').textContent = '● Online';
-  // Nachrichten laden
+  activeChatUserId=userId;
+  document.querySelector('.chat-name').textContent=userName;
+  document.querySelector('.chat-status').textContent='● Online';
+  document.getElementById('chatMsgs').innerHTML='';
   await loadMessages();
-  // Echtzeit-Updates
   if(chatSubscription) chatSubscription.unsubscribe();
-  chatSubscription = sb.channel('nachrichten').on('postgres_changes',
+  chatSubscription=sb.channel('chat_'+currentUser.id).on('postgres_changes',
     {event:'INSERT',schema:'public',table:'nachrichten'},
-    payload => {
-      if((payload.new.von_user_id===activeChatUserId&&payload.new.zu_user_id===currentUser.id)){
-        appendMsg(payload.new.inhalt, false);
+    payload=>{
+      if(payload.new.von_user_id===activeChatUserId&&payload.new.zu_user_id===currentUser.id){
+        appendMsg(payload.new.inhalt,false,userName);
       }
     }
   ).subscribe();
@@ -1185,46 +1206,74 @@ async function openChat(userId, userName){
 
 async function loadMessages(){
   if(!currentUser||!activeChatUserId) return;
-  const {data:msgs} = await sb.from('nachrichten')
+  const {data:msgs}=await sb.from('nachrichten')
     .select('*')
     .or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`)
     .order('created_at',{ascending:true});
-  const container = document.getElementById('chatMsgs');
-  if(msgs && msgs.length > 0){
-    container.innerHTML = '';
-    msgs.forEach(m => appendMsg(m.inhalt, m.von_user_id===currentUser.id));
-  }
+  const container=document.getElementById('chatMsgs');
+  container.innerHTML='';
+  if(msgs&&msgs.length) msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id));
 }
 
-function appendMsg(text, isMe){
-  const msgs = document.getElementById('chatMsgs');
-  const initial = isMe ? (currentProfile?.full_name||'M').charAt(0).toUpperCase() : (document.querySelector('.chat-name')?.textContent||'?').charAt(0).toUpperCase();
-  const d = document.createElement('div');
-  d.className = 'msg'+(isMe?' me':'');
-  d.innerHTML=`<div class="msg-av">${initial}</div><div><div class="bubble">${text}</div><div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
-  msgs.appendChild(d);
-  msgs.scrollTop = msgs.scrollHeight;
+function appendMsg(text,isMe,senderName){
+  const msgs=document.getElementById('chatMsgs');
+  const init=isMe?(currentProfile?.full_name||'I').charAt(0).toUpperCase():(senderName||document.querySelector('.chat-name')?.textContent||'?').charAt(0).toUpperCase();
+  const d=document.createElement('div');
+  d.className='msg'+(isMe?' me':'');
+  d.innerHTML=`<div class="msg-av">${init}</div><div><div class="bubble">${text}</div><div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
 }
 
 async function sendMsg(){
-  if(!currentUser){showToast('Bitte zuerst anmelden!','error');openModal('auth');return;}
+  if(!currentUser){showToast('Bitte anmelden!','error');openModal('auth');return;}
   if(!activeChatUserId){showToast('Bitte zuerst einen Nutzer auswählen!','error');return;}
-  const input=document.getElementById('chatInput'); const text=input.value.trim();
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
   if(!text) return;
-  // In Supabase speichern
-  await sb.from('nachrichten').insert({
-    von_user_id: currentUser.id,
-    zu_user_id: activeChatUserId,
-    inhalt: text,
-    created_at: new Date().toISOString()
+  const {error}=await sb.from('nachrichten').insert({
+    von_user_id:currentUser.id,
+    zu_user_id:activeChatUserId,
+    inhalt:text,
+    created_at:new Date().toISOString()
   });
-  appendMsg(text, true);
-  input.value='';
+  if(!error){appendMsg(text,true); input.value='';}
+  else showToast('Fehler beim Senden','error');
+}
+
+// ── JOBS ──
+async function loadRealJobs(){
+  const {data:jobs}=await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
+  const allJ=[...(jobs||[]).map(j=>({cat:j.kategorie||'Sonstiges',title:j.titel,desc:j.beschreibung,loc:j.standort||'Deutschland',date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',urgent:j.dringend,offers:0,poster:j.profiles?.full_name||'Anonym'})),...JOBS];
+  const grid=document.getElementById('jobGrid');
+  if(grid) grid.innerHTML=allJ.map(j=>`<div class="job-card"><div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div><div class="job-title">${j.title}</div><div class="job-desc">${j.desc}</div><div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div><div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="currentUser?showView('chat'):openModal('auth')">Angebot senden</button></div></div>`).join('');
+}
+
+async function postJob(){
+  if(!currentUser){showToast('Bitte anmelden!','error');openModal('auth');return;}
+  const titel=document.getElementById('jobTitel').value.trim();
+  const desc=document.getElementById('jobDesc').value.trim();
+  if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
+  const {error}=await sb.from('jobs').insert({
+    kunde_id:currentUser.id, titel, beschreibung:desc,
+    kategorie:document.getElementById('jobKat').value,
+    budget_min:parseFloat(document.getElementById('jobBudgetMin').value)||0,
+    budget_max:parseFloat(document.getElementById('jobBudgetMax').value)||0,
+    standort:document.getElementById('jobStandort').value,
+    datum:document.getElementById('jobDatum').value||null,
+    dringend:document.getElementById('jobDringend').checked,
+    status:'offen', created_at:new Date().toISOString()
+  });
+  if(error){showToast('Fehler: '+error.message,'error');return;}
+  ['jobTitel','jobDesc','jobBudgetMin','jobBudgetMax','jobStandort'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const suc=document.getElementById('job-posted-success');
+  if(suc){suc.style.display='block';setTimeout(()=>suc.style.display='none',4000);}
+  showToast('Job gepostet! 🎉','success');
+  loadRealJobs();
 }
 
 // ── MODALS ──
-function openModal(n){document.getElementById('modal-'+n).classList.add('open');}
-function closeModal(n){document.getElementById('modal-'+n).classList.remove('open');}
+function openModal(n){document.getElementById('modal-'+n)?.classList.add('open');}
+function closeModal(n){document.getElementById('modal-'+n)?.classList.remove('open');}
 function switchAuthTab(t,el){
   el.closest('.modal-tabs').querySelectorAll('.mtab2').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
@@ -1238,344 +1287,88 @@ function switchRegType(t,el){
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
 
-// ── JOB POSTEN ──
-async function postJob(){
-  if(!currentUser){showToast('Bitte zuerst anmelden!','error');openModal('auth');return;}
-  const titel = document.getElementById('jobTitel').value.trim();
-  const desc = document.getElementById('jobDesc').value.trim();
-  if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
-  const {error} = await sb.from('jobs').insert({
-    kunde_id: currentUser.id,
-    titel,
-    beschreibung: desc,
-    kategorie: document.getElementById('jobKat').value,
-    budget_min: parseFloat(document.getElementById('jobBudgetMin').value)||0,
-    budget_max: parseFloat(document.getElementById('jobBudgetMax').value)||0,
-    standort: document.getElementById('jobStandort').value,
-    datum: document.getElementById('jobDatum').value,
-    dringend: document.getElementById('jobDringend').checked,
-    status: 'offen',
-    created_at: new Date().toISOString()
-  });
-  if(error){showToast('Fehler beim Posten: '+error.message,'error');return;}
-  document.getElementById('job-posted-success').style.display='block';
-  document.getElementById('jobTitel').value='';
-  document.getElementById('jobDesc').value='';
-  document.getElementById('jobDesc').value='';
-  document.getElementById('jobBudgetMin').value='';
-  document.getElementById('jobBudgetMax').value='';
-  document.getElementById('jobStandort').value='';
-  showToast('Job erfolgreich gepostet! 🎉','success');
-  setTimeout(()=>{document.getElementById('job-posted-success').style.display='none';},4000);
-  loadRealJobs();
-}
-
-async function loadRealJobs(){
-  const {data:jobs} = await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
-  const allJobs = [];
-  if(jobs && jobs.length>0){
-    jobs.forEach(j=>{
-      allJobs.push({
-        cat:j.kategorie||'Sonstiges',
-        title:j.titel,
-        desc:j.beschreibung,
-        loc:j.standort||'Deutschland',
-        date:j.datum||'Flexibel',
-        budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',
-        urgent:j.dringend,
-        offers:0,
-        poster:j.profiles?.full_name||'Anonym'
-      });
-    });
-  }
-  const allJobsDisplay = [...allJobs, ...JOBS];
-  document.getElementById('jobGrid').innerHTML = allJobsDisplay.map(j=>`
-    <div class="job-card">
-      <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
-      <div class="job-title">${j.title}</div>
-      <div class="job-desc">${j.desc}</div>
-      <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
-      <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="currentUser?showView('chat'):openModal('auth')">Angebot senden</button></div>
-    </div>`).join('');
-}
-
-
-// ── SYNONYM & AUTOCOMPLETE SYSTEM ──
-const SYNONYMS = {
-  // Elektro
-  'elektro': ['IT & Digital','Elektrik','Elektronik','Elektriker'],
-  'elektriker': ['IT & Digital','Elektrik','Elektronik'],
-  'strom': ['Elektrik','IT & Digital'],
-  'kabel': ['Elektrik','IT & Digital'],
-  'steckdose': ['Elektrik'],
-  // IT
-  'it': ['IT-Expertin','IT & Digital','PC','WLAN','Software','Computer'],
-  'computer': ['IT & Digital','PC','Software'],
-  'pc': ['IT & Digital','PC-Hilfe','Software'],
-  'laptop': ['IT & Digital','PC-Hilfe','Software'],
-  'internet': ['IT & Digital','WLAN','PC-Hilfe'],
-  'wlan': ['IT & Digital','WLAN'],
-  'wifi': ['IT & Digital','WLAN'],
-  'handy': ['IT & Digital','Software'],
-  'drucker': ['IT & Digital','PC-Hilfe'],
-  // Reinigung
-  'putzen': ['Profi-Reinigungskraft','Wohnungsreinigung','Haushalt','Reinigung'],
-  'sauber': ['Profi-Reinigungskraft','Wohnungsreinigung','Reinigung'],
-  'reinigung': ['Profi-Reinigungskraft','Wohnungsreinigung','Büroreinigung'],
-  'fenster': ['Fensterputzen','Reinigung'],
-  'haushalt': ['Profi-Reinigungskraft','Haushalt','Reinigung'],
-  'putzkraft': ['Profi-Reinigungskraft','Reinigung'],
-  // Handwerk
-  'handwerk': ['Handwerker','Sanitär','Elektrik','Reparatur'],
-  'reparatur': ['Handwerker & Sanitär','Wasserhahn','Elektrik'],
-  'wasserhahn': ['Handwerker & Sanitär','Sanitär','Klempner'],
-  'klempner': ['Handwerker & Sanitär','Sanitär','Wasserhahn'],
-  'montage': ['Möbelmontage','Handwerker','IKEA'],
-  'ikea': ['Möbelmontage','Handwerker'],
-  'möbel': ['Möbelmontage','Handwerker','Umzug'],
-  'bohren': ['Handwerker','Montage'],
-  'maler': ['Handwerk','Renovierung'],
-  'streichen': ['Handwerk','Maler','Renovierung'],
-  'fliesen': ['Handwerk','Renovierung'],
-  // Umzug
-  'umzug': ['Umzugsprofi','Transport','Möbel'],
-  'transport': ['Umzugsprofi','Transport'],
-  'tragen': ['Umzugsprofi','Umzug'],
-  'transporter': ['Umzugsprofi','Transport'],
-  'einzug': ['Umzugsprofi','Umzug'],
-  'auszug': ['Umzugsprofi','Umzug'],
-  // Garten
-  'garten': ['Profi-Gärtner','Rasen','Hecken','Bepflanzung'],
-  'rasen': ['Profi-Gärtner','Rasen mähen','Garten'],
-  'mähen': ['Profi-Gärtner','Rasen mähen'],
-  'hecke': ['Profi-Gärtner','Hecken schneiden'],
-  'pflanzen': ['Profi-Gärtner','Bepflanzung'],
-  'blumen': ['Profi-Gärtner','Bepflanzung'],
-  'bäume': ['Profi-Gärtner','Garten'],
-  // Nachhilfe
-  'nachhilfe': ['Nachhilfelehrerin','Mathe','Englisch','Lernen'],
-  'mathe': ['Nachhilfelehrerin','Mathe','Lernen'],
-  'englisch': ['Nachhilfelehrerin','Englisch','Lernen'],
-  'schule': ['Nachhilfelehrerin','Lernen','Nachhilfe'],
-  'abitur': ['Nachhilfelehrerin','Abitur Vorbereitung'],
-  'hausaufgaben': ['Nachhilfelehrerin','Lernen'],
-  'lehrer': ['Nachhilfelehrerin','Lernen','Nachhilfe'],
-  'physik': ['Nachhilfelehrerin','Mathe'],
-  // Beauty & Tiere
-  'hund': ['Tiere','Hundesitter','Gassi'],
-  'katze': ['Tiere','Katzensitter'],
-  'haustier': ['Tiere','Sitter'],
-  'gassi': ['Tiere','Hundesitter'],
-  'friseur': ['Beauty','Haare'],
-  'haare': ['Beauty','Friseur'],
-  'massage': ['Beauty','Wellness'],
-  // Events
-  'party': ['Events','Catering','Dekoration'],
-  'hochzeit': ['Events','Catering','Fotografie'],
-  'foto': ['Events','Fotografie','Kreativ'],
-  'fotograf': ['Events','Fotografie'],
-  'video': ['Events','Kreativ','Video'],
-  // Kreativ
-  'design': ['Kreativ','Grafikdesign','Web'],
-  'logo': ['Kreativ','Grafikdesign'],
-  'website': ['IT & Digital','Kreativ','Web'],
-  'social media': ['Kreativ','IT & Digital','Marketing'],
-};
-
-// Autocomplete Vorschläge
-const SUGGESTIONS = {
-  'el': ['Elektriker','Elektronik','Elektroinstallation','Elektroarbeiten'],
-  'elek': ['Elektriker','Elektronik reparieren','Elektroinstallation'],
-  'it': ['IT-Hilfe','IT-Experte','IT-Support'],
-  'pu': ['Putzkraft','Putzfrau','Putzen'],
-  'rei': ['Reinigung','Reinigungskraft','Reinigungsservice'],
-  'han': ['Handwerker','Handwerk','Handyservice'],
-  'um': ['Umzugshilfe','Umzugsprofi','Umzug'],
-  'ga': ['Gärtner','Gartenarbeit','Gartengestaltung'],
-  'na': ['Nachhilfe','Nachhilfelehrer','Nachhilfeunterricht'],
-  'mo': ['Möbelmontage','Möbeltransport','Montage'],
-  'kl': ['Klempner','Klempnerarbeiten'],
-  'ma': ['Maler','Mathe Nachhilfe','Massage','Malerarbeiten'],
-  'hu': ['Hundebetreuer','Hundesitter','Hundetraining'],
-  'fo': ['Fotograf','Fotoservice'],
-  'web': ['Webdesign','Website erstellen','Webentwicklung'],
-};
-
-function getSuggestions(q){
-  if(!q || q.length < 2) return [];
-  const ql = q.toLowerCase();
-  
-  // Direkte Synonym-Matches
-  let suggestions = new Set();
-  
-  // 1. Aus SUGGESTIONS Dictionary
-  Object.keys(SUGGESTIONS).forEach(key => {
-    if(ql.startsWith(key) || key.startsWith(ql)){
-      SUGGESTIONS[key].forEach(s => suggestions.add(s));
-    }
-  });
-  
-  // 2. Aus SYNONYMS Keys
-  Object.keys(SYNONYMS).forEach(key => {
-    if(key.startsWith(ql) && key !== ql){
-      // Kapitalisiert hinzufügen
-      suggestions.add(key.charAt(0).toUpperCase() + key.slice(1));
-    }
-  });
-  
-  // 3. Freelancer Rollen aus Demo-Daten
-  FL.forEach(f => {
-    if(f.role.toLowerCase().includes(ql) || f.tags.some(t=>t.toLowerCase().includes(ql))){
-      suggestions.add(f.role);
-      f.tags.forEach(t => { if(t.toLowerCase().includes(ql)) suggestions.add(t); });
-    }
-  });
-  
-  return [...suggestions].slice(0, 6);
-}
-
-function showSearchSuggestions(input, suggContainerId){
-  const q = input.value;
-  const container = document.getElementById(suggContainerId);
-  if(!container) return;
-  const suggestions = getSuggestions(q);
-  if(!suggestions.length || !q){ container.style.display='none'; return; }
-  container.innerHTML = suggestions.map(s =>
-    `<div class="sugg-item" onclick="selectSuggestion('${s}','${input.id}','${suggContainerId}')">
-      🔍 <strong>${s}</strong>
-    </div>`
-  ).join('');
-  container.style.display = 'block';
-}
-
-function selectSuggestion(val, inputId, suggId){
-  document.getElementById(inputId).value = val;
-  document.getElementById(suggId).style.display = 'none';
-  doSearch();
-}
-
-// Erweiterte Suche mit Synonymen
-function expandQuery(query){
-  const ql = query.toLowerCase().trim();
-  let terms = [ql];
-  // Synonyme hinzufügen
-  if(SYNONYMS[ql]) terms = [...terms, ...SYNONYMS[ql].map(s=>s.toLowerCase())];
-  // Teilmatch in Synonym-Keys
-  Object.keys(SYNONYMS).forEach(key => {
-    if(key.includes(ql) && !terms.includes(key)){
-      terms.push(key);
-      SYNONYMS[key].forEach(s => terms.push(s.toLowerCase()));
-    }
-  });
-  return [...new Set(terms)];
-}
-
-// ── DISTANCE CALCULATION ──
-function getDistanceKm(lat1, lon1, lat2, lon2){
-  const R = 6371;
-  const dLat = (lat2-lat1)*Math.PI/180;
-  const dLon = (lon2-lon1)*Math.PI/180;
-  const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
-    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-    Math.sin(dLon/2)*Math.sin(dLon/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
 // ── LOCATION ──
-let locTimer = null;
-async function searchLocation(q, suggId){
-  const sugg = document.getElementById(suggId);
+async function searchLocation(q,suggId){
+  const sugg=document.getElementById(suggId);
   if(!sugg) return;
-  if(!q || q.length < 2){ sugg.style.display='none'; return; }
+  if(!q||q.length<2){sugg.style.display='none';return;}
   clearTimeout(locTimer);
-  locTimer = setTimeout(async()=>{
+  locTimer=setTimeout(async()=>{
     try{
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&format=json&limit=5&addressdetails=1`);
-      const data = await res.json();
-      if(!data.length){ sugg.style.display='none'; return; }
-      sugg.innerHTML = data.map(d=>{
-        const city = d.address.city||d.address.town||d.address.village||d.address.municipality||d.display_name.split(',')[0];
-        const state = d.address.state||'';
-        return `<div class="loc-item" onclick="selectLocation('${city}, ${state}','${suggId}',this.closest('.fg').querySelector('input'))">
-          <strong>${city}</strong> <span>${state}</span>
-        </div>`;
+      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&format=json&limit=5&addressdetails=1`);
+      const data=await res.json();
+      if(!data.length){sugg.style.display='none';return;}
+      sugg.innerHTML=data.map(d=>{
+        const city=d.address.city||d.address.town||d.address.village||d.address.municipality||d.display_name.split(',')[0];
+        const state=d.address.state||'';
+        return `<div class="loc-item" onclick="selectLocation('${city}','${suggId}',this.closest('.fg').querySelector('input'))"><strong>${city}</strong> <span>${state}</span></div>`;
       }).join('');
       sugg.style.display='block';
-    } catch(e){ sugg.style.display='none'; }
-  }, 300);
+    }catch(e){sugg.style.display='none';}
+  },300);
 }
-function selectLocation(val, suggId, input){
-  if(input) input.value = val;
-  const sugg = document.getElementById(suggId);
+
+function selectLocation(val,suggId,input){
+  if(input) input.value=val;
+  const sugg=document.getElementById(suggId);
   if(sugg) sugg.style.display='none';
 }
-let userLat = null, userLon = null, userCity = '';
 
 function getMyLocation(){
-  if(!navigator.geolocation){ showToast('Standort nicht verfügbar','error'); return; }
-  document.getElementById('locSpinner').style.display='inline';
-  document.getElementById('locText').textContent=' Wird ermittelt...';
+  if(!navigator.geolocation){showToast('Standort nicht verfügbar','error');return;}
+  const spinner=document.getElementById('locSpinner');
+  const locText=document.getElementById('locText');
+  if(spinner) spinner.style.display='inline';
+  if(locText) locText.textContent=' Wird ermittelt...';
   navigator.geolocation.getCurrentPosition(async pos=>{
-    userLat = pos.coords.latitude;
-    userLon = pos.coords.longitude;
+    userLat=pos.coords.latitude; userLon=pos.coords.longitude;
     try{
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
-      const data = await res.json();
-      userCity = data.address.city||data.address.town||data.address.village||data.address.municipality||'Dein Standort';
-    } catch(e){ userCity = 'Dein Standort'; }
-    document.getElementById('locSpinner').style.display='none';
-    document.getElementById('locText').textContent='📍 '+userCity;
-    const lb2 = document.getElementById('locText2');
-    if(lb2) lb2.textContent='📍 '+userCity;
-    document.getElementById('cityLabel').textContent='in '+userCity+' und Umgebung';
-    document.getElementById('heroSearch').placeholder='Was brauchst du in '+userCity+'?';
-    showToast('📍 Standort: '+userCity,'success');
-  }, (err)=>{
-    document.getElementById('locSpinner').style.display='none';
-    document.getElementById('locText').textContent='📍 Standort';
-    if(err.code===1) showToast('Bitte Standort-Zugriff erlauben','error');
-    else showToast('Standort konnte nicht ermittelt werden','error');
+      const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
+      const data=await res.json();
+      userCity=data.address.city||data.address.town||data.address.village||'Dein Standort';
+    }catch(e){userCity='Dein Standort';}
+    updateLocationUI();
+    showToast('📍 '+userCity,'success');
+  },()=>{
+    if(spinner) spinner.style.display='none';
+    if(locText) locText.textContent='📍 Standort';
+    showToast('Standort-Zugriff verweigert','error');
   },{enableHighAccuracy:true,timeout:8000});
 }
 
-// Beim Laden automatisch Standort ermitteln
+function updateLocationUI(){
+  const spinner=document.getElementById('locSpinner');
+  const locText=document.getElementById('locText');
+  if(spinner) spinner.style.display='none';
+  if(locText) locText.textContent='📍 '+userCity;
+  const cl=document.getElementById('cityLabel'); if(cl) cl.textContent='📍 '+userCity;
+  const cls=document.getElementById('cityLabelSearch'); if(cls) cls.textContent='📍 '+userCity;
+  const ls=document.getElementById('locTextSearch'); if(ls) ls.textContent=userCity;
+  const hs=document.getElementById('heroSearch'); if(hs) hs.placeholder='Was brauchst du in '+userCity+'?';
+}
+
 function autoDetectLocation(){
   if(!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(async pos=>{
-    userLat = pos.coords.latitude;
-    userLon = pos.coords.longitude;
+    userLat=pos.coords.latitude; userLon=pos.coords.longitude;
     try{
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
-      const data = await res.json();
-      userCity = data.address.city||data.address.town||data.address.village||'';
-      if(userCity){
-        document.getElementById('locText').textContent='📍 '+userCity;
-        ['locText2','locText'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='📍 '+userCity;});
-        const ls=document.getElementById('locTextSearch'); if(ls) ls.textContent=userCity;
-        const cls=document.getElementById('cityLabelSearch'); if(cls) cls.textContent='in '+userCity;
-        const cl=document.getElementById('cityLabel'); if(cl) cl.textContent='in '+userCity+' und Umgebung';
-        const hs=document.getElementById('heroSearch'); if(hs) hs.placeholder='Was brauchst du in '+userCity+'?';
-      }
-    } catch(e){}
-  }, ()=>{}, {timeout:5000});
+      const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
+      const data=await res.json();
+      userCity=data.address.city||data.address.town||data.address.village||'';
+      if(userCity) updateLocationUI();
+    }catch(e){}
+  },()=>{},{timeout:5000});
 }
-// Klick außerhalb schließt Dropdown
-function hideAllSugg(){
-  document.querySelectorAll('.search-sugg, .loc-sugg').forEach(s=>s.style.display='none');
+
+function getDistanceKm(lat1,lon1,lat2,lon2){
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
-function toggleRadius(){
-  const row = document.getElementById('radiusRow');
-  row.style.display = row.style.display === 'none' ? 'flex' : 'none';
-}
-function toggleRadiusSearch(){
-  const row = document.getElementById('radiusRowSearch');
-  if(row) row.style.display = row.style.display === 'none' ? 'flex' : 'none';
-}
-document.addEventListener('click', e=>{
+
+document.addEventListener('click',e=>{
   if(!e.target.closest('.fg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
-  if(!e.target.closest('.search-outer') && !e.target.closest('[id^="view-search"] > div')){
-    document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
-  }
+  if(!e.target.closest('.search-outer')&&!e.target.closest('#view-search > div')) document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
 });
 
 // ── HELPERS ──
@@ -1588,33 +1381,20 @@ function showToast(msg,type=''){
 
 // ── INIT ──
 async function init(){
-  const {data:{session}} = await sb.auth.getSession();
-  if(session){
-    currentUser=session.user;
-    await loadProfile();
-    updateNav();
-    await loadChatUsers();
-  }
-  sb.auth.onAuthStateChange(async(_,session)=>{
-    currentUser=session?.user||null;
-    if(currentUser){
-      await loadProfile();
-      updateNav();
-      await loadChatUsers();
-    } else {
-      currentProfile=null;
-      updateNav();
-    }
+  const {data:{session}}=await sb.auth.getSession();
+  if(session){currentUser=session.user;await loadProfile();updateNav();}
+  sb.auth.onAuthStateChange(async(_,s)=>{
+    currentUser=s?.user||null;
+    if(currentUser){await loadProfile();updateNav();if(document.getElementById('view-chat').classList.contains('active'))loadChatUsers();}
+    else{currentProfile=null;updateNav();}
   });
-  // URL beim ersten Laden prüfen
-  const path = window.location.pathname.replace('/','') || 'home';
-  const validViews = ['home','search','profile','dashboard','chat'];
-  const startView = validViews.includes(path) ? path : 'home';
-  history.replaceState({view:startView},'',window.location.pathname);
-  showView(startView, false);
+  const path=window.location.pathname.replace('/','').trim()||'home';
+  const valid=['home','search','profile','dashboard','chat'];
+  const start=valid.includes(path)?path:'home';
+  history.replaceState({view:start},'',window.location.pathname);
+  showView(start,false);
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
-  // Standort automatisch ermitteln
-  setTimeout(autoDetectLocation, 500);
+  setTimeout(autoDetectLocation,800);
 }
 init();
 </script>
