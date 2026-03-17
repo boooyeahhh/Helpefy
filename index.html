@@ -335,7 +335,6 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
             onkeydown="if(event.key==='Enter'){hideAllSugg();doSearch();}"
             oninput="showSearchSuggestions(this,'heroSugg')"
             autocomplete="off">
-          <div class="ai-badge">KI</div>
           <div class="search-divider"></div>
           <button class="loc-btn" id="locBtn" onclick="getMyLocation()">
             <span id="locSpinner" style="display:none">⏳</span>
@@ -535,17 +534,22 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
 <div id="view-search" class="view">
   <div class="section">
     <div style="margin-bottom:1.5rem">
-      <div class="search-bar" style="max-width:680px">
-        <span>🔍</span>
-        <input id="searchInput" placeholder="Was brauchst du?" onkeydown="if(event.key==='Enter')doSearch()">
-        <div class="ai-badge">KI</div>
-        <button class="search-btn" onclick="doSearch()">Suchen</button>
+      <div style="position:relative;max-width:680px">
+        <div class="search-bar">
+          <span>🔍</span>
+          <input id="searchInput" placeholder="Was brauchst du? z.B. Reinigung, Elektriker..."
+            onkeydown="if(event.key==='Enter'){hideAllSugg();doSearch();}"
+            oninput="showSearchSuggestions(this,'searchSugg')"
+            autocomplete="off">
+          <button class="search-btn" onclick="hideAllSugg();doSearch()">Suchen</button>
+        </div>
+        <div id="searchSugg" class="search-sugg" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:100;margin-top:4px"></div>
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
       <div style="font-size:0.875rem;color:var(--muted)"><strong id="rCount" style="color:var(--dark)">6</strong> Ergebnisse für „<strong id="rQuery" style="color:var(--dark)">Alle</strong>"</div>
       <div class="filter-row" style="margin:0">
-        <button class="fpill active">Alle</button>
+        <button class="fpill active" onclick="togglePill(this)">Alle</button>
         <button class="fpill" onclick="togglePill(this)">⭐ Top bewertet</button>
         <button class="fpill" onclick="togglePill(this)">💰 Günstigste</button>
         <button class="fpill" onclick="togglePill(this)">✅ Verfügbar heute</button>
@@ -859,9 +863,13 @@ const SYNONYMS = {
 function expandQuery(q){
   const ql = q.toLowerCase().trim();
   let terms = new Set([ql]);
+  // Exact match in synonyms
   if(SYNONYMS[ql]) SYNONYMS[ql].forEach(s=>terms.add(s.toLowerCase()));
+  // For short queries (<=3 chars): only startsWith, not includes
+  // For longer queries: also check if key includes the query
   Object.keys(SYNONYMS).forEach(k=>{
-    if(k.includes(ql)){
+    const match = ql.length <= 3 ? k.startsWith(ql) : k.includes(ql);
+    if(match && k !== ql){
       terms.add(k);
       SYNONYMS[k].forEach(s=>terms.add(s.toLowerCase()));
     }
@@ -1146,10 +1154,11 @@ function togglePill(el){
   const all=window.ALL_FL||FL;
   let r=[...all];
   if(txt.includes('verfügbar')||txt.includes('Verfügbar')) r=r.filter(f=>f.avail);
-  else if(txt.includes('Bewertung')) r.sort((a,b)=>b.rating-a.rating);
-  else if(txt.includes('Günstig')) r.sort((a,b)=>a.price-b.price);
-  const g=document.getElementById('searchGrid');
-  if(g) g.innerHTML=r.map((f,i)=>flCard(f,all.indexOf(f))).join('');
+  else if(txt.includes('bewertet')||txt.includes('Bewertung')) r=[...all].sort((a,b)=>b.rating-a.rating);
+  else if(txt.includes('Günstig')) r=[...all].sort((a,b)=>a.price-b.price);
+  // "Alle" resets to current search
+  const grid=document.getElementById('searchGrid')||document.getElementById('homeGrid');
+  if(grid) grid.innerHTML=r.map((f,i)=>flCard(f,all.indexOf(f))).join('');
 }
 function toggleRadius(){
   const r=document.getElementById('radiusRow');
@@ -1434,8 +1443,8 @@ function getDistanceKm(lat1,lon1,lat2,lon2){
 }
 
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.fg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
-  if(!e.target.closest('.search-outer')&&!e.target.closest('#view-search > div')) document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
+  if(!e.target.closest('.fg')&&!e.target.closest('.loc-sugg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
+  if(!e.target.closest('.search-bar')&&!e.target.closest('.search-sugg')) document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
 });
 
 // ── HELPERS ──
