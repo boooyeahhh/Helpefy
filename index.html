@@ -1123,12 +1123,17 @@ function openProfileByData(i){
 
 // ── SEARCH ──
 function doSearch(){
-  const v=document.getElementById('heroSearch')?.value||document.getElementById('searchInput')?.value||'';
+  // If already on search page, use searchInput value; otherwise use heroSearch
+  const searchInput = document.getElementById('searchInput');
+  const heroSearch = document.getElementById('heroSearch');
+  const onSearchPage = document.getElementById('view-search').classList.contains('active');
+  const v = onSearchPage
+    ? (searchInput?.value || heroSearch?.value || '')
+    : (heroSearch?.value || searchInput?.value || '');
   hideAllSugg();
   showView('search');
   setTimeout(()=>{
-    const si=document.getElementById('searchInput');
-    if(si) si.value=v;
+    if(searchInput) searchInput.value=v;
     renderSearch(v||'');
   },50);
 }
