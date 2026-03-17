@@ -267,6 +267,13 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
 .footer-col ul li:hover{color:white;}
 .footer-bottom{border-top:1px solid #2a2a2a;padding-top:1.5rem;display:flex;justify-content:space-between;font-size:0.78rem;color:#555;}
 
+/* SEARCH SUGGESTIONS */
+.search-sugg{background:var(--white);border:1.5px solid var(--border);border-radius:12px;box-shadow:var(--shadow2);overflow:hidden;margin-top:0.5rem;}
+.sugg-item{padding:0.65rem 1.1rem;cursor:pointer;font-size:0.875rem;border-bottom:1px solid var(--border);transition:background 0.15s;display:flex;align-items:center;gap:0.5rem;}
+.sugg-item:last-child{border-bottom:none;}
+.sugg-item:hover{background:var(--red-light);color:var(--red);}
+.sugg-item strong{color:var(--dark);}
+
 /* LOCATION AUTOCOMPLETE */
 .loc-sugg{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--shadow2);z-index:999;max-height:200px;overflow-y:auto;margin-top:2px;}
 .loc-item{padding:0.65rem 1rem;cursor:pointer;font-size:0.85rem;border-bottom:1px solid var(--border);transition:background 0.15s;}
@@ -992,14 +999,26 @@ async function renderSearch(q){
   
   let results = allFL;
   if(query && query !== 'alle'){
-    results = allFL.filter(f => (
-      f.name.toLowerCase().includes(query) ||
-      f.role.toLowerCase().includes(query) ||
-      f.tags.some(t=>t.toLowerCase().includes(query)) ||
-      f.services.some(s=>s.toLowerCase().includes(query)) ||
-      f.bio.toLowerCase().includes(query) ||
-      f.loc.toLowerCase().includes(query)
-    ));
+    const terms = expandQuery(query); // Synonyme einbeziehen
+    results = allFL.filter(f => {
+      const fields = [
+        f.name, f.role, ...(f.tags||[]), ...(f.services||[]), f.bio||'', f.loc||''
+      ].map(s => s.toLowerCase());
+      return terms.some(term =>
+        fields.some(field => field.includes(term))
+      );
+    });
+  }
+  
+  // Umkreis-Filter (wenn Standort bekannt)
+  const radius = parseInt(document.getElementById('radiusSliderSearch')?.value || document.getElementById('radiusSlider')?.value || 999);
+  if(userLat && userLon && radius < 999){
+    results = results.filter(f => {
+      // Demo-Freelancer haben keine echten Coords → immer anzeigen wenn kein Standort gesetzt
+      if(!f.lat || !f.lon) return true;
+      const dist = getDistanceKm(userLat, userLon, f.lat, f.lon);
+      return dist <= radius;
+    });
   }
   
   document.getElementById('rQuery').textContent = q||'Alle';
@@ -1437,6 +1456,188 @@ async function loadRealJobs(){
     </div>`).join('');
 }
 
+
+// ── SYNONYM & AUTOCOMPLETE SYSTEM ──
+const SYNONYMS = {
+  // Elektro
+  'elektro': ['IT & Digital','Elektrik','Elektronik','Elektriker'],
+  'elektriker': ['IT & Digital','Elektrik','Elektronik'],
+  'strom': ['Elektrik','IT & Digital'],
+  'kabel': ['Elektrik','IT & Digital'],
+  'steckdose': ['Elektrik'],
+  // IT
+  'it': ['IT-Expertin','IT & Digital','PC','WLAN','Software','Computer'],
+  'computer': ['IT & Digital','PC','Software'],
+  'pc': ['IT & Digital','PC-Hilfe','Software'],
+  'laptop': ['IT & Digital','PC-Hilfe','Software'],
+  'internet': ['IT & Digital','WLAN','PC-Hilfe'],
+  'wlan': ['IT & Digital','WLAN'],
+  'wifi': ['IT & Digital','WLAN'],
+  'handy': ['IT & Digital','Software'],
+  'drucker': ['IT & Digital','PC-Hilfe'],
+  // Reinigung
+  'putzen': ['Profi-Reinigungskraft','Wohnungsreinigung','Haushalt','Reinigung'],
+  'sauber': ['Profi-Reinigungskraft','Wohnungsreinigung','Reinigung'],
+  'reinigung': ['Profi-Reinigungskraft','Wohnungsreinigung','Büroreinigung'],
+  'fenster': ['Fensterputzen','Reinigung'],
+  'haushalt': ['Profi-Reinigungskraft','Haushalt','Reinigung'],
+  'putzkraft': ['Profi-Reinigungskraft','Reinigung'],
+  // Handwerk
+  'handwerk': ['Handwerker','Sanitär','Elektrik','Reparatur'],
+  'reparatur': ['Handwerker & Sanitär','Wasserhahn','Elektrik'],
+  'wasserhahn': ['Handwerker & Sanitär','Sanitär','Klempner'],
+  'klempner': ['Handwerker & Sanitär','Sanitär','Wasserhahn'],
+  'montage': ['Möbelmontage','Handwerker','IKEA'],
+  'ikea': ['Möbelmontage','Handwerker'],
+  'möbel': ['Möbelmontage','Handwerker','Umzug'],
+  'bohren': ['Handwerker','Montage'],
+  'maler': ['Handwerk','Renovierung'],
+  'streichen': ['Handwerk','Maler','Renovierung'],
+  'fliesen': ['Handwerk','Renovierung'],
+  // Umzug
+  'umzug': ['Umzugsprofi','Transport','Möbel'],
+  'transport': ['Umzugsprofi','Transport'],
+  'tragen': ['Umzugsprofi','Umzug'],
+  'transporter': ['Umzugsprofi','Transport'],
+  'einzug': ['Umzugsprofi','Umzug'],
+  'auszug': ['Umzugsprofi','Umzug'],
+  // Garten
+  'garten': ['Profi-Gärtner','Rasen','Hecken','Bepflanzung'],
+  'rasen': ['Profi-Gärtner','Rasen mähen','Garten'],
+  'mähen': ['Profi-Gärtner','Rasen mähen'],
+  'hecke': ['Profi-Gärtner','Hecken schneiden'],
+  'pflanzen': ['Profi-Gärtner','Bepflanzung'],
+  'blumen': ['Profi-Gärtner','Bepflanzung'],
+  'bäume': ['Profi-Gärtner','Garten'],
+  // Nachhilfe
+  'nachhilfe': ['Nachhilfelehrerin','Mathe','Englisch','Lernen'],
+  'mathe': ['Nachhilfelehrerin','Mathe','Lernen'],
+  'englisch': ['Nachhilfelehrerin','Englisch','Lernen'],
+  'schule': ['Nachhilfelehrerin','Lernen','Nachhilfe'],
+  'abitur': ['Nachhilfelehrerin','Abitur Vorbereitung'],
+  'hausaufgaben': ['Nachhilfelehrerin','Lernen'],
+  'lehrer': ['Nachhilfelehrerin','Lernen','Nachhilfe'],
+  'physik': ['Nachhilfelehrerin','Mathe'],
+  // Beauty & Tiere
+  'hund': ['Tiere','Hundesitter','Gassi'],
+  'katze': ['Tiere','Katzensitter'],
+  'haustier': ['Tiere','Sitter'],
+  'gassi': ['Tiere','Hundesitter'],
+  'friseur': ['Beauty','Haare'],
+  'haare': ['Beauty','Friseur'],
+  'massage': ['Beauty','Wellness'],
+  // Events
+  'party': ['Events','Catering','Dekoration'],
+  'hochzeit': ['Events','Catering','Fotografie'],
+  'foto': ['Events','Fotografie','Kreativ'],
+  'fotograf': ['Events','Fotografie'],
+  'video': ['Events','Kreativ','Video'],
+  // Kreativ
+  'design': ['Kreativ','Grafikdesign','Web'],
+  'logo': ['Kreativ','Grafikdesign'],
+  'website': ['IT & Digital','Kreativ','Web'],
+  'social media': ['Kreativ','IT & Digital','Marketing'],
+};
+
+// Autocomplete Vorschläge
+const SUGGESTIONS = {
+  'el': ['Elektriker','Elektronik','Elektroinstallation','Elektroarbeiten'],
+  'elek': ['Elektriker','Elektronik reparieren','Elektroinstallation'],
+  'it': ['IT-Hilfe','IT-Experte','IT-Support'],
+  'pu': ['Putzkraft','Putzfrau','Putzen'],
+  'rei': ['Reinigung','Reinigungskraft','Reinigungsservice'],
+  'han': ['Handwerker','Handwerk','Handyservice'],
+  'um': ['Umzugshilfe','Umzugsprofi','Umzug'],
+  'ga': ['Gärtner','Gartenarbeit','Gartengestaltung'],
+  'na': ['Nachhilfe','Nachhilfelehrer','Nachhilfeunterricht'],
+  'mo': ['Möbelmontage','Möbeltransport','Montage'],
+  'kl': ['Klempner','Klempnerarbeiten'],
+  'ma': ['Maler','Mathe Nachhilfe','Massage','Malerarbeiten'],
+  'hu': ['Hundebetreuer','Hundesitter','Hundetraining'],
+  'fo': ['Fotograf','Fotoservice'],
+  'web': ['Webdesign','Website erstellen','Webentwicklung'],
+};
+
+function getSuggestions(q){
+  if(!q || q.length < 2) return [];
+  const ql = q.toLowerCase();
+  
+  // Direkte Synonym-Matches
+  let suggestions = new Set();
+  
+  // 1. Aus SUGGESTIONS Dictionary
+  Object.keys(SUGGESTIONS).forEach(key => {
+    if(ql.startsWith(key) || key.startsWith(ql)){
+      SUGGESTIONS[key].forEach(s => suggestions.add(s));
+    }
+  });
+  
+  // 2. Aus SYNONYMS Keys
+  Object.keys(SYNONYMS).forEach(key => {
+    if(key.startsWith(ql) && key !== ql){
+      // Kapitalisiert hinzufügen
+      suggestions.add(key.charAt(0).toUpperCase() + key.slice(1));
+    }
+  });
+  
+  // 3. Freelancer Rollen aus Demo-Daten
+  FL.forEach(f => {
+    if(f.role.toLowerCase().includes(ql) || f.tags.some(t=>t.toLowerCase().includes(ql))){
+      suggestions.add(f.role);
+      f.tags.forEach(t => { if(t.toLowerCase().includes(ql)) suggestions.add(t); });
+    }
+  });
+  
+  return [...suggestions].slice(0, 6);
+}
+
+function showSearchSuggestions(input, suggContainerId){
+  const q = input.value;
+  const container = document.getElementById(suggContainerId);
+  if(!container) return;
+  const suggestions = getSuggestions(q);
+  if(!suggestions.length || !q){ container.style.display='none'; return; }
+  container.innerHTML = suggestions.map(s =>
+    `<div class="sugg-item" onclick="selectSuggestion('${s}','${input.id}','${suggContainerId}')">
+      🔍 <strong>${s}</strong>
+    </div>`
+  ).join('');
+  container.style.display = 'block';
+}
+
+function selectSuggestion(val, inputId, suggId){
+  document.getElementById(inputId).value = val;
+  document.getElementById(suggId).style.display = 'none';
+  doSearch();
+}
+
+// Erweiterte Suche mit Synonymen
+function expandQuery(query){
+  const ql = query.toLowerCase().trim();
+  let terms = [ql];
+  // Synonyme hinzufügen
+  if(SYNONYMS[ql]) terms = [...terms, ...SYNONYMS[ql].map(s=>s.toLowerCase())];
+  // Teilmatch in Synonym-Keys
+  Object.keys(SYNONYMS).forEach(key => {
+    if(key.includes(ql) && !terms.includes(key)){
+      terms.push(key);
+      SYNONYMS[key].forEach(s => terms.push(s.toLowerCase()));
+    }
+  });
+  return [...new Set(terms)];
+}
+
+// ── DISTANCE CALCULATION ──
+function getDistanceKm(lat1, lon1, lat2, lon2){
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+    Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 // ── LOCATION ──
 let locTimer = null;
 async function searchLocation(q, suggId){
@@ -1508,6 +1709,10 @@ function autoDetectLocation(){
         document.getElementById('locText').textContent='📍 '+userCity;
         const lb2 = document.getElementById('locText2');
         if(lb2) lb2.textContent='📍 '+userCity;
+        const ls = document.getElementById('locTextSearch');
+        if(ls) ls.textContent=userCity;
+        const cls = document.getElementById('cityLabelSearch');
+        if(cls) cls.textContent='in '+userCity;
         document.getElementById('cityLabel').textContent='in '+userCity+' und Umgebung';
         document.getElementById('heroSearch').placeholder='Was brauchst du in '+userCity+'?';
       }
@@ -1517,6 +1722,9 @@ function autoDetectLocation(){
 // Klick außerhalb schließt Dropdown
 document.addEventListener('click', e=>{
   if(!e.target.closest('.fg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
+  if(!e.target.closest('.search-outer') && !e.target.closest('#view-search > div')) {
+    document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
+  }
 });
 
 // ── HELPERS ──
