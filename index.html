@@ -779,6 +779,23 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
   </div>
 </div>
 
+<!-- ANGEBOT MODAL -->
+<div class="modal-overlay" id="modal-angebot">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('angebot')">✕</button>
+    <div class="modal-title">📝 Angebot senden</div>
+    <div class="modal-sub">Beschreibe kurz warum du der Richtige für diesen Job bist.</div>
+    <div class="fg"><label>Dein Angebot / Nachricht</label>
+      <textarea id="angebotText" placeholder="z.B. Ich bin verfügbar und habe 5 Jahre Erfahrung in diesem Bereich..." style="min-height:100px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
+    </div>
+    <div class="fg"><label>Dein Preis (€)</label>
+      <input type="number" id="angebotPreis" placeholder="z.B. 80">
+    </div>
+    <div id="angebot-error" class="error-msg"></div>
+    <button class="form-submit" onclick="submitAngebot()">Angebot absenden →</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1069,50 +1086,104 @@ async function renderHome(){
   document.getElementById('homeGrid').innerHTML=all.map((f,i)=>flCard(f,i)).join('');
 }
 
-async function aiSearch(query, freelancers){
-  // Use Claude API to understand the query and find matching freelancers
-  try {
-    const freelancerList = freelancers.map((f,i) =>
-      `[${i}] ${f.name} – ${f.role} | Tags: ${(f.tags||[]).join(', ')} | Services: ${(f.services||[]).join(', ')} | Bio: ${(f.bio||'').slice(0,80)}`
-    ).join('\n');
+// ── SMART SEMANTIC SEARCH ──
+// Umfangreiches Semantik-Wörterbuch für natürliche Sprache
+const SEMANTIC_MAP = {
+  // Garten
+  'garten':['gärtner','garten','rasen','hecke','pflanzen','bepflanzung'],
+  'gartenarbeiter':['gärtner','garten','rasen'],
+  'gartenarbeit':['gärtner','garten','rasen','hecke'],
+  'rasen mähen':['gärtner','rasen','mähen'],
+  'jemand für meinen garten':['gärtner','garten'],
+  'jemand für mein garten':['gärtner','garten'],
+  // Reinigung
+  'putzen':['reinigung','reinigungskraft','wohnungsreinigung','haushalt'],
+  'sauber machen':['reinigung','reinigungskraft','wohnungsreinigung'],
+  'jemand zum putzen':['reinigung','reinigungskraft'],
+  'wohnung reinigen':['reinigung','wohnungsreinigung'],
+  'haushaltshilfe':['reinigung','reinigungskraft','haushalt'],
+  'putzfrau':['reinigung','reinigungskraft'],
+  'putzkraft':['reinigung','reinigungskraft'],
+  // IT
+  'computer hilfe':['it','pc','software','wlan'],
+  'pc hilfe':['it','pc-hilfe','software'],
+  'internet probleme':['it','wlan','pc-hilfe'],
+  'wlan einrichten':['it','wlan'],
+  'laptop kaputt':['it','pc-hilfe','software'],
+  'techniker':['it','pc-hilfe'],
+  // Handwerk
+  'handwerker':['handwerk','sanitär','elektrik','wasserhahn','möbelmontage'],
+  'reparatur':['handwerk','wasserhahn','elektrik'],
+  'wasserhahn tropft':['handwerk','sanitär','wasserhahn'],
+  'möbel aufbauen':['handwerk','möbelmontage'],
+  'ikea aufbau':['handwerk','möbelmontage'],
+  'elektriker':['handwerk','elektrik'],
+  // Umzug
+  'umzugshelfer':['umzug','transport','umzugsprofi'],
+  'umziehen':['umzug','transport','umzugsprofi'],
+  'möbel transportieren':['umzug','transport'],
+  'tragen':['umzug','transport'],
+  // Nachhilfe
+  'nachhilfelehrer':['nachhilfe','mathe','englisch','lernen'],
+  'mathe nachhilfe':['nachhilfe','mathe'],
+  'englisch lernen':['nachhilfe','englisch'],
+  'hausaufgaben hilfe':['nachhilfe','lernen'],
+  'schulhilfe':['nachhilfe','lernen'],
+};
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: `Du bist eine intelligente Suchmaschine für Helpefy, eine Freelancer-Plattform.
-
-Deine Aufgabe: Verstehe was der Nutzer BRAUCHT und finde passende Freelancer – auch wenn die Worte nicht exakt übereinstimmen.
-
-Beispiele für semantisches Verstehen:
-- "garten arbeiter" → Gärtner
-- "jemand zum putzen" → Reinigungskraft  
-- "elektriker" → IT & Digital ODER Handwerker mit Elektrik
-- "nachhilfelehrer mathe" → Nachhilfelehrerin
-- "umzugshelfer" → Umzugsprofi
-- "wlan probleme" → IT-Expertin
-
-Suchanfrage: "${query}"
-
-Verfügbare Freelancer:
-${freelancerList}
-
-Antworte NUR mit JSON-Array der passenden Indizes, z.B.: [0,2,4]
-Leeres Array [] nur wenn wirklich niemand passt.
-Sei großzügig – lieber zu viele als zu wenige Ergebnisse.`
-        }]
-      })
+function smartSearch(query, freelancers){
+  const q = query.toLowerCase().trim();
+  
+  // 1. Exakter Semantik-Match aus SEMANTIC_MAP
+  let semanticTerms = [];
+  Object.keys(SEMANTIC_MAP).forEach(key => {
+    if(q.includes(key) || key.includes(q)){
+      semanticTerms = [...semanticTerms, ...SEMANTIC_MAP[key]];
+    }
+  });
+  
+  // 2. Synonym-Erweiterung aus SYNONYMS
+  const expanded = expandQuery(q);
+  
+  // 3. Alle Suchbegriffe kombinieren
+  const allTerms = [...new Set([...expanded, ...semanticTerms])];
+  
+  // 4. Einzelne Wörter der Query auch durchsuchen (für "jemand für mein garten")
+  const words = q.split(/\s+/).filter(w => w.length > 2);
+  words.forEach(w => {
+    expanded.forEach(t => allTerms.push(t));
+    // Jedes Wort einzeln in SYNONYMS nachschlagen
+    if(SYNONYMS[w]) SYNONYMS[w].forEach(s => allTerms.push(s.toLowerCase()));
+    Object.keys(SYNONYMS).forEach(k => {
+      if(k.startsWith(w)) {
+        SYNONYMS[k].forEach(s => allTerms.push(s.toLowerCase()));
+      }
     });
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '[]';
-    const match = text.match(/\[[\d,\s]*\]/);
-    if(match) return JSON.parse(match[0]);
-  } catch(e) { console.log('AI search fallback:', e); }
-  return null; // null = fallback to normal search
+    // Jedes Wort einzeln in SEMANTIC_MAP
+    Object.keys(SEMANTIC_MAP).forEach(key => {
+      if(key.includes(w) || w.includes(key)){
+        SEMANTIC_MAP[key].forEach(s => allTerms.push(s));
+      }
+    });
+  });
+  
+  // 5. Freelancer filtern
+  return freelancers.filter(f => {
+    const fields = [
+      f.name, f.role,
+      ...(f.tags||[]),
+      ...(f.services||[]),
+      f.bio||'',
+      f.loc||''
+    ].map(s => s.toLowerCase()).join(' ');
+    
+    return allTerms.some(term => fields.includes(term.toLowerCase()));
+  });
+}
+
+async function aiSearch(query, freelancers){
+  // Nutze smarte client-seitige semantische Suche
+  return smartSearch(query, freelancers);
 }
 
 async function renderSearch(q){
@@ -1130,27 +1201,14 @@ async function renderSearch(q){
   let results=all;
 
   if(query && query.toLowerCase()!=='alle'){
-    // Show loading state
-    document.getElementById('searchGrid').innerHTML=`
-      <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">
-        <div style="font-size:1.5rem;margin-bottom:0.5rem">🤖</div>
-        <div style="font-size:0.9rem">KI sucht passende Freelancer...</div>
-      </div>`;
-    document.getElementById('rQuery').textContent=query;
-    document.getElementById('rCount').textContent='...';
-
-    // Try AI search first
-    const aiIndices = await aiSearch(query, all);
-
-    if(aiIndices !== null){
-      // AI returned results
-      results = aiIndices.map(i => all[i]).filter(Boolean);
-    } else {
-      // Fallback to keyword search
-      const terms=expandQuery(query.toLowerCase());
-      results=all.filter(f=>{
-        const fields=[f.name,f.role,...(f.tags||[]),...(f.services||[]),f.bio||'',f.loc||''].map(s=>s.toLowerCase());
-        return terms.some(t=>fields.some(field=>field.includes(t)));
+    const aiResults = await aiSearch(query, all);
+    results = aiResults && aiResults.length > 0 ? aiResults : [];
+    // If still empty, try broader single-word search
+    if(results.length === 0){
+      const words = query.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+      results = all.filter(f=>{
+        const fields=[f.name,f.role,...(f.tags||[]),...(f.services||[]),f.bio||''].join(' ').toLowerCase();
+        return words.some(w=>fields.includes(w));
       });
     }
   }
@@ -1388,7 +1446,7 @@ function renderJobGrid(jobs){
     <div class="job-title">${j.title}</div>
     <div class="job-desc">${j.desc}</div>
     <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
-    <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="currentUser?showView('chat'):openModal('auth')">Angebot senden</button></div>
+    <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button></div>
   </div>`).join('');
 }
 
@@ -1422,31 +1480,33 @@ async function searchJobs(){
   const grid=document.getElementById('jobGrid');
   if(grid) grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)"><div style="font-size:1.5rem">🤖</div><div style="font-size:0.9rem;margin-top:0.5rem">KI sucht passende Jobs...</div></div>`;
 
-  try{
-    const jobList=allJobsCache.map((j,i)=>`[${i}] ${j.title} | Kategorie: ${j.cat} | ${j.desc.slice(0,60)}`).join('\n');
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:150,
-        messages:[{role:'user',content:`Du bist eine intelligente Job-Suchmaschine für Helpefy. Verstehe was gesucht wird – auch umgangssprachlich oder mit Tippfehlern.\n\nBeispiele: "gartenarbeiten" → Garten-Jobs, "wohnung sauber machen" → Reinigungs-Jobs, "möbel aufbauen" → Handwerk/Umzug-Jobs\n\nSuche: "${q}"\n\nJobs:\n${jobList}\n\nAntworte NUR mit JSON-Array der passenden Indizes z.B. [0,2]. Sei großzügig.`}]
-      })
-    });
-    const data=await res.json();
-    const text=data.content?.[0]?.text||'[]';
-    const match=text.match(/\[[\d,\s]*\]/);
-    const indices=match?JSON.parse(match[0]):[];
-    renderJobGrid(indices.map(i=>allJobsCache[i]).filter(Boolean));
-  }catch(e){
-    // Fallback keyword search
-    const results=allJobsCache.filter(j=>
-      j.title.toLowerCase().includes(q.toLowerCase())||
-      j.cat.toLowerCase().includes(q.toLowerCase())||
-      j.desc.toLowerCase().includes(q.toLowerCase())
-    );
-    renderJobGrid(results);
-  }
+  // Smart job search - alle Wörter einzeln und kombiniert suchen
+  const qLow = q.toLowerCase();
+  const words = qLow.split(/\s+/).filter(w=>w.length>2);
+  
+  // Semantische Job-Kategorien
+  const jobSemantics = {
+    'garten':['Garten'],'gartenarbeit':['Garten'],'pflanzen':['Garten'],
+    'putzen':['Reinigung','Haushalt'],'sauber':['Reinigung','Haushalt'],
+    'reinigung':['Reinigung'],'haushalt':['Haushalt'],
+    'handwerk':['Handwerk'],'reparatur':['Handwerk'],'montage':['Handwerk'],
+    'it':['IT & Digital'],'computer':['IT & Digital'],'wlan':['IT & Digital'],
+    'umzug':['Umzug'],'transport':['Umzug'],'tragen':['Umzug'],
+    'lernen':['Lernen'],'nachhilfe':['Lernen'],'mathe':['Lernen'],
+  };
+  
+  let catMatches = [];
+  Object.keys(jobSemantics).forEach(key=>{
+    if(qLow.includes(key)||words.some(w=>key.includes(w)||w.includes(key))){
+      catMatches=[...catMatches,...jobSemantics[key]];
+    }
+  });
+  
+  const results=allJobsCache.filter(j=>{
+    const txt=(j.title+' '+j.cat+' '+j.desc).toLowerCase();
+    return words.some(w=>txt.includes(w)) || catMatches.some(c=>j.cat.includes(c));
+  });
+  renderJobGrid(results.length ? results : allJobsCache.filter(j=>catMatches.some(c=>j.cat.includes(c))));
 }
 
 async function loadRealJobs(){
@@ -1605,6 +1665,30 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.fg')&&!e.target.closest('.loc-sugg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
   if(!e.target.closest('.search-bar')&&!e.target.closest('.search-sugg')) document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
 });
+
+// ── ANGEBOT ──
+function applyForJob(btn){
+  if(!currentUser){openModal('auth');return;}
+  document.getElementById('angebotText').value='';
+  document.getElementById('angebotPreis').value='';
+  document.getElementById('angebot-error').style.display='none';
+  openModal('angebot');
+}
+
+async function submitAngebot(){
+  const text=document.getElementById('angebotText').value.trim();
+  const preis=document.getElementById('angebotPreis').value;
+  const err=document.getElementById('angebot-error');
+  if(!text){err.style.display='block';err.textContent='Bitte schreib eine Nachricht.';return;}
+  // Save as message in nachrichten
+  const {error}=await sb.from('nachrichten').insert({
+    von_user_id:currentUser.id,
+    inhalt:`📋 Angebot: ${text}${preis?' | Preis: '+preis+' €':''}`,
+    created_at:new Date().toISOString()
+  });
+  closeModal('angebot');
+  showToast('Angebot gesendet! 🎉','success');
+}
 
 // ── HELPERS ──
 function showError(el,msg){el.style.display='block';el.textContent=msg;}
