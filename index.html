@@ -301,8 +301,8 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
     <div class="logo-text">Helpefy</div>
   </div>
   <div class="nav-center">
-    <a class="nav-link" onclick="showView('home')">Freelancer finden</a>
-    <a class="nav-link" onclick="switchMode('jobs');showView('home');">Jobs posten</a>
+    <a class="nav-link" onclick="switchMode('freelancer');showView('home')">Freelancer finden</a>
+    <a class="nav-link" onclick="showView('job-posten')">Jobs posten</a>
     <a class="nav-link" onclick="showView('dashboard')">Dashboard</a>
     <a class="nav-link" onclick="showView('chat')">Nachrichten</a>
   </div>
@@ -489,6 +489,48 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
   </footer>
 </div>
 
+<!-- ══ JOB POSTEN ══ -->
+<div id="view-job-posten" class="view">
+  <div style="max-width:700px;margin:0 auto;padding:2.5rem 1.5rem">
+    <button onclick="showView('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem;font-family:Inter,sans-serif;display:flex;align-items:center;gap:0.35rem">← Zurück</button>
+    <div class="eyebrow">Auftrag ausschreiben</div>
+    <h1 style="font-size:1.8rem;font-weight:700;margin-bottom:0.4rem;letter-spacing:-0.5px">Job posten</h1>
+    <p style="color:var(--muted);margin-bottom:2rem;font-size:0.9rem">Beschreibe deinen Auftrag – passende Freelancer melden sich bei dir.</p>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:2rem">
+      <div id="job-posted-success2" style="display:none;background:#dcfce7;color:#15803d;padding:1rem;border-radius:10px;margin-bottom:1.5rem;font-weight:500">✅ Job erfolgreich gepostet! Freelancer können ihn jetzt sehen.</div>
+      <div id="job-login-hint2" style="display:none;background:var(--red-light);border:1.5px solid var(--red);border-radius:12px;padding:1.25rem;text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:1rem;font-weight:600;color:var(--red);margin-bottom:0.75rem">🔒 Bitte zuerst anmelden</div>
+        <button class="btn-red" onclick="openModal('auth')">Jetzt anmelden →</button>
+      </div>
+      <div class="fg"><label>Titel des Auftrags</label><input type="text" id="jobTitel2" placeholder="z.B. Wohnung reinigen, IKEA Möbel aufbauen..."></div>
+      <div class="fg"><label>Kategorie</label>
+        <select id="jobKat2">
+          <option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option>
+          <option>Garten</option><option>Umzug</option><option>Lernen</option>
+          <option>Kreativ</option><option>Beauty</option><option>Tiere</option>
+          <option>Transport</option><option>Events</option><option>Sonstiges</option>
+        </select>
+      </div>
+      <div class="fg"><label>Beschreibung</label><textarea id="jobDesc2" placeholder="Was genau soll gemacht werden? Je mehr Details, desto besser." style="min-height:120px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light);transition:border-color 0.2s" onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--border)'"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+        <div class="fg"><label>Budget min (€)</label><input type="number" id="jobBudgetMin2" placeholder="50"></div>
+        <div class="fg"><label>Budget max (€)</label><input type="number" id="jobBudgetMax2" placeholder="100"></div>
+      </div>
+      <div class="fg" style="position:relative">
+        <label>Standort</label>
+        <input type="text" id="jobStandort2" placeholder="Stadt oder PLZ..." autocomplete="off" oninput="searchLocation(this.value,'jobLocSugg2')">
+        <div id="jobLocSugg2" class="loc-sugg" style="display:none"></div>
+      </div>
+      <div class="fg"><label>Wann?</label><input type="date" id="jobDatum2"></div>
+      <div class="fg" style="display:flex;align-items:center;gap:0.5rem;flex-direction:row">
+        <input type="checkbox" id="jobDringend2" style="width:auto">
+        <label style="font-size:0.85rem;color:var(--text);margin:0">🔥 Dringend – ich brauche schnell jemanden</label>
+      </div>
+      <button class="btn-red" style="width:100%;padding:1rem;margin-top:1rem;border-radius:12px;font-size:1rem" onclick="postJob2()">Job veröffentlichen →</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ SEARCH ══ -->
 <div id="view-search" class="view">
   <div class="section">
@@ -605,7 +647,7 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
           <div class="dcard"><div class="dc-title">Schnellzugriff</div>
             <div class="oi"><div class="oi-icon">🔍</div><div class="oi-info"><div class="oi-title">Freelancer suchen</div><div class="oi-meta">Finde den passenden Experten</div></div><button class="book-btn" onclick="showView('home')">Los</button></div>
             <div class="oi"><div class="oi-icon">💬</div><div class="oi-info"><div class="oi-title">Nachrichten</div><div class="oi-meta">Mit Freelancern chatten</div></div><button class="book-btn" onclick="showView('chat')">Öffnen</button></div>
-            <div class="oi"><div class="oi-icon">📝</div><div class="oi-info"><div class="oi-title">Job posten</div><div class="oi-meta">Auftrag ausschreiben</div></div><button class="book-btn" onclick="switchMode('jobs');showView('home')">Posten</button></div>
+            <div class="oi"><div class="oi-icon">📝</div><div class="oi-info"><div class="oi-title">Job posten</div><div class="oi-meta">Auftrag ausschreiben</div></div><button class="book-btn" onclick="showView('job-posten')">Posten</button></div>
           </div>
           <div class="dcard"><div class="dc-title">Konto Info</div>
             <div class="oi"><div class="oi-icon">📧</div><div class="oi-info"><div class="oi-title" id="dashEmail">–</div><div class="oi-meta">E-Mail Adresse</div></div></div>
@@ -1238,6 +1280,34 @@ async function loadRealJobs(){
   const allJ=[...(jobs||[]).map(j=>({cat:j.kategorie||'Sonstiges',title:j.titel,desc:j.beschreibung,loc:j.standort||'Deutschland',date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',urgent:j.dringend,offers:0,poster:j.profiles?.full_name||'Anonym'})),...JOBS];
   const grid=document.getElementById('jobGrid');
   if(grid) grid.innerHTML=allJ.map(j=>`<div class="job-card"><div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div><div class="job-title">${j.title}</div><div class="job-desc">${j.desc}</div><div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div><div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="currentUser?showView('chat'):openModal('auth')">Angebot senden</button></div></div>`).join('');
+}
+
+async function postJob2(){
+  if(!currentUser){
+    document.getElementById('job-login-hint2').style.display='block';
+    openModal('auth');
+    return;
+  }
+  const titel=document.getElementById('jobTitel2').value.trim();
+  const desc=document.getElementById('jobDesc2').value.trim();
+  if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
+  const {error}=await sb.from('jobs').insert({
+    kunde_id:currentUser.id, titel, beschreibung:desc,
+    kategorie:document.getElementById('jobKat2').value,
+    budget_min:parseFloat(document.getElementById('jobBudgetMin2').value)||0,
+    budget_max:parseFloat(document.getElementById('jobBudgetMax2').value)||0,
+    standort:document.getElementById('jobStandort2').value,
+    datum:document.getElementById('jobDatum2').value||null,
+    dringend:document.getElementById('jobDringend2').checked,
+    status:'offen', created_at:new Date().toISOString()
+  });
+  if(error){showToast('Fehler: '+error.message,'error');return;}
+  ['jobTitel2','jobDesc2','jobBudgetMin2','jobBudgetMax2','jobStandort2'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.value='';
+  });
+  const suc=document.getElementById('job-posted-success2');
+  if(suc){suc.style.display='block';setTimeout(()=>suc.style.display='none',5000);}
+  showToast('Job veröffentlicht! 🎉','success');
 }
 
 async function postJob(){
