@@ -292,11 +292,19 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
 @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 
 @media(max-width:1024px){.profile-layout{grid-template-columns:1fr;padding:1.5rem;}.booking-card{position:static;}.dash-layout{grid-template-columns:200px 1fr;}.chat-layout{grid-template-columns:260px 1fr;}.footer-grid{grid-template-columns:1fr 1fr;}}
+/* HAMBURGER */
+.hamburger{display:none;background:none;border:1.5px solid var(--border);border-radius:8px;padding:0.35rem 0.65rem;font-size:1.1rem;cursor:pointer;color:var(--dark);}
+.mobile-menu-item{display:block;padding:0.85rem 1.5rem;font-size:0.95rem;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;}
+.mobile-menu-item:last-child{border-bottom:none;}
+.mobile-menu-item:hover{background:var(--light);}
+
 @media(max-width:768px){
 nav{padding:0.75rem 1rem;}
 .nav-center{display:none!important;}
 .nav-right .btn-ghost{display:none;}
+.nav-right .btn-red{display:none;}
 .nav-right span{display:none;}
+.hamburger{display:block;}
 .search-bar{padding:0.65rem 0.75rem;gap:0.5rem;}
 .search-btn{padding:0.6rem 0.85rem;font-size:0.82rem;}
 .search-bar input{font-size:0.9rem;}
@@ -322,7 +330,16 @@ nav{padding:0.75rem 1rem;}
     <button class="btn-ghost" onclick="openModal('auth')">Anmelden</button>
     <button class="btn-red" onclick="openModal('auth')">Registrieren</button>
   </div>
+  <button class="hamburger" id="hamburgerBtn" onclick="toggleMenu()">☰</button>
 </nav>
+
+<!-- MOBILE MENU -->
+<div id="mobileMenu" style="display:none;position:fixed;top:57px;left:0;right:0;background:white;border-bottom:1.5px solid var(--border);z-index:199;box-shadow:var(--shadow2);padding:0.5rem 0">
+  <a class="mobile-menu-item" onclick="switchMode('freelancer');showView('home');toggleMenu()">🔍 Freelancer finden</a>
+  <a class="mobile-menu-item" onclick="showView('job-posten');toggleMenu()">📝 Jobs posten</a>
+  <a class="mobile-menu-item" onclick="showView('dashboard');toggleMenu()">📊 Dashboard</a>
+  <a class="mobile-menu-item" onclick="showView('chat');toggleMenu()">💬 Nachrichten</a>
+</div>
 
 <!-- ══ HOME ══ -->
 <div id="view-home" class="view active">
@@ -949,6 +966,18 @@ function selectSuggestion(val,inputId,suggId){
   document.getElementById(suggId).style.display='none';
   doSearch();
 }
+
+function toggleMenu(){
+  const m=document.getElementById('mobileMenu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+// Close menu on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('nav')&&!e.target.closest('#mobileMenu')){
+    const m=document.getElementById('mobileMenu');
+    if(m) m.style.display='none';
+  }
+});
 
 function hideAllSugg(){
   document.querySelectorAll('.search-sugg,.loc-sugg').forEach(s=>s.style.display='none');
