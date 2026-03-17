@@ -698,7 +698,11 @@ let currentProfile = null;
       <div class="fg"><label>Vollständiger Name</label><input type="text" id="regName" placeholder="Max Mustermann"></div>
       <div class="fg"><label>E-Mail</label><input type="email" id="regEmail" placeholder="max@beispiel.de"></div>
       <div class="fg"><label>Passwort</label><input type="password" id="regPassword" placeholder="Mindestens 6 Zeichen"></div>
-      <div class="fg"><label>Standort</label><input type="text" id="regLocation" placeholder="Stadt eingeben..." autocomplete="off" oninput="searchLocation(this.value,'regLocSugg')"></div>
+      <div class="fg" style="position:relative">
+        <label>Standort</label>
+        <input type="text" id="regLocation" placeholder="Stadt eingeben..." autocomplete="off" oninput="searchLocation(this.value,'regLocSugg')">
+        <div id="regLocSugg" class="loc-sugg" style="display:none"></div>
+      </div>
       <div id="reg-fl-extra" style="display:none">
         <div class="fg"><label>Kategorie</label><select id="regKategorie"><option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option><option>Garten</option><option>Umzug</option><option>Lernen</option></select></div>
         <div class="fg"><label>Stundenlohn (€)</label><input type="number" id="regPreis" placeholder="25"></div>
@@ -774,6 +778,7 @@ async function doLogin(){
   updateNav();
   showView('dashboard');
   showToast('Erfolgreich angemeldet! 👋','success');
+  }catch(e){console.error('Login error:',e);showToast('Anmeldefehler – bitte neu versuchen','error');}
 }
 
 async function doRegister(){
