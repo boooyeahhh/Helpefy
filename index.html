@@ -1673,47 +1673,69 @@ async function renderDashOrders(){
   const ordersEl=document.getElementById('dash-orders');
   if(!ordersEl) return;
 
+  const isFreelancer = currentProfile?.role === 'freelancer';
+
+  // Load orders - for freelancer load from freelancer_id too
   const {data:orders}=await sb.from('auftraege')
     .select('*')
     .eq('kunde_id',currentUser.id)
     .order('created_at',{ascending:false});
 
   const badge=s=>{
-    if(s==='bezahlt') return '<span class="badge badge-green">Bezahlt ✓</span>';
-    if(s==='angenommen') return '<span class="badge badge-green">Angenommen ✓</span>';
+    if(s==='bezahlt') return '<span class="badge badge-green">✅ Bezahlt</span>';
+    if(s==='angenommen') return '<span class="badge badge-green">✓ Angenommen</span>';
     if(s==='bestätigt') return '<span class="badge badge-blue">Bestätigt</span>';
-    if(s==='angebot_gesendet') return '<span class="badge badge-yellow">Angebot ausstehend</span>';
-    if(s==='abgelehnt') return '<span class="badge" style="background:#fee2e2;color:#991b1b">Abgelehnt</span>';
+    if(s==='angebot_gesendet') return '<span class="badge badge-yellow">⏳ Ausstehend</span>';
+    if(s==='abgelehnt') return '<span class="badge" style="background:#fee2e2;color:#991b1b">✕ Abgelehnt</span>';
     return '<span class="badge badge-yellow">Offen</span>';
   };
 
   if(!orders||!orders.length){
-    ordersEl.innerHTML=`<div class="dash-title">Meine Aufträge</div><div class="dash-sub">Noch keine Aufträge oder Angebote vorhanden.</div>`;
+    ordersEl.innerHTML=`<div class="dash-title">Meine Aufträge</div><div class="dash-sub" style="margin-top:0.5rem">Noch keine Aufträge vorhanden.<br><br><button class="btn-red" onclick="showView('home')">Freelancer suchen</button></div>`;
     return;
   }
 
   ordersEl.innerHTML=`
     <div class="dash-title">Meine Aufträge & Angebote</div>
-    <div class="dcard" style="max-width:100%">
+    <div class="dcard" style="max-width:100%;margin-top:1rem">
       ${orders.map(o=>`
-        <div class="oi">
-          <div class="oi-icon">${o.status==='bezahlt'||o.status==='angenommen'?'✅':'📋'}</div>
-          <div class="oi-info">
-            <div class="oi-title">${o.titel||'Auftrag'}</div>
-            <div class="oi-meta">${o.datum?new Date(o.datum).toLocaleDateString('de'):''} ${o.preis?'· '+o.preis.toFixed(2)+' €':''}</div>
-            ${o.beschreibung&&o.beschreibung!=='Buchung über Helpefy'?`<div class="oi-meta" style="font-style:italic;margin-top:0.2rem">"${o.beschreibung.slice(0,60)}..."</div>`:''}
+        <div class="oi" style="padding:1rem 0;flex-wrap:wrap;gap:0.5rem">
+          <div class="oi-icon" style="font-size:1.5rem">${o.status==='bezahlt'?'✅':o.status==='abgelehnt'?'❌':'📋'}</div>
+          <div class="oi-info" style="flex:1;min-width:200px">
+            <div class="oi-title" style="font-size:0.9rem">${o.titel||'Auftrag'}</div>
+            <div class="oi-meta">${o.datum?new Date(o.datum).toLocaleDateString('de-DE'):''} ${o.preis?'· <strong>'+o.preis.toFixed(2)+' €</strong>':''}</div>
+            ${o.beschreibung&&o.beschreibung!=='Buchung über Helpefy'?`<div class="oi-meta" style="font-style:italic;margin-top:0.25rem;color:var(--muted)">"${o.beschreibung.slice(0,80)}${o.beschreibung.length>80?'...':''}"</div>`:''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
             ${badge(o.status)}
             ${o.status==='angebot_gesendet'?`
               <div style="display:flex;gap:0.35rem;margin-top:0.25rem">
-                <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.25rem 0.6rem;background:var(--green);color:white;border:none;border-radius:6px;font-size:0.72rem;cursor:pointer;font-family:Inter,sans-serif">✓ Annehmen</button>
-                <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.25rem 0.6rem;background:#fee2e2;color:#991b1b;border:none;border-radius:6px;font-size:0.72rem;cursor:pointer;font-family:Inter,sans-serif">✕ Ablehnen</button>
-              </div>`:''
-            }
+                <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
+                <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
+              </div>`:''}
+            ${o.status==='angenommen'?`
+              <button onclick="payAuftrag('${o.id}','${(o.titel||'').replace(/'/g,'')}',${o.preis||0})"
+                style="padding:0.4rem 1rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;margin-top:0.25rem">
+                💳 Jetzt bezahlen
+              </button>`:''}
+            ${o.status==='bezahlt'?`<div style="font-size:0.72rem;color:var(--muted);text-align:right">Ref: HLF-${o.id?.slice(0,8).toUpperCase()||'XXXX'}</div>`:''}
           </div>
         </div>`).join('')}
     </div>`;
+}
+
+function payAuftrag(id, titel, preis){
+  // Open payment modal pre-filled
+  const fee = +(preis*0.15).toFixed(2);
+  const total = +(preis+fee).toFixed(2);
+  document.getElementById('paymentSummary').textContent = titel;
+  document.getElementById('pay-label').textContent = 'Auftrag: '+titel;
+  document.getElementById('pay-sub').textContent = preis.toFixed(2)+' €';
+  document.getElementById('pay-fee').textContent = fee.toFixed(2)+' €';
+  document.getElementById('pay-total').textContent = total.toFixed(2)+' €';
+  // Store order id for after payment
+  window._payAuftragId = id;
+  openModal('payment');
 }
 
 async function updateAuftrag(id, status){
