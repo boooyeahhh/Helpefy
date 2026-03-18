@@ -853,8 +853,8 @@ nav{padding:0.75rem 1rem;}
         <div class="dash-title" id="dashGreet">Willkommen! 👋</div>
         <div class="dash-sub">Deine Übersicht</div>
         <div class="dstats">
-          <div class="dsc"><div class="dsc-icon">📋</div><div class="dsc-n">0</div><div class="dsc-l">Aufträge</div></div>
-          <div class="dsc"><div class="dsc-icon">💶</div><div class="dsc-n">0€</div><div class="dsc-l">Ausgaben</div></div>
+          <div class="dsc" onclick="switchDash('orders',document.querySelector('.sni:nth-child(2)'))" style="cursor:pointer"><div class="dsc-icon">📋</div><div class="dsc-n dsc-auftraege">0</div><div class="dsc-l">Aufträge</div></div>
+          <div class="dsc"><div class="dsc-icon">💶</div><div class="dsc-n dsc-ausgaben">0€</div><div class="dsc-l">Ausgaben</div></div>
           <div class="dsc"><div class="dsc-icon">⭐</div><div class="dsc-n">–</div><div class="dsc-l">Bewertungen</div></div>
           <div class="dsc"><div class="dsc-icon">❤️</div><div class="dsc-n">0</div><div class="dsc-l">Gespeichert</div></div>
         </div>
@@ -1367,12 +1367,21 @@ async function loadProfile(){
   }
   // Load all orders (as kunde AND as freelancer receiving offers)
   const {data:orders}=await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
-  if(orders&&orders.length){
-    const total=orders.filter(o=>o.status==='bezahlt').reduce((s,o)=>s+(o.preis||0),0);
-    const dscNs=document.querySelectorAll('.dsc-n');
-    if(dscNs[0]) dscNs[0].textContent=orders.length;
-    if(dscNs[1]) dscNs[1].textContent=total.toFixed(0)+'€';
+  // Count orders based on role
+  const isFL = data?.role === 'freelancer';
+  let orderCount = 0, totalSpent = 0;
+  if(isFL){
+    const {data:flOrders}=await sb.from('auftraege').select('id,preis').eq('freelancer_id',currentUser.id);
+    orderCount = flOrders?.length||0;
+    totalSpent = (flOrders||[]).reduce((s,o)=>s+(o.preis||0),0);
+  } else if(orders&&orders.length){
+    orderCount = orders.length;
+    totalSpent = orders.filter(o=>o.status==='bezahlt').reduce((s,o)=>s+(o.preis||0),0);
   }
+  const auftraegeEl = document.querySelector('.dsc-auftraege');
+  const ausgabenEl = document.querySelector('.dsc-ausgaben');
+  if(auftraegeEl) auftraegeEl.textContent = orderCount;
+  if(ausgabenEl) ausgabenEl.textContent = totalSpent.toFixed(0)+'€';
   await renderDashOrders();
 }
 
@@ -1954,16 +1963,13 @@ async function renderDashOrders(){
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
             ${badge(o.status)}
-            ${(o.status==='angebot_gesendet'||o.status==='bezahlt')&&isFreelancer?`
+            ${o.status==='angebot_gesendet'&&isFreelancer?`
               <div style="display:flex;gap:0.35rem;margin-top:0.25rem">
                 <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
                 <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
               </div>`:''}
-            ${o.status==='angebot_gesendet'&&!isFreelancer?`
-              <div style="display:flex;gap:0.35rem;margin-top:0.25rem">
-                <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
-                <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
-              </div>`:''}
+            ${o.status==='angenommen'&&isFreelancer?`
+              <div style="font-size:0.72rem;color:var(--green);text-align:right;margin-top:0.25rem">✓ Angenommen – warte auf Zahlung</div>`:''}
             ${o.status==='angenommen'&&!isFreelancer?`
               <button onclick="payAuftrag('${o.id}','${(o.titel||'').replace(/'/g,'')}',${o.preis||0})"
                 style="padding:0.4rem 1rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;margin-top:0.25rem">
@@ -1976,12 +1982,9 @@ async function renderDashOrders(){
                 🔑 Code eingeben
               </button>`:''}
             ${o.status==='bezahlt'&&isFreelancer?`
-              <div style="font-size:0.72rem;color:var(--muted);text-align:right;margin-bottom:0.25rem">Zahlung erhalten ✅</div>
-              <button onclick="openCodeEntry('${o.id}')"
-                style="padding:0.35rem 0.85rem;background:#f0fdf4;color:#15803d;border:1.5px solid #15803d;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
-                🔑 Code eingeben
-              </button>`:''}
-            ${o.status==='abgeschlossen'?`<div style="font-size:0.72rem;color:var(--green);text-align:right">✅ Abgeschlossen</div>`:''}
+              <div style="font-size:0.72rem;color:var(--green);font-weight:500;margin-bottom:0.25rem">💰 Zahlung erhalten!</div>
+              <div style="font-size:0.7rem;color:var(--muted)">Warte auf Abschluss-Code vom Kunden</div>`:''}
+            ${o.status==='abgeschlossen'?`<div style="font-size:0.72rem;color:var(--green);text-align:right;font-weight:500">✅ Abgeschlossen</div>`:''}
           </div>
         </div>`).join('')}
     </div>`;
