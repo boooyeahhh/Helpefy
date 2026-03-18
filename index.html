@@ -822,7 +822,6 @@ nav{padding:0.75rem 1rem;}
           <div style="font-size:0.7rem;color:var(--muted);margin-top:0.35rem">✓ Zahlung erst nach Annahme durch den Freelancer</div>
         </div>
         <button class="book-now" onclick="doBook()">📨 Anfrage senden →</button>
-        <button class="chat-now" onclick="showView('chat')">💬 Nachricht senden</button>
       </div>
     </div>
   </div>
@@ -1890,7 +1889,7 @@ async function doBook(){
   const preis=f.price*h;
   const details=document.getElementById('bookDetails')?.value||'';
   const btn=document.querySelector('.book-now');
-  btn.disabled=true; btn.textContent='Wird gesendet...';
+  btn.disabled=true; btn.textContent='⏳ Wird gesendet...';
 
   // Save as 'anfrage' - no payment yet
   const {error}=await sb.from('auftraege').insert({
@@ -1907,7 +1906,11 @@ async function doBook(){
   });
 
   btn.disabled=false; btn.textContent='📨 Anfrage senden →';
-  if(error){showToast('Fehler: '+error.message,'error');return;}
+  if(error){
+    console.error('Anfrage Fehler:', error);
+    showToast('Fehler: '+error.message,'error');
+    return;
+  }
 
   showToast('✅ Anfrage gesendet! Der Freelancer meldet sich bald.','success');
   // Stay on profile - just show success
