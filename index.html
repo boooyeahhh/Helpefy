@@ -811,8 +811,8 @@ nav{padding:0.75rem 1rem;}
         </div>
         <div class="price-box">
           <div class="pb-row"><span id="pbLabel">35 € × 2 Std</span><span id="pbSub">70,00 €</span></div>
-          <div class="pb-row"><span>Helpefy Service (15%)</span><span id="pbFee">10,50 €</span></div>
           <div class="pb-row total"><span>Gesamt</span><span id="pbTotal">80,50 €</span></div>
+          <span id="pbFee" style="display:none">0</span>
         </div>
         <div class="fg"><label>Zahlung</label>
           <select><option>💳 Kreditkarte</option><option>🍎 Apple Pay</option><option>🅿️ PayPal</option></select>
@@ -1104,7 +1104,7 @@ nav{padding:0.75rem 1rem;}
     <div class="modal-sub" id="paymentSummary">Buchungsdetails...</div>
     <div style="background:var(--light);border-radius:10px;padding:1rem;margin-bottom:1rem;">
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:0.2rem 0;color:var(--muted)"><span id="pay-label">–</span><span id="pay-sub">–</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:0.2rem 0;color:var(--muted)"><span>Helpefy Service (15%)</span><span id="pay-fee">–</span></div>
+      <span id="pay-fee" style="display:none">0</span>
       <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:600;padding:0.5rem 0 0;border-top:1px solid var(--border);margin-top:0.25rem"><span>Gesamt</span><span id="pay-total" style="color:var(--red)">–</span></div>
     </div>
     <div class="fg"><label>Zahlungsmethode</label><select id="payMethod"><option value="card">💳 Kreditkarte</option><option value="apple">🍎 Apple Pay</option><option value="paypal">🅿️ PayPal</option></select></div>
@@ -1725,10 +1725,11 @@ function calcPrice(){
   const f=window._curFL||FL[curFL];
   if(!f) return;
   const h=parseInt(document.getElementById('bHours').value)||1;
-  const sub=f.price*h,fee=+(sub*0.15).toFixed(2),total=+(sub+fee).toFixed(2);
+  const total=f.price*h; // Kunde zahlt nur den Freelancer-Preis
+  const fee=+(total*0.15).toFixed(2); // 15% intern - Freelancer zahlt das
   document.getElementById('pbLabel').textContent=`${f.price} € × ${h} Std`;
-  document.getElementById('pbSub').textContent=`${sub.toFixed(2)} €`;
-  document.getElementById('pbFee').textContent=`${fee.toFixed(2)} €`;
+  document.getElementById('pbSub').textContent=`${total.toFixed(2)} €`;
+  if(document.getElementById('pbFee')) document.getElementById('pbFee').textContent=`${fee.toFixed(2)}`;
   document.getElementById('pbTotal').textContent=`${total.toFixed(2)} €`;
 }
 
@@ -1743,7 +1744,7 @@ async function doBook(){
   document.getElementById('pay-label').textContent=`${f.price} € × ${h} Std`;
   document.getElementById('pay-sub').textContent=`${sub.toFixed(2)} €`;
   document.getElementById('pay-fee').textContent=`${fee.toFixed(2)} €`;
-  document.getElementById('pay-total').textContent=`${total.toFixed(2)} €`;
+  document.getElementById('pay-total').textContent=`${sub.toFixed(2)} €`; // Customer pays freelancer price only
   openModal('payment');
 }
 
@@ -1756,7 +1757,10 @@ async function confirmPayment(){
   btn.disabled=true; btn.textContent='Wird verarbeitet...';
   const f=window._curFL||FL[curFL];
   const h=parseInt(document.getElementById('bHours').value)||1;
-  await sb.from('auftraege').insert({kunde_id:currentUser.id,titel:f.role,beschreibung:'Buchung über Helpefy',kategorie:f.tags[0],preis:f.price*h,provision:+(f.price*h*0.15).toFixed(2),datum:document.getElementById('bDate').value,status:'bezahlt'});
+  const gesamtPreis = f.price*h;
+  const provision = +(gesamtPreis*0.15).toFixed(2);
+  const freelancerErhaelt = +(gesamtPreis*0.85).toFixed(2);
+  await sb.from('auftraege').insert({kunde_id:currentUser.id,titel:f.role,beschreibung:'Buchung über Helpefy',kategorie:f.tags[0],preis:gesamtPreis,provision:provision,freelancer_erhaelt:freelancerErhaelt,datum:document.getElementById('bDate').value,status:'bezahlt'});
   const ref='HLF-2026-'+String(Math.floor(Math.random()*90000)+10000);
   closeModal('payment');
   document.getElementById('bookRef').textContent=ref;
