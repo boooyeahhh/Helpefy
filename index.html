@@ -1980,22 +1980,28 @@ async function renderDashOrders(){
 
   const isFreelancer = currentProfile?.role === 'freelancer';
 
-  let orders = [];
-  if(isFreelancer){
-    // Freelancer sees all orders addressed to them (via freelancer_id) + their own sent ones
-    const {data:flOrders}=await sb.from('auftraege')
-      .select('*, profiles!auftraege_kunde_id_fkey(full_name)')
-      .eq('freelancer_id',currentUser.id)
-      .order('created_at',{ascending:false});
-    orders = flOrders || [];
-  } else {
-    // Kunde sees their own orders
-    const {data:myOrders}=await sb.from('auftraege')
-      .select('*')
-      .eq('kunde_id',currentUser.id)
-      .order('created_at',{ascending:false});
-    orders = myOrders || [];
-  }
+  // Load ALL orders where user is involved (as kunde OR freelancer)
+  const {data:asKunde}=await sb.from('auftraege')
+    .select('*')
+    .eq('kunde_id',currentUser.id)
+    .order('created_at',{ascending:false});
+  const {data:asFreelancer}=await sb.from('auftraege')
+    .select('*')
+    .eq('freelancer_id',currentUser.id)
+    .order('created_at',{ascending:false});
+  
+  // Merge and deduplicate
+  const allOrders = [...(asKunde||[]), ...(asFreelancer||[])];
+  const seen = new Set();
+  const orders = allOrders.filter(o => {
+    if(seen.has(o.id)) return false;
+    seen.add(o.id); return true;
+  });
+  
+  // Tag each order with perspective
+  orders.forEach(o => {
+    o._asFreelancer = o.freelancer_id === currentUser.id && o.kunde_id !== currentUser.id;
+  });
 
   const badge=s=>{
     if(s==='abgeschlossen') return '<span class="badge badge-green">✅ Abgeschlossen</span>';
@@ -2013,7 +2019,7 @@ async function renderDashOrders(){
     return;
   }
 
-  const title = isFreelancer ? 'Eingehende Aufträge' : 'Meine Aufträge & Angebote';
+  const title = 'Alle Aufträge';
   ordersEl.innerHTML=`
     <div class="dash-title">${title}</div>
     <div class="dcard" style="max-width:100%;margin-top:1rem">
@@ -2022,24 +2028,24 @@ async function renderDashOrders(){
           <div class="oi-icon" style="font-size:1.5rem">${o.status==='bezahlt'||o.status==='abgeschlossen'?'✅':o.status==='abgelehnt'?'❌':'📋'}</div>
           <div class="oi-info" style="flex:1;min-width:200px">
             <div class="oi-title" style="font-size:0.9rem">${o.titel||'Auftrag'}</div>
-            ${isFreelancer&&o.profiles?`<div class="oi-meta" style="color:var(--red);font-weight:500">👤 Von: ${o.profiles.full_name||'Kunde'}</div>`:''}
+            ${o._asFreelancer&&o.profiles?`<div class="oi-meta" style="color:var(--red);font-weight:500">👤 Von: ${o.profiles.full_name||'Kunde'}</div>`:''}
             <div class="oi-meta">${o.datum?new Date(o.datum).toLocaleDateString('de-DE'):''} ${o.preis?'· <strong>'+o.preis.toFixed(2)+' €</strong>':''}</div>
             ${o.beschreibung&&o.beschreibung!=='Buchung über Helpefy'?`<div class="oi-meta" style="font-style:italic;margin-top:0.25rem;color:var(--muted)">"${o.beschreibung.slice(0,80)}${o.beschreibung.length>80?'...':''}"</div>`:''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
             ${badge(o.status)}
-            ${(o.status==='anfrage'||o.status==='offen'||o.status==='angebot_gesendet')&&isFreelancer?`
+            ${(o.status==='anfrage'||o.status==='offen'||o.status==='angebot_gesendet')&&o._asFreelancer?`
               <div style="display:flex;gap:0.35rem;margin-top:0.25rem;flex-wrap:wrap">
                 <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
                 <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
                 <button onclick="openChatWithOrder('${o.id}','${isFreelancer?o.kunde_id:o.freelancer_id}')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">💬 Chat</button>
               </div>`:''}
-            ${(o.status==='anfrage'||o.status==='offen')&&!isFreelancer?`
+            ${(o.status==='anfrage'||o.status==='offen')&&!o._asFreelancer?`
               <div style="font-size:0.72rem;color:var(--muted);margin-top:0.25rem">⏳ Warte auf Antwort...</div>
               <button onclick="showView('chat')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;margin-top:0.25rem">💬 Chat</button>`:''}
-            ${o.status==='angenommen'&&isFreelancer?`
+            ${o.status==='angenommen'&&o._asFreelancer?`
               <div style="font-size:0.72rem;color:var(--green);text-align:right;margin-top:0.25rem">✓ Angenommen – warte auf Zahlung</div>`:''}
-            ${o.status==='angenommen'&&!isFreelancer?`
+            ${o.status==='angenommen'&&!o._asFreelancer?`
               <div style="display:flex;flex-direction:column;gap:0.35rem;margin-top:0.25rem">
                 <button onclick="payAuftrag('${o.id}','${(o.titel||'').replace(/'/g,'')}',${o.preis||0})"
                   style="padding:0.4rem 1rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600">
@@ -2047,19 +2053,19 @@ async function renderDashOrders(){
                 </button>
                 <button onclick="openChatWithOrder('${o.id}','${isFreelancer?o.kunde_id:o.freelancer_id}')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif">💬 Chat</button>
               </div>`:''}
-            ${o.status==='bezahlt'&&!isFreelancer?`
+            ${o.status==='bezahlt'&&!o._asFreelancer?`
               <div style="font-size:0.72rem;color:var(--muted);text-align:right;margin-bottom:0.25rem">Warte auf Abschluss...</div>
               <button onclick="openCodeEntry('${o.id}')"
                 style="padding:0.35rem 0.85rem;background:#f0fdf4;color:#15803d;border:1.5px solid #15803d;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
                 🔑 Code eingeben
               </button>`:''}
-            ${o.status==='bezahlt'&&isFreelancer?`
+            ${o.status==='bezahlt'&&o._asFreelancer?`
               <div style="font-size:0.72rem;color:var(--green);font-weight:500;margin-bottom:0.25rem">💰 Zahlung erhalten!</div>
               <button onclick="openCodeEntry('${o.id}')"
                 style="padding:0.35rem 0.85rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;margin-top:0.25rem">
                 🔑 Code vom Kunden eingeben
               </button>`:''}
-            ${o.status==='abgeschlossen'&&!isFreelancer?`
+            ${o.status==='abgeschlossen'&&!o._asFreelancer?`
               <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-end">
                 <div style="font-size:0.72rem;color:var(--green);font-weight:500">✅ Abgeschlossen</div>
                 <button onclick="window._reviewAuftragId='${o.id}';setStar(0);openModal('bewertung')"
@@ -2067,7 +2073,7 @@ async function renderDashOrders(){
                   ⭐ Bewertung abgeben
                 </button>
               </div>`:''}
-            ${o.status==='abgeschlossen'&&isFreelancer?`<div style="font-size:0.72rem;color:var(--green);text-align:right;font-weight:500">✅ Abgeschlossen</div>`:''}
+            ${o.status==='abgeschlossen'&&o._asFreelancer?`<div style="font-size:0.72rem;color:var(--green);text-align:right;font-weight:500">✅ Abgeschlossen</div>`:''}
           </div>
         </div>`).join('')}
     </div>`;
