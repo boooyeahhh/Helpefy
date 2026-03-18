@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Helpefy – Finde den perfekten Experten</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
@@ -567,7 +567,7 @@ nav{padding:0.75rem 1rem;}
       89077 Ulm<br>
       Deutschland</p>
       <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">Kontakt</h2>
-      <p>E-Mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="88ebe0fae1fbfce7f8e0edfad7fafdfbfbede4e4c8ffedeaa6eced">[email&#160;protected]</a><br>
+      <p>E-Mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="53303b213a20273c233b36210c21262020363f3f132436317d3736">[email&#160;protected]</a><br>
       Website: helpefy.de</p>
       <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">Steuerliche Angaben</h2>
       <p>Steuernummer: wird nachgetragen</p>
@@ -586,7 +586,7 @@ nav{padding:0.75rem 1rem;}
     <h1 style="font-size:2rem;font-weight:700;margin-bottom:2rem">Datenschutzerklärung</h1>
     <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:2rem;line-height:1.8;color:var(--text)">
       <h2 style="font-size:1.1rem;font-weight:600;margin-bottom:1rem">1. Verantwortlicher</h2>
-      <p>Christopher Simon Russell, Wagnerstraße 63, 89077 Ulm<br>E-Mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="86e5eef4eff5f2e9f6eee3f4d9f4f3f5f5e3eaeac6f1e3e4a8e2e3">[email&#160;protected]</a></p>
+      <p>Christopher Simon Russell, Wagnerstraße 63, 89077 Ulm<br>E-Mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="76151e041f050219061e13042904030505131a1a36011314581213">[email&#160;protected]</a></p>
 
       <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">2. Erhebung und Verarbeitung personenbezogener Daten</h2>
       <p>Wir erheben und verarbeiten folgende personenbezogene Daten:<br>
@@ -607,7 +607,7 @@ nav{padding:0.75rem 1rem;}
       • Berichtigung unrichtiger Daten<br>
       • Löschung Ihrer Daten<br>
       • Widerspruch gegen die Verarbeitung<br><br>
-      Kontakt: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4e2d263c273d3a213e262b3c113c3b3d3d2b22220e392b2c602a2b">[email&#160;protected]</a></p>
+      Kontakt: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1f7c776d766c6b706f777a6d406d6a6c6c7a73735f687a7d317b7a">[email&#160;protected]</a></p>
 
       <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">6. Cookies</h2>
       <p>Helpefy verwendet technisch notwendige Cookies für die Anmeldung und Sitzungsverwaltung. Es werden keine Tracking- oder Werbe-Cookies eingesetzt.</p>
@@ -1103,24 +1103,1311 @@ nav{padding:0.75rem 1rem;}
     <button class="modal-close" onclick="closeModal('payment')">✕</button>
     <div class="modal-title">💳 Zahlung bestätigen</div>
     <div class="modal-sub" id="paymentSummary">Buchungsdetails...</div>
-    <div style="background:var(--light);border-radius:10px;padding:1rem;margin-bottom:1.25rem">
-      <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--muted);padding:0.2rem 0"><span id="pay-label">–</span><span id="pay-sub">–</span></div>
+    <div style="background:var(--light);border-radius:10px;padding:1rem;margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:0.2rem 0;color:var(--muted)"><span id="pay-label">–</span><span id="pay-sub">–</span></div>
       <span id="pay-fee" style="display:none">0</span>
-      <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:700;padding:0.6rem 0 0;border-top:1px solid var(--border);margin-top:0.4rem"><span>Gesamt</span><span id="pay-total" style="color:var(--red)">–</span></div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.35rem">✓ Geld wird erst nach Auftragsabschluss freigegeben</div>
+      <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:600;padding:0.5rem 0 0;border-top:1px solid var(--border);margin-top:0.25rem"><span>Gesamt</span><span id="pay-total" style="color:var(--red)">–</span></div>
     </div>
-    <div class="fg">
-      <label>Karteninhaber</label>
-      <input type="text" id="cardName" placeholder="Max Mustermann" autocomplete="cc-name">
-    </div>
-    <div class="fg">
-      <label>Kartendaten (Stripe gesichert)</label>
-      <div id="stripe-card-element" style="padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:9px;background:white;min-height:44px"></div>
-    </div>
+
+    <div class="fg"><label>Karteninhaber</label><input type="text" id="cardName" placeholder="Max Mustermann"></div>
+
     <div id="pay-error" class="error-msg"></div>
-    <button class="form-submit" id="payBtn" onclick="confirmPayment()">🔒 Jetzt bezahlen →</button>
-    <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.75rem">🔒 SSL verschlüsselt · Powered by <strong>Stripe</strong></p>
+    <button class="form-submit" id="payBtn" onclick="confirmPayment()">Jetzt bezahlen →</button>
+    <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.5rem">🔒 Sichere Zahlung · SSL verschlüsselt</p>
   </div>
 </div>
+
+
+
+<!-- NAV -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+
+
+// ── CONFIG ──
+const SUPABASE_URL = 'https://hkrkqqzpmpoyoocrbxra.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_sHnuja7A8iJBwvkA5zRDbg_9zkfHJ_i';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Stripe
+const STRIPE_KEY = 'pk_test_51T1tYFRK3iEHR2pEqOaXmM5mNDhU43xQ5xeczVp1yPN44KR841VYLuSxHXo31LAc9XyUHGgS4bInnyXEybt8APRq00NGr6EIQn';
+let stripe, stripeElements, stripeCard;
+function initStripe(){
+  if(window.Stripe && !stripe){
+    stripe = Stripe(STRIPE_KEY);
+  }
+}
+
+let currentUser = null, currentProfile = null;
+let curMode = 'freelancer', curFL = 0;
+let userLat = null, userLon = null, userCity = '';
+let activeChatUserId = null, chatSubscription = null;
+let locTimer = null;
+
+const FL = [
+  {name:"Maria K.",emoji:"👩",role:"Profi-Reinigungskraft",tags:["Wohnungsreinigung","Büroreinigung","Fensterputzen"],price:27,rating:4.9,reviews:48,loc:"2,1 km entfernt",avail:true,bio:"Ich reinige seit 8 Jahren professionell Wohnungen und Büros. Sehr gründlich, pünktlich und zuverlässig.",services:["Wohnungsreinigung","Büroreinigung","Fensterputzen","Einzugsreinigung","Frühjahrsputz"],revs:[{n:"Anna M.",r:5,d:"12.03.2026",t:"Maria hat unsere Wohnung top gereinigt!"},{n:"Peter K.",r:5,d:"28.02.2026",t:"Sehr zuverlässig und gründlich."}]},
+  {name:"Thomas B.",emoji:"👨",role:"Handwerker & Sanitär",tags:["Wasserhahn","Elektrik","Möbelmontage"],price:45,rating:4.8,reviews:62,loc:"3,4 km entfernt",avail:true,bio:"Gelernter Handwerker mit 15 Jahren Erfahrung. Schnell, zuverlässig und fair.",services:["Wasserhahn reparieren","Möbelmontage","Elektroarbeiten","Fliesen"],revs:[{n:"Klaus R.",r:5,d:"15.03.2026",t:"Thomas hat unseren Wasserhahn blitzschnell repariert!"}]},
+  {name:"Peter M.",emoji:"👨‍🦱",role:"Umzugsprofi",tags:["Umzug","Transport","Möbel"],price:30,rating:4.7,reviews:35,loc:"5,2 km entfernt",avail:false,bio:"Ich helfe beim Umzug mit eigenem Transporter. Über 100 erfolgreiche Umzüge.",services:["Umzugshilfe","Transport","Möbel aufbauen"],revs:[{n:"Julia B.",r:5,d:"20.03.2026",t:"Peter war super!"}]},
+  {name:"Klaus G.",emoji:"👴",role:"Profi-Gärtner",tags:["Rasen","Hecken","Bepflanzung"],price:25,rating:4.6,reviews:28,loc:"1,8 km entfernt",avail:true,bio:"Gärtner mit 20 Jahren Erfahrung. Dein Garten in besten Händen!",services:["Rasenmähen","Hecken schneiden","Bepflanzung"],revs:[{n:"Renate M.",r:5,d:"18.03.2026",t:"Unser Garten sieht traumhaft aus!"}]},
+  {name:"Sara L.",emoji:"👩‍💻",role:"IT-Expertin",tags:["PC-Hilfe","WLAN","Software"],price:40,rating:5.0,reviews:41,loc:"Online möglich",avail:true,bio:"IT-Spezialistin. Helfe bei PC, WLAN, Software. Auch Remote!",services:["PC einrichten","WLAN","Viren entfernen","Software"],revs:[{n:"Heinrich B.",r:5,d:"22.03.2026",t:"Sara hat in 30 Min mein Problem gelöst!"}]},
+  {name:"Anna H.",emoji:"👩‍🏫",role:"Nachhilfelehrerin",tags:["Mathe","Englisch","Abitur"],price:35,rating:4.9,reviews:55,loc:"Online / vor Ort",avail:true,bio:"Studentin Mathe Master. Nachhilfe für alle Stufen bis Abitur.",services:["Mathe","Physik","Englisch","Abitur Vorbereitung"],revs:[{n:"Familie Braun",r:5,d:"19.03.2026",t:"Note von 4 auf 2 gebracht!"}]}
+];
+const JOBS = [
+  {cat:"Reinigung",title:"Wohnungsreinigung 3-Zimmer",desc:"Gründliche Reinigung meiner 80m² Wohnung. Alle Mittel vorhanden.",loc:"Berlin Mitte",date:"Heute",budget:"60–90 €",urgent:true,offers:3},
+  {cat:"Handwerk",title:"Wasserhahn reparieren",desc:"Wasserhahn tropft seit 2 Wochen. Brauche schnelle Hilfe.",loc:"Berlin Prenzlauer Berg",date:"Diese Woche",budget:"50–80 €",urgent:false,offers:5},
+  {cat:"IT & Digital",title:"WLAN einrichten & Laptop optimieren",desc:"Neuer Router und alter Laptop brauchen Setup.",loc:"Online oder Berlin",date:"Flexibel",budget:"40–60 €",urgent:false,offers:7},
+  {cat:"Umzug",title:"Umzugshilfe 2-Zimmer Wohnung",desc:"2 starke Helfer für Umzug in Berlin gesucht.",loc:"Berlin Mitte",date:"22. März",budget:"150–200 €",urgent:true,offers:2},
+  {cat:"Garten",title:"Rasen mähen und Hecke schneiden",desc:"Garten ca. 80m². Rasen + Hecke + Entsorgung.",loc:"Berlin Zehlendorf",date:"Wochenende",budget:"50–70 €",urgent:false,offers:4},
+  {cat:"Lernen",title:"Mathe Nachhilfe Abitur",desc:"2x pro Woche, 2 Stunden. Online bevorzugt.",loc:"Online",date:"Ab sofort",budget:"35–45 €/Std",urgent:false,offers:8}
+];
+
+// ── SYNONYMS ──
+const SYNONYMS = {
+  'elektro':['Elektrik','Elektronik','Elektriker'],'elektriker':['Elektrik','Elektronik'],
+  'strom':['Elektrik'],'steckdose':['Elektrik'],'kabel':['Elektrik'],
+  'it':['IT-Expertin','IT & Digital','PC','WLAN','Software'],
+  'computer':['IT & Digital','PC'],'pc':['IT & Digital','PC-Hilfe'],
+  'laptop':['IT & Digital','PC-Hilfe'],'internet':['IT & Digital','WLAN'],
+  'wlan':['IT & Digital','WLAN'],'wifi':['WLAN'],'drucker':['IT & Digital'],
+  'putzen':['Profi-Reinigungskraft','Wohnungsreinigung','Reinigung'],
+  'sauber':['Reinigung'],'reinigung':['Profi-Reinigungskraft','Wohnungsreinigung'],
+  'fenster':['Fensterputzen'],'putzkraft':['Profi-Reinigungskraft'],
+  'haushalt':['Profi-Reinigungskraft','Haushalt'],
+  'handwerk':['Handwerker','Sanitär','Reparatur'],
+  'reparatur':['Handwerker & Sanitär'],'wasserhahn':['Handwerker & Sanitär','Sanitär'],
+  'klempner':['Handwerker & Sanitär','Sanitär'],'montage':['Möbelmontage'],
+  'ikea':['Möbelmontage'],'möbel':['Möbelmontage'],'bohren':['Handwerker'],
+  'maler':['Handwerk'],'streichen':['Handwerk'],'fliesen':['Handwerk'],
+  'umzug':['Umzugsprofi','Transport'],'transport':['Umzugsprofi'],
+  'tragen':['Umzugsprofi'],'transporter':['Umzugsprofi'],
+  'garten':['Profi-Gärtner','Rasen','Hecken'],'rasen':['Profi-Gärtner'],
+  'mähen':['Profi-Gärtner'],'hecke':['Profi-Gärtner'],
+  'pflanzen':['Profi-Gärtner'],'blumen':['Profi-Gärtner'],
+  'nachhilfe':['Nachhilfelehrerin','Mathe','Englisch'],
+  'mathe':['Nachhilfelehrerin'],'englisch':['Nachhilfelehrerin'],
+  'schule':['Nachhilfelehrerin'],'abitur':['Nachhilfelehrerin'],
+  'hausaufgaben':['Nachhilfelehrerin'],'lehrer':['Nachhilfelehrerin'],
+  'hund':['Tiere','Hundesitter'],'katze':['Tiere'],'gassi':['Tiere'],
+  'friseur':['Beauty'],'haare':['Beauty'],'massage':['Beauty'],
+  'party':['Events'],'hochzeit':['Events'],'foto':['Events','Kreativ'],
+  'design':['Kreativ'],'logo':['Kreativ'],'website':['IT & Digital','Kreativ'],
+};
+
+function expandQuery(q){
+  const ql = q.toLowerCase().trim();
+  let terms = new Set([ql]);
+  // Exact match in synonyms
+  if(SYNONYMS[ql]) SYNONYMS[ql].forEach(s=>terms.add(s.toLowerCase()));
+  // For short queries (<=3 chars): only startsWith, not includes
+  // For longer queries: also check if key includes the query
+  Object.keys(SYNONYMS).forEach(k=>{
+    const match = ql.length <= 3 ? k.startsWith(ql) : k.includes(ql);
+    if(match && k !== ql){
+      terms.add(k);
+      SYNONYMS[k].forEach(s=>terms.add(s.toLowerCase()));
+    }
+  });
+  return [...terms];
+}
+
+function getSuggestions(q){
+  if(!q||q.length<2) return [];
+  const ql = q.toLowerCase();
+  let out = new Set();
+  Object.keys(SYNONYMS).forEach(k=>{
+    if(k.startsWith(ql)&&k!==ql) out.add(k.charAt(0).toUpperCase()+k.slice(1));
+  });
+  FL.forEach(f=>{
+    if(f.role.toLowerCase().includes(ql)) out.add(f.role);
+    f.tags.forEach(t=>{if(t.toLowerCase().includes(ql))out.add(t);});
+  });
+  return [...out].slice(0,6);
+}
+
+function showSearchSuggestions(input, id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const s = getSuggestions(input.value);
+  if(!s.length){el.style.display='none';return;}
+  el.innerHTML = s.map(x=>`<div class="sugg-item" onclick="selectSuggestion('${x}','${input.id}','${id}')">🔍 <strong>${x}</strong></div>`).join('');
+  el.style.display='block';
+}
+
+function selectSuggestion(val,inputId,suggId){
+  document.getElementById(inputId).value=val;
+  document.getElementById(suggId).style.display='none';
+  doSearch();
+}
+
+function toggleMenu(){
+  const m=document.getElementById('mobileMenu');
+  const isOpen = m.style.display==='none';
+  m.style.display=isOpen?'block':'none';
+  // Show/hide auth buttons based on login state
+  if(isOpen){
+    const authBtns=document.getElementById('mobileAuthBtns');
+    const logoutBtn=document.getElementById('mobileLogoutBtn');
+    if(authBtns) authBtns.style.display=currentUser?'none':'flex';
+    if(logoutBtn) logoutBtn.style.display=currentUser?'block':'none';
+  }
+}
+// Close menu on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('nav')&&!e.target.closest('#mobileMenu')){
+    const m=document.getElementById('mobileMenu');
+    if(m) m.style.display='none';
+  }
+});
+
+function hideAllSugg(){
+  document.querySelectorAll('.search-sugg,.loc-sugg').forEach(s=>s.style.display='none');
+}
+
+// ── AUTH ──
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPassword').value;
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('login-error');
+  if(!email||!pass){showError(err,'Bitte E-Mail und Passwort eingeben.');return;}
+  btn.disabled=true; btn.textContent='Anmelden...';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){
+    showError(err,error.message.includes('Invalid')?'Falsche E-Mail oder Passwort.':error.message);
+    btn.disabled=false; btn.textContent='Anmelden'; return;
+  }
+  currentUser=data.user;
+  closeModal('auth');
+  await loadProfile(); updateNav();
+  showView('dashboard');
+  showToast('Willkommen zurück! 👋','success');
+}
+
+async function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const pass=document.getElementById('regPassword').value;
+  const loc=document.getElementById('regLocation').value.trim();
+  const isFL=document.getElementById('reg-fl-extra').style.display!=='none';
+  const btn=document.getElementById('regBtn');
+  const err=document.getElementById('reg-error');
+  const suc=document.getElementById('reg-success');
+  if(!name||!email||!pass){showError(err,'Bitte alle Felder ausfüllen.');return;}
+  if(pass.length<6){showError(err,'Passwort mind. 6 Zeichen.');return;}
+  btn.disabled=true; btn.textContent='Konto erstellen...';
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role:isFL?'freelancer':'kunde',location:loc}}});
+  if(error){showError(err,error.message);btn.disabled=false;btn.textContent='Konto erstellen';return;}
+  if(data.user){
+    await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,role:isFL?'freelancer':'kunde',created_at:new Date().toISOString()});
+    if(isFL){
+      const kat=document.getElementById('regKategorie').value;
+      const preis=parseFloat(document.getElementById('regPreis').value)||25;
+      // Get avatar if uploaded (stored as base64 in profiles)
+      const avatarEl=document.getElementById('regAvatarPreview')?.querySelector('img');
+      const avatar=avatarEl?.src||null;
+      await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,avatar_url:avatar,created_at:new Date().toISOString()});
+      if(avatar) await sb.from('profiles').update({avatar_url:avatar}).eq('id',data.user.id);
+    }
+  }
+  err.style.display='none'; suc.style.display='block';
+  suc.textContent='✅ Konto erstellt! Du kannst dich jetzt anmelden.';
+  btn.disabled=false; btn.textContent='Konto erstellen';
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null; currentProfile=null;
+  updateNav(); showView('home');
+  showToast('Abgemeldet.','success');
+}
+
+async function loadProfile(){
+  if(!currentUser) return;
+  const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  currentProfile=data;
+  if(data){
+    const name=data.full_name||currentUser.email;
+    document.getElementById('dashName').textContent=name;
+    document.getElementById('dashRole').textContent=data.role==='freelancer'?'Freelancer':'Kunde';
+    document.getElementById('dashGreet').textContent=`Willkommen, ${name.split(' ')[0]}! 👋`;
+    document.getElementById('dashEmail').textContent=data.email||currentUser.email;
+    document.getElementById('dashFullName').textContent=name;
+    document.getElementById('dashAvatar').textContent=name.charAt(0).toUpperCase();
+    document.getElementById('settingsName').value=name;
+    document.getElementById('settingsEmail').value=data.email||currentUser.email;
+    // Show avatar in settings
+    const avatarPrev=document.getElementById('settingsAvatarPreview');
+    if(avatarPrev && data.avatar_url){
+      avatarPrev.innerHTML=`<img src="${data.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+    } else if(avatarPrev){
+      avatarPrev.innerHTML=`<span style="font-size:2rem">${name.charAt(0).toUpperCase()}</span>`;
+    }
+    // Show freelancer extra fields if freelancer
+    const flExtra=document.getElementById('settings-fl-extra');
+    if(flExtra) flExtra.style.display=data.role==='freelancer'?'block':'none';
+  }
+  // Load all orders (as kunde AND as freelancer receiving offers)
+  const {data:orders}=await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
+  if(orders&&orders.length){
+    const total=orders.filter(o=>o.status==='bezahlt').reduce((s,o)=>s+(o.preis||0),0);
+    const dscNs=document.querySelectorAll('.dsc-n');
+    if(dscNs[0]) dscNs[0].textContent=orders.length;
+    if(dscNs[1]) dscNs[1].textContent=total.toFixed(0)+'€';
+  }
+  await renderDashOrders();
+}
+
+function previewSettingsAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){showToast('Bild zu groß! Max. 2MB','error');return;}
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('settingsAvatarPreview');
+    if(prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+    window._newAvatar = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveSettings(){
+  if(!currentUser) return;
+  const btn = document.querySelector('#dash-settings .btn-red');
+  btn.textContent='Speichern...'; btn.disabled=true;
+  const name=document.getElementById('settingsName').value;
+  const standort=document.getElementById('settingsStandort')?.value||'';
+  const avatar=window._newAvatar||null;
+
+  // Update profile
+  const profileUpdate = {full_name:name};
+  if(avatar) profileUpdate.avatar_url = avatar;
+  await sb.from('profiles').update(profileUpdate).eq('id',currentUser.id);
+
+  // Update freelancer data if freelancer
+  if(currentProfile?.role==='freelancer'){
+    const kat=document.getElementById('settingsKategorie')?.value;
+    const preis=parseFloat(document.getElementById('settingsPreis')?.value)||0;
+    const bio=document.getElementById('settingsBio')?.value||'';
+    const flUpdate={standort};
+    if(kat) flUpdate.kategorie=kat;
+    if(preis) flUpdate.stundenlohn=preis;
+    if(bio) flUpdate.beschreibung=bio;
+    if(avatar) flUpdate.avatar_url=avatar;
+    await sb.from('freelancers').update(flUpdate).eq('user_id',currentUser.id);
+  }
+
+  window._newAvatar = null;
+  btn.textContent='Speichern'; btn.disabled=false;
+  showToast('Einstellungen gespeichert! ✅','success');
+  await loadProfile();
+}
+
+function updateNav(){
+  const nr=document.getElementById('navRight');
+  const nrm=document.getElementById('navRightMobile');
+  if(currentUser){
+    const n=(currentProfile?.full_name||currentUser.email);
+    const init=n.charAt(0).toUpperCase();
+    const avatar=currentProfile?.avatar_url;
+    const avatarHtml=avatar
+      ?`<div class="user-badge" onclick="showView('dashboard')" style="overflow:hidden"><img src="${avatar}" style="width:100%;height:100%;object-fit:cover"></div>`
+      :`<div class="user-badge" onclick="showView('dashboard')">${init}</div>`;
+    nr.innerHTML=`<div class="user-nav"><span style="font-size:0.82rem;color:var(--muted)">${n}</span>${avatarHtml}</div>`;
+    if(nrm) nrm.innerHTML=avatarHtml;
+  } else {
+    nr.innerHTML=`<button class="btn-ghost" onclick="openModal('auth')">Anmelden</button><button class="btn-red" onclick="openModal('auth')">Registrieren</button>`;
+    if(nrm) nrm.innerHTML='';
+  }
+}
+
+// ── VIEWS ──
+function showView(n, push=true){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const el=document.getElementById('view-'+n);
+  if(!el) return;
+  el.classList.add('active');
+  window.scrollTo(0,0);
+  if(n==='home') renderHome();
+  if(n==='dashboard'){if(!currentUser){openModal('auth');return;}loadProfile();}
+  if(n==='chat'){if(!currentUser){openModal('auth');return;}loadChatUsers();}
+  if(push){
+    const titles={home:'Helpefy',search:'Helpefy – Suche',profile:'Helpefy – Profil',dashboard:'Helpefy – Dashboard',chat:'Helpefy – Nachrichten',success:'Helpefy – Buchung'};
+    history.pushState({view:n},'','/'+(n==='home'?'':n));
+    document.title=titles[n]||'Helpefy';
+  }
+}
+
+window.addEventListener('popstate',e=>{
+  if(e.state&&e.state.view) showView(e.state.view,false);
+  else showView('home',false);
+});
+
+function switchMode(mode,el){
+  curMode=mode;
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  else document.getElementById('tab-'+mode)?.classList.add('active');
+  document.getElementById('hero-freelancer').style.display=mode==='freelancer'?'block':'none';
+  document.getElementById('hero-jobs').style.display=mode==='jobs'?'block':'none';
+  document.getElementById('section-freelancer').style.display=mode==='freelancer'?'block':'none';
+  document.getElementById('section-jobs').style.display=mode==='jobs'?'block':'none';
+  if(mode==='jobs'){loadRealJobs();const h=document.getElementById('job-login-hint');if(h)h.style.display=currentUser?'none':'block';}
+}
+
+// ── RENDER ──
+async function renderHome(){
+  const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').eq('verfuegbar',true).limit(20);
+  let all=[...FL];
+  if(realFL&&realFL.length){
+    const CAT_TAGS={
+      'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
+      'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe','Putzkraft'],
+      'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],
+      'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen','Gartenarbeit','Rasenmähen'],
+      'Umzug':['Umzug','Transport','Umzugshelfer','Möbel','Einzug','Auszug'],
+      'Lernen':['Nachhilfe','Lernen','Mathe','Englisch','Tutor','Unterricht','Abitur'],
+      'Kreativ':['Design','Kreativ','Grafik','Logo','Website','Foto','Video'],
+      'Beauty':['Beauty','Friseur','Haare','Massage','Wellness','Kosmetik'],
+      'Tiere':['Tiere','Hund','Katze','Gassi','Haustier','Tiersitter'],
+      'Transport':['Transport','Lieferung','Fahrdienst','Van'],
+      'Events':['Events','Party','Hochzeit','Dekoration','Catering'],
+    };
+    const rc=realFL.map(f=>{
+      const kat=f.kategorie||'Sonstiges';
+      const extraTags=CAT_TAGS[kat]||[kat];
+      return {name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.id};
+    });
+    all=[...rc,...FL];
+  }
+  window.ALL_FL=all;
+  document.getElementById('homeGrid').innerHTML=all.map((f,i)=>flCard(f,i)).join('');
+}
+
+// ── SMART SEMANTIC SEARCH ──
+// Umfangreiches Semantik-Wörterbuch für natürliche Sprache
+const SEMANTIC_MAP = {
+  // Garten
+  'garten':['gärtner','garten','rasen','hecke','pflanzen','bepflanzung'],
+  'gartenarbeiter':['gärtner','garten','rasen'],
+  'gartenarbeit':['gärtner','garten','rasen','hecke'],
+  'rasen mähen':['gärtner','rasen','mähen'],
+  'jemand für meinen garten':['gärtner','garten'],
+  'jemand für mein garten':['gärtner','garten'],
+  // Reinigung
+  'putzen':['reinigung','reinigungskraft','wohnungsreinigung','haushalt'],
+  'sauber machen':['reinigung','reinigungskraft','wohnungsreinigung'],
+  'jemand zum putzen':['reinigung','reinigungskraft'],
+  'wohnung reinigen':['reinigung','wohnungsreinigung'],
+  'haushaltshilfe':['reinigung','reinigungskraft','haushalt'],
+  'putzfrau':['reinigung','reinigungskraft'],
+  'putzkraft':['reinigung','reinigungskraft'],
+  // IT
+  'computer hilfe':['it','pc','software','wlan'],
+  'pc hilfe':['it','pc-hilfe','software'],
+  'internet probleme':['it','wlan','pc-hilfe'],
+  'wlan einrichten':['it','wlan'],
+  'laptop kaputt':['it','pc-hilfe','software'],
+  'techniker':['it','pc-hilfe'],
+  // Handwerk
+  'handwerker':['handwerk','sanitär','elektrik','wasserhahn','möbelmontage'],
+  'reparatur':['handwerk','wasserhahn','elektrik'],
+  'wasserhahn tropft':['handwerk','sanitär','wasserhahn'],
+  'möbel aufbauen':['handwerk','möbelmontage'],
+  'ikea aufbau':['handwerk','möbelmontage'],
+  'elektriker':['handwerk','elektrik'],
+  // Umzug
+  'umzugshelfer':['umzug','transport','umzugsprofi'],
+  'umziehen':['umzug','transport','umzugsprofi'],
+  'möbel transportieren':['umzug','transport'],
+  'tragen':['umzug','transport'],
+  // Nachhilfe
+  'nachhilfelehrer':['nachhilfe','mathe','englisch','lernen'],
+  'mathe nachhilfe':['nachhilfe','mathe'],
+  'englisch lernen':['nachhilfe','englisch'],
+  'hausaufgaben hilfe':['nachhilfe','lernen'],
+  'schulhilfe':['nachhilfe','lernen'],
+};
+
+function smartSearch(query, freelancers){
+  const q = query.toLowerCase().trim();
+  
+  // 1. Exakter Semantik-Match aus SEMANTIC_MAP
+  let semanticTerms = [];
+  Object.keys(SEMANTIC_MAP).forEach(key => {
+    if(q.includes(key) || key.includes(q)){
+      semanticTerms = [...semanticTerms, ...SEMANTIC_MAP[key]];
+    }
+  });
+  
+  // 2. Synonym-Erweiterung aus SYNONYMS
+  const expanded = expandQuery(q);
+  
+  // 3. Alle Suchbegriffe kombinieren
+  const allTerms = [...new Set([...expanded, ...semanticTerms])];
+  
+  // 4. Einzelne Wörter der Query auch durchsuchen (für "jemand für mein garten")
+  const words = q.split(/\s+/).filter(w => w.length > 2);
+  words.forEach(w => {
+    expanded.forEach(t => allTerms.push(t));
+    // Jedes Wort einzeln in SYNONYMS nachschlagen
+    if(SYNONYMS[w]) SYNONYMS[w].forEach(s => allTerms.push(s.toLowerCase()));
+    Object.keys(SYNONYMS).forEach(k => {
+      if(k.startsWith(w)) {
+        SYNONYMS[k].forEach(s => allTerms.push(s.toLowerCase()));
+      }
+    });
+    // Jedes Wort einzeln in SEMANTIC_MAP
+    Object.keys(SEMANTIC_MAP).forEach(key => {
+      if(key.includes(w) || w.includes(key)){
+        SEMANTIC_MAP[key].forEach(s => allTerms.push(s));
+      }
+    });
+  });
+  
+  // 5. Freelancer filtern
+  return freelancers.filter(f => {
+    const fields = [
+      f.name, f.role,
+      ...(f.tags||[]),
+      ...(f.services||[]),
+      f.bio||'',
+      f.loc||''
+    ].map(s => s.toLowerCase()).join(' ');
+    
+    return allTerms.some(term => fields.includes(term.toLowerCase()));
+  });
+}
+
+async function aiSearch(query, freelancers){
+  // Nutze smarte client-seitige semantische Suche
+  return smartSearch(query, freelancers);
+}
+
+async function renderSearch(q){
+  const query=(q||'').trim();
+  
+  // Load real freelancers from Supabase
+  const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').limit(50);
+  let all=[...FL];
+  if(realFL&&realFL.length){
+    const CAT_TAGS={
+      'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
+      'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe','Putzkraft'],
+      'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],
+      'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen','Gartenarbeit','Rasenmähen'],
+      'Umzug':['Umzug','Transport','Umzugshelfer','Möbel','Einzug','Auszug'],
+      'Lernen':['Nachhilfe','Lernen','Mathe','Englisch','Tutor','Unterricht','Abitur'],
+      'Kreativ':['Design','Kreativ','Grafik','Logo','Website','Foto','Video'],
+      'Beauty':['Beauty','Friseur','Haare','Massage','Wellness','Kosmetik'],
+      'Tiere':['Tiere','Hund','Katze','Gassi','Haustier','Tiersitter'],
+      'Transport':['Transport','Lieferung','Fahrdienst','Van'],
+      'Events':['Events','Party','Hochzeit','Dekoration','Catering'],
+    };
+    const rc=realFL.map(f=>{
+      const kat=f.kategorie||'Sonstiges';
+      const extraTags=CAT_TAGS[kat]||[kat];
+      return {name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.id};
+    });
+    all=[...rc,...FL];
+  }
+  window.ALL_FL=all;
+
+  let results=all;
+
+  if(query && query.toLowerCase()!=='alle'){
+    const aiResults = await aiSearch(query, all);
+    results = aiResults && aiResults.length > 0 ? aiResults : [];
+    // If still empty, try broader single-word search
+    if(results.length === 0){
+      const words = query.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+      results = all.filter(f=>{
+        const fields=[f.name,f.role,...(f.tags||[]),...(f.services||[]),f.bio||''].join(' ').toLowerCase();
+        return words.some(w=>fields.includes(w));
+      });
+    }
+  }
+
+  // Radius filter if active
+  const radiusRow=document.getElementById('radiusRowSearch');
+  if(userLat&&userLon&&radiusRow&&radiusRow.style.display==='flex'){
+    const r=parseInt(document.getElementById('radiusSliderSearch')?.value||25);
+    results=results.filter(f=>!f.lat||!f.lon||getDistanceKm(userLat,userLon,f.lat,f.lon)<=r);
+  }
+
+  const locInfo=userCity?` · 📍 ${userCity}`:'';
+  document.getElementById('rQuery').textContent=(q||'Alle')+locInfo;
+  document.getElementById('rCount').textContent=results.length;
+
+  if(!results.length){
+    document.getElementById('searchGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem">🔍</div><div style="font-weight:600;margin:1rem 0">Keine Ergebnisse für "${q}"</div><div style="font-size:0.85rem;margin-bottom:1rem">Versuche einen anderen Begriff wie "Putzen", "Elektriker" oder "Mathe"</div><button class="btn-red" onclick="renderSearch('')">Alle anzeigen</button></div>`;
+  } else {
+    document.getElementById('searchGrid').innerHTML=results.map((f,i)=>flCard(f,all.indexOf(f))).join('');
+  }
+}
+
+function renderSaved(){
+  const g=document.getElementById('savedGrid');
+  if(g) g.innerHTML=FL.slice(0,3).map((f,i)=>flCard(f,i)).join('');
+}
+
+function flCard(f,i){
+  const imgContent = f.avatar
+    ? `<img src="${f.avatar}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=\'font-size:4rem\'>${f.emoji||'👤'}</span>'">`
+    : `<span style="font-size:4rem">${f.emoji||'👤'}</span>`;
+  return `<div class="fl-card" onclick="openProfileByData(${i})">
+    <div class="fl-img">${imgContent}${f.avail?'<div class="avail-badge"><div class="avail-dot"></div>Verfügbar</div>':''}</div>
+    <div class="fl-body">
+      <div class="fl-top"><div class="fl-name">${f.name}</div><div class="fl-price">${f.price} €<span>/Std</span></div></div>
+      <div class="fl-role">${f.role}</div>
+      <div class="fl-tags">${(f.tags||[]).map(t=>`<span class="fl-tag">${t}</span>`).join('')}</div>
+      <div class="fl-footer"><span style="font-size:0.78rem">★ ${f.rating} (${f.reviews})</span><span style="font-size:0.72rem;color:var(--muted)">📍 ${f.loc}</span><button class="book-btn" onclick="event.stopPropagation();openProfileByData(${i})">Buchen</button></div>
+    </div></div>`;
+}
+
+function openProfileByData(i){
+  const all=window.ALL_FL||FL;
+  const f=all[i];
+  if(!f) return;
+  curFL=i; window._curFL=f;
+  document.getElementById('pEmoji').textContent=f.emoji||'👤';
+  document.getElementById('pName').textContent=f.name;
+  document.getElementById('pRole').textContent=f.role;
+  document.getElementById('pRating').textContent=f.rating;
+  document.getElementById('pRevCount').textContent=f.reviews;
+  document.getElementById('pLoc').textContent=f.loc;
+  document.getElementById('pRatBig').textContent=f.rating;
+  document.getElementById('pJobs').textContent=f.reviews;
+  document.getElementById('pBio').textContent=f.bio;
+  document.getElementById('bPrice').textContent=f.price;
+  document.getElementById('bAvail').textContent=f.avail?'✅ Verfügbar heute':'⏳ Nächste Woche';
+  document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pServices').innerHTML=(f.services||[f.role]).map(s=>`<span class="sp">${s}</span>`).join('');
+  document.getElementById('pRevTitle').textContent=`Bewertungen (${f.reviews})`;
+  document.getElementById('pReviews').innerHTML=(f.revs||[]).length?f.revs.map(r=>`<div class="review-item"><div class="ri-header"><span class="ri-name">${r.n}</span><span class="ri-stars">${'★'.repeat(r.r)}</span></div><div class="ri-text">${r.t}</div></div>`).join(''):'<div style="color:var(--muted);font-size:0.85rem">Noch keine Bewertungen.</div>';
+  calcPrice(); showView('profile');
+}
+
+// ── SEARCH ──
+function doSearch(){
+  // If already on search page, use searchInput value; otherwise use heroSearch
+  const searchInput = document.getElementById('searchInput');
+  const heroSearch = document.getElementById('heroSearch');
+  const onSearchPage = document.getElementById('view-search').classList.contains('active');
+  const v = onSearchPage
+    ? (searchInput?.value || heroSearch?.value || '')
+    : (heroSearch?.value || searchInput?.value || '');
+  hideAllSugg();
+  showView('search');
+  setTimeout(()=>{
+    if(searchInput) searchInput.value=v;
+    renderSearch(v||'');
+  },50);
+}
+function setSearch(q){const h=document.getElementById('heroSearch');if(h)h.value=q;doSearch();}
+function catClick(cat,el){document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('active'));el.classList.add('active');setSearch(cat);}
+function togglePill(el){
+  el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const txt=el.textContent.trim();
+  const all=window.ALL_FL||FL;
+  let r=[...all];
+  if(txt.includes('verfügbar')||txt.includes('Verfügbar')) r=r.filter(f=>f.avail);
+  else if(txt.includes('bewertet')||txt.includes('Bewertung')) r=[...all].sort((a,b)=>b.rating-a.rating);
+  else if(txt.includes('Günstig')) r=[...all].sort((a,b)=>a.price-b.price);
+  // "Alle" resets to current search
+  const grid=document.getElementById('searchGrid')||document.getElementById('homeGrid');
+  if(grid) grid.innerHTML=r.map((f,i)=>flCard(f,all.indexOf(f))).join('');
+}
+function toggleRadius(){
+  const r=document.getElementById('radiusRow');
+  if(r) r.style.display=r.style.display==='none'?'flex':'none';
+}
+function toggleRadiusSearch(){
+  const r=document.getElementById('radiusRowSearch');
+  if(r) r.style.display=r.style.display==='none'?'flex':'none';
+}
+
+// ── BOOKING ──
+function calcPrice(){
+  const f=window._curFL||FL[curFL];
+  if(!f) return;
+  const h=parseInt(document.getElementById('bHours').value)||1;
+  const total=f.price*h; // Kunde zahlt nur den Freelancer-Preis
+  const fee=+(total*0.15).toFixed(2); // 15% intern - Freelancer zahlt das
+  document.getElementById('pbLabel').textContent=`${f.price} € × ${h} Std`;
+  document.getElementById('pbSub').textContent=`${total.toFixed(2)} €`;
+  if(document.getElementById('pbFee')) document.getElementById('pbFee').textContent=`${fee.toFixed(2)}`;
+  document.getElementById('pbTotal').textContent=`${total.toFixed(2)} €`;
+}
+
+function openModal(n){
+  const el = document.getElementById('modal-'+n);
+  if(!el) return;
+  el.classList.add('open');
+  if(n==='payment'){
+    initStripe();
+    setTimeout(()=>{
+      if(stripe && !stripeCard){
+        stripeElements = stripe.elements({locale:'de'});
+        stripeCard = stripeElements.create('card',{
+          style:{
+            base:{fontSize:'16px',fontFamily:'Inter,sans-serif',color:'#1a1a1a','::placeholder':{color:'#aaa'}},
+            invalid:{color:'#991b1b'}
+          },
+          hidePostalCode:true
+        });
+        stripeCard.mount('#stripe-card-element');
+        stripeCard.on('change',e=>{
+          const err=document.getElementById('pay-error');
+          if(e.error){err.style.display='block';err.textContent=e.error.message;}
+          else err.style.display='none';
+        });
+      }
+    },150);
+  }
+}
+
+function closeModal(n){
+  document.getElementById('modal-'+n)?.classList.remove('open');
+}
+
+async function doBook(){
+  if(!currentUser){showToast('Bitte zuerst anmelden!','error');openModal('auth');return;}
+  const datum=document.getElementById('bDate').value;
+  if(!datum){showToast('Bitte ein Datum wählen!','error');return;}
+  const f=window._curFL||FL[curFL];
+  const h=parseInt(document.getElementById('bHours').value)||1;
+  const sub=f.price*h,fee=+(sub*0.15).toFixed(2),total=+(sub+fee).toFixed(2);
+  document.getElementById('paymentSummary').textContent=`${f.name} · ${datum} · ${h} Std`;
+  document.getElementById('pay-label').textContent=`${f.price} € × ${h} Std`;
+  document.getElementById('pay-sub').textContent=`${sub.toFixed(2)} €`;
+  document.getElementById('pay-fee').textContent=`${fee.toFixed(2)} €`;
+  document.getElementById('pay-total').textContent=`${sub.toFixed(2)} €`; // Customer pays freelancer price only
+  openModal('payment');
+}
+
+async function confirmPayment(){
+  const name = document.getElementById('cardName').value.trim();
+  const err = document.getElementById('pay-error');
+  const btn = document.getElementById('payBtn');
+
+  if(!name){err.style.display='block';err.textContent='Bitte Karteninhaber eingeben.';return;}
+  if(!stripe||!stripeCard){err.style.display='block';err.textContent='Stripe nicht geladen. Bitte Seite neu laden.';return;}
+
+  btn.disabled=true; btn.textContent='⏳ Wird verarbeitet...';
+  err.style.display='none';
+
+  const {paymentMethod, error} = await stripe.createPaymentMethod({
+    type:'card', card:stripeCard, billing_details:{name}
+  });
+
+  if(error){
+    err.style.display='block';
+    err.textContent=error.message;
+    btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen →';
+    return;
+  }
+
+  const f=window._curFL||FL[curFL];
+  const h=parseInt(document.getElementById('bHours').value)||1;
+  const preis=f?f.price*h:0;
+  const provision=+(preis*0.15).toFixed(2);
+  const ref='HLF-2026-'+String(Math.floor(Math.random()*90000)+10000);
+  const completionCode=String(Math.floor(100000+Math.random()*900000));
+
+  if(window._payAuftragId){
+    await sb.from('auftraege').update({
+      status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
+    }).eq('id',window._payAuftragId);
+    window._payAuftragId=null;
+  } else {
+    await sb.from('auftraege').insert({
+      kunde_id:currentUser.id, titel:f?.role||'Buchung',
+      beschreibung:'Buchung über Helpefy', kategorie:f?.tags?.[0]||'Service',
+      preis:preis, provision:provision,
+      datum:document.getElementById('bDate').value,
+      status:'bezahlt', abschluss_code:completionCode,
+      stripe_payment_id:paymentMethod.id
+    });
+  }
+
+  // Destroy card element so it can be remounted next time
+  stripeCard.destroy(); stripeCard=null;
+
+  closeModal('payment');
+  btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen →';
+  document.getElementById('bookRef').textContent=ref;
+  document.getElementById('completionCode').textContent=completionCode;
+  document.getElementById('completionCodeBox').style.display='block';
+  showView('success');
+  showToast('Zahlung erfolgreich! 🎉','success');
+}
+
+async function renderDashOrders(){
+  if(!currentUser) return;
+  const ordersEl=document.getElementById('dash-orders');
+  if(!ordersEl) return;
+
+  const isFreelancer = currentProfile?.role === 'freelancer';
+
+  // Load orders - for freelancer load from freelancer_id too
+  const {data:orders}=await sb.from('auftraege')
+    .select('*')
+    .eq('kunde_id',currentUser.id)
+    .order('created_at',{ascending:false});
+
+  const badge=s=>{
+    if(s==='abgeschlossen') return '<span class="badge badge-green">✅ Abgeschlossen</span>';
+    if(s==='bezahlt') return '<span class="badge badge-green">💳 Bezahlt</span>';
+    if(s==='angenommen') return '<span class="badge badge-green">✓ Angenommen</span>';
+    if(s==='bestätigt') return '<span class="badge badge-blue">Bestätigt</span>';
+    if(s==='angebot_gesendet') return '<span class="badge badge-yellow">⏳ Ausstehend</span>';
+    if(s==='abgelehnt') return '<span class="badge" style="background:#fee2e2;color:#991b1b">✕ Abgelehnt</span>';
+    return '<span class="badge badge-yellow">Offen</span>';
+  };
+
+  if(!orders||!orders.length){
+    ordersEl.innerHTML=`<div class="dash-title">Meine Aufträge</div><div class="dash-sub" style="margin-top:0.5rem">Noch keine Aufträge vorhanden.<br><br><button class="btn-red" onclick="showView('home')">Freelancer suchen</button></div>`;
+    return;
+  }
+
+  ordersEl.innerHTML=`
+    <div class="dash-title">Meine Aufträge & Angebote</div>
+    <div class="dcard" style="max-width:100%;margin-top:1rem">
+      ${orders.map(o=>`
+        <div class="oi" style="padding:1rem 0;flex-wrap:wrap;gap:0.5rem">
+          <div class="oi-icon" style="font-size:1.5rem">${o.status==='bezahlt'?'✅':o.status==='abgelehnt'?'❌':'📋'}</div>
+          <div class="oi-info" style="flex:1;min-width:200px">
+            <div class="oi-title" style="font-size:0.9rem">${o.titel||'Auftrag'}</div>
+            <div class="oi-meta">${o.datum?new Date(o.datum).toLocaleDateString('de-DE'):''} ${o.preis?'· <strong>'+o.preis.toFixed(2)+' €</strong>':''}</div>
+            ${o.beschreibung&&o.beschreibung!=='Buchung über Helpefy'?`<div class="oi-meta" style="font-style:italic;margin-top:0.25rem;color:var(--muted)">"${o.beschreibung.slice(0,80)}${o.beschreibung.length>80?'...':''}"</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
+            ${badge(o.status)}
+            ${o.status==='angebot_gesendet'?`
+              <div style="display:flex;gap:0.35rem;margin-top:0.25rem">
+                <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
+                <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
+              </div>`:''}
+            ${o.status==='angenommen'?`
+              <button onclick="payAuftrag('${o.id}','${(o.titel||'').replace(/'/g,'')}',${o.preis||0})"
+                style="padding:0.4rem 1rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;margin-top:0.25rem">
+                💳 Jetzt bezahlen
+              </button>`:''}
+            ${o.status==='bezahlt'?`
+              <div style="font-size:0.72rem;color:var(--muted);text-align:right;margin-bottom:0.25rem">Warte auf Abschluss...</div>
+              <button onclick="openCodeEntry('${o.id}')"
+                style="padding:0.35rem 0.85rem;background:#f0fdf4;color:#15803d;border:1.5px solid #15803d;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
+                🔑 Code eingeben
+              </button>`:''}
+            ${o.status==='abgeschlossen'?`<div style="font-size:0.72rem;color:var(--green);text-align:right">✅ Vollständig abgeschlossen</div>`:''}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function payAuftrag(id, titel, preis){
+  // Open payment modal pre-filled
+  const fee = +(preis*0.15).toFixed(2);
+  const total = +(preis+fee).toFixed(2);
+  document.getElementById('paymentSummary').textContent = titel;
+  document.getElementById('pay-label').textContent = 'Auftrag: '+titel;
+  document.getElementById('pay-sub').textContent = preis.toFixed(2)+' €';
+  document.getElementById('pay-fee').textContent = fee.toFixed(2)+' €';
+  document.getElementById('pay-total').textContent = total.toFixed(2)+' €';
+  // Store order id for after payment
+  window._payAuftragId = id;
+  openModal('payment');
+}
+
+async function updateAuftrag(id, status){
+  await sb.from('auftraege').update({status}).eq('id',id);
+  showToast(status==='angenommen'?'Auftrag angenommen! ✅':'Auftrag abgelehnt.','success');
+  renderDashOrders();
+}
+
+// ── ANGEBOT ──
+// Image handling
+let jobImageBase64 = [];
+
+function previewAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('regAvatarPreview');
+    if(prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewBookImages(input){
+  const area = document.getElementById('bookImgArea');
+  if(!area) return;
+  Array.from(input.files).forEach(file=>{
+    if(file.size > 3*1024*1024){showToast('Bild zu groß! Max 3MB','error');return;}
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid var(--border)';
+      img.onclick = ()=>img.remove();
+      img.title = 'Klicken zum Entfernen';
+      area.insertBefore(img, area.lastElementChild);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function previewJobImages(input){
+  const area = document.getElementById('jobImgPreviewArea');
+  if(!area) return;
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:10px;border:2px solid var(--border)';
+      area.insertBefore(img, area.lastElementChild);
+      jobImageBase64.push(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+let currentJobData = null;
+function applyForJob(btn){
+  if(!currentUser){openModal('auth');return;}
+  // Get job info from card
+  const card = btn.closest('.job-card');
+  const title = card?.querySelector('.job-title')?.textContent||'Job';
+  const budget = card?.querySelector('.job-budget')?.textContent||'';
+  currentJobData = {title, budget};
+  document.getElementById('angebot-job-info').innerHTML = `<strong>📋 ${title}</strong>${budget?' · Budget: '+budget:''}`;
+  document.getElementById('angebotText').value='';
+  document.getElementById('angebotPreis').value='';
+  document.getElementById('angebotDatum').value=new Date().toISOString().split('T')[0];
+  document.getElementById('angebot-error').style.display='none';
+  openModal('angebot');
+}
+
+async function submitAngebot(){
+  const text=document.getElementById('angebotText').value.trim();
+  const preis=document.getElementById('angebotPreis').value;
+  const datum=document.getElementById('angebotDatum').value;
+  const err=document.getElementById('angebot-error');
+  if(!text){err.style.display='block';err.textContent='Bitte schreib eine Nachricht.';return;}
+  const btn=document.querySelector('#modal-angebot .form-submit');
+  btn.disabled=true; btn.textContent='Wird gesendet...';
+  // Save to auftraege as pending offer
+  const {error}=await sb.from('auftraege').insert({
+    kunde_id:currentUser.id,
+    titel:currentJobData?.title||'Job-Angebot',
+    beschreibung:text,
+    kategorie:'Angebot',
+    preis:parseFloat(preis)||0,
+    datum:datum||null,
+    status:'angebot_gesendet',
+    created_at:new Date().toISOString()
+  });
+  btn.disabled=false; btn.textContent='Angebot absenden →';
+  if(error){err.style.display='block';err.textContent='Fehler: '+error.message;return;}
+  closeModal('angebot');
+  showToast('Angebot erfolgreich gesendet! 🎉','success');
+  // Refresh dashboard orders if open
+  if(document.getElementById('view-dashboard').classList.contains('active')) loadProfile();
+}
+
+// ── ABSCHLUSSCODE SYSTEM ──
+let currentRating = 0;
+let currentVerifyAuftragId = null;
+
+function openCodeEntry(auftragId){
+  currentVerifyAuftragId = auftragId;
+  document.getElementById('codeInput').value='';
+  document.getElementById('code-error').style.display='none';
+  openModal('code');
+}
+
+async function verifyCode(){
+  const code = document.getElementById('codeInput').value.trim();
+  const err = document.getElementById('code-error');
+  if(code.length !== 6){err.style.display='block';err.textContent='Bitte 6-stelligen Code eingeben.';return;}
+  
+  // Check code against database
+  const {data:order} = await sb.from('auftraege')
+    .select('*')
+    .eq('abschluss_code', code)
+    .eq('status','bezahlt')
+    .single();
+  
+  if(!order){err.style.display='block';err.textContent='Falscher Code. Bitte nochmal versuchen.';return;}
+  
+  // Mark order as completed
+  await sb.from('auftraege').update({status:'abgeschlossen'}).eq('id', order.id);
+  currentVerifyAuftragId = order.id;
+  closeModal('code');
+  
+  // Show rating modal for customer
+  setStar(0);
+  openModal('bewertung');
+  showToast('Code korrekt! Auftrag abgeschlossen ✅','success');
+}
+
+function setStar(n){
+  currentRating = n;
+  const stars = document.getElementById('starRating').children;
+  for(let i=0;i<5;i++){
+    stars[i].textContent = i < n ? '⭐' : '☆';
+  }
+}
+
+async function submitBewertung(){
+  if(currentRating===0){showToast('Bitte Sterne vergeben!','error');return;}
+  const text = document.getElementById('bewertungText').value.trim();
+  
+  await sb.from('bewertungen').insert({
+    auftrag_id: currentVerifyAuftragId,
+    von_user_id: currentUser.id,
+    sterne: currentRating,
+    kommentar: text,
+    created_at: new Date().toISOString()
+  });
+  
+  closeModal('bewertung');
+  showToast('Bewertung abgegeben! Danke ⭐','success');
+  renderDashOrders();
+}
+
+// ── HELPERS ──
+function showError(el,msg){el.style.display='block';el.textContent=msg;}
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+(type||'');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── INIT ─
+// ── LOCATION ──
+async function autoDetectLocation(){
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      userLat=pos.coords.latitude; userLon=pos.coords.longitude;
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
+        const d=await r.json();
+        userCity=d.address?.city||d.address?.town||d.address?.village||'';
+        const cl=document.getElementById('cityLabel');
+        if(cl&&userCity) cl.textContent='📍 '+userCity;
+        const lt=document.getElementById('locText');
+        if(lt&&userCity) lt.textContent='📍 '+userCity;
+      }catch(e){}
+    },()=>{});
+  }
+}
+
+async function getMyLocation(){
+  const spinner=document.getElementById('locSpinner');
+  const locText=document.getElementById('locText');
+  if(spinner) spinner.style.display='inline';
+  if(locText) locText.textContent='Wird gesucht...';
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      userLat=pos.coords.latitude; userLon=pos.coords.longitude;
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
+        const d=await r.json();
+        userCity=d.address?.city||d.address?.town||d.address?.village||'';
+        if(locText) locText.textContent='📍 '+(userCity||'Gefunden');
+        const cl=document.getElementById('cityLabel');
+        if(cl&&userCity) cl.textContent='📍 '+userCity;
+      }catch(e){if(locText) locText.textContent='📍 Standort';}
+      if(spinner) spinner.style.display='none';
+    },()=>{if(spinner) spinner.style.display='none';if(locText) locText.textContent='📍 Standort';});
+  }
+}
+
+async function searchLocation(q,id){
+  if(!q||q.length<3) return;
+  const sugg=document.getElementById(id);
+  if(!sugg) return;
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=de`);
+    const d=await r.json();
+    if(!d.length){sugg.style.display='none';return;}
+    sugg.innerHTML=d.map(l=>`<div class="loc-item" onclick="selectLocation('${l.display_name.split(',')[0]}','${id}',event)"><strong>${l.display_name.split(',')[0]}</strong> <span>${l.display_name.split(',').slice(1,3).join(',')}</span></div>`).join('');
+    sugg.style.display='block';
+  }catch(e){sugg.style.display='none';}
+}
+
+function selectLocation(val,sugg,e){
+  e?.stopPropagation();
+  const input=document.getElementById(sugg)?.previousElementSibling;
+  if(input) input.value=val;
+  document.getElementById(sugg).style.display='none';
+}
+
+function getDistanceKm(lat1,lon1,lat2,lon2){
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ── JOBS ──
+let allJobsCache = [];
+
+function renderJobGrid(jobs){
+  const grid=document.getElementById('jobGrid');
+  const cnt=document.getElementById('jobCount');
+  if(cnt) cnt.textContent=jobs.length+' Jobs gefunden';
+  if(!grid) return;
+  if(!jobs.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)"><div style="font-size:2.5rem">📋</div><div style="font-weight:600;margin:0.5rem 0">Keine Jobs gefunden</div><button class="btn-red" style="margin-top:0.5rem" onclick="loadRealJobs()">Alle anzeigen</button></div>`;
+    return;
+  }
+  const JOB_IMGS={'Reinigung':'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=300&fit=crop','Haushalt':'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=300&fit=crop','Handwerk':'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=300&fit=crop','Garten':'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=300&fit=crop','Umzug':'https://images.unsplash.com/photo-1600518464441-9306adb181b3?w=600&h=300&fit=crop','Lernen':'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=300&fit=crop','IT & Digital':'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=300&fit=crop','Kreativ':'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&h=300&fit=crop','Beauty':'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=300&fit=crop','Tiere':'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=300&fit=crop','Transport':'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&h=300&fit=crop','Events':'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=300&fit=crop','Sonstiges':'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=300&fit=crop'};
+  grid.innerHTML=jobs.map(j=>`<div class="job-card" style="overflow:hidden;padding:0">
+    <img src="${j.img||JOB_IMGS[j.cat]||JOB_IMGS['Sonstiges']}" class="job-img" loading="lazy" onerror="this.style.display='none'">
+    <div style="padding:1.25rem">
+      <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
+      <div class="job-title">${j.title}</div>
+      <div class="job-desc">${j.desc}</div>
+      <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
+      <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button></div>
+    </div>
+  </div>`).join('');
+}
+
+function filterJobs(type,el){
+  if(el){el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));el.classList.add('active');}
+  let results=[...allJobsCache];
+  if(type==='dringend') results=results.filter(j=>j.urgent);
+  else if(type==='bezahlt') results=results.filter(j=>j.budget&&j.budget!=='Verhandelbar');
+  renderJobGrid(results);
+}
+
+function showJobSuggestions(input){
+  const q=input.value.toLowerCase();
+  const sugg=document.getElementById('jobSugg');
+  if(!sugg||q.length<2){if(sugg)sugg.style.display='none';return;}
+  const cats=['Reinigung','Handwerk','IT & Digital','Garten','Umzug','Lernen','Kreativ','Beauty','Tiere','Transport','Events','Sonstiges'];
+  const matches=cats.filter(c=>c.toLowerCase().includes(q));
+  if(!matches.length){sugg.style.display='none';return;}
+  sugg.innerHTML=matches.map(c=>`<div class="sugg-item" onclick="document.getElementById('jobSearchInput').value='${c}';document.getElementById('jobSugg').style.display='none';searchJobs()">🔍 <strong>${c}</strong></div>`).join('');
+  sugg.style.display='block';
+}
+
+async function searchJobs(){
+  const q=document.getElementById('jobSearchInput')?.value?.trim()||'';
+  hideAllSugg();
+  if(!q){renderJobGrid(allJobsCache);return;}
+  const qLow=q.toLowerCase();
+  const words=qLow.split(/\s+/).filter(w=>w.length>2);
+  const jobSemantics={'garten':['Garten'],'gartenarbeit':['Garten'],'pflanzen':['Garten'],'putzen':['Reinigung','Haushalt'],'sauber':['Reinigung','Haushalt'],'reinigung':['Reinigung'],'haushalt':['Haushalt'],'handwerk':['Handwerk'],'reparatur':['Handwerk'],'montage':['Handwerk'],'it':['IT & Digital'],'computer':['IT & Digital'],'wlan':['IT & Digital'],'umzug':['Umzug'],'transport':['Umzug'],'tragen':['Umzug'],'lernen':['Lernen'],'nachhilfe':['Lernen'],'mathe':['Lernen']};
+  let catMatches=[];
+  Object.keys(jobSemantics).forEach(key=>{if(qLow.includes(key)||words.some(w=>key.includes(w)||w.includes(key))){catMatches=[...catMatches,...jobSemantics[key]];}});
+  const results=allJobsCache.filter(j=>{const txt=(j.title+' '+j.cat+' '+j.desc).toLowerCase();return words.some(w=>txt.includes(w))||catMatches.some(c=>j.cat.includes(c));});
+  renderJobGrid(results.length?results:allJobsCache.filter(j=>catMatches.some(c=>j.cat.includes(c))));
+}
+
+async function loadRealJobs(){
+  const{data:jobs}=await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
+  allJobsCache=[...(jobs||[]).map(j=>({cat:j.kategorie||'Sonstiges',title:j.titel,desc:j.beschreibung,loc:j.standort||'Deutschland',date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',urgent:j.dringend,offers:0,poster:j.profiles?.full_name||'Anonym'})),...JOBS];
+  renderJobGrid(allJobsCache);
+}
+
+async function postJob(){
+  if(!currentUser){showToast('Bitte anmelden!','error');openModal('auth');return;}
+  const titel=document.getElementById('jobTitel').value.trim();
+  const desc=document.getElementById('jobDesc').value.trim();
+  if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
+  const{error}=await sb.from('jobs').insert({kunde_id:currentUser.id,titel,beschreibung:desc,kategorie:document.getElementById('jobKat').value,budget_min:parseFloat(document.getElementById('jobBudgetMin').value)||0,budget_max:parseFloat(document.getElementById('jobBudgetMax').value)||0,standort:document.getElementById('jobStandort').value,datum:document.getElementById('jobDatum').value||null,dringend:document.getElementById('jobDringend').checked,status:'offen',created_at:new Date().toISOString()});
+  if(error){showToast('Fehler: '+error.message,'error');return;}
+  ['jobTitel','jobDesc','jobBudgetMin','jobBudgetMax','jobStandort'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const suc=document.getElementById('job-posted-success');
+  if(suc){suc.style.display='block';setTimeout(()=>suc.style.display='none',4000);}
+  showToast('Job gepostet! 🎉','success');
+  loadRealJobs();
+}
+
+async function postJob2(){
+  if(!currentUser){document.getElementById('job-login-hint2').style.display='block';openModal('auth');return;}
+  const titel=document.getElementById('jobTitel2').value.trim();
+  const desc=document.getElementById('jobDesc2').value.trim();
+  if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
+  const{error}=await sb.from('jobs').insert({kunde_id:currentUser.id,titel,beschreibung:desc,kategorie:document.getElementById('jobKat2').value,budget_min:parseFloat(document.getElementById('jobBudgetMin2').value)||0,budget_max:parseFloat(document.getElementById('jobBudgetMax2').value)||0,standort:document.getElementById('jobStandort2').value,datum:document.getElementById('jobDatum2').value||null,dringend:document.getElementById('jobDringend2').checked,status:'offen',created_at:new Date().toISOString()});
+  if(error){showToast('Fehler: '+error.message,'error');return;}
+  ['jobTitel2','jobDesc2','jobBudgetMin2','jobBudgetMax2','jobStandort2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const suc=document.getElementById('job-posted-success2');
+  if(suc){suc.style.display='block';setTimeout(()=>suc.style.display='none',5000);}
+  showToast('Job veröffentlicht! 🎉','success');
+}
+
+// ── DASHBOARD ──
+function switchDash(tab,el){
+  document.querySelectorAll('.sni').forEach(i=>i.classList.remove('active'));
+  if(el) el.classList.add('active');
+  ['overview','orders','saved','payments','settings'].forEach(t=>{const e=document.getElementById('dash-'+t);if(e)e.style.display=t===tab?'block':'none';});
+  if(tab==='saved') renderSaved();
+  if(tab==='orders') renderDashOrders();
+}
+
+// ── AUTH HELPERS ──
+function switchAuthTab(tab,el){
+  document.querySelectorAll('.mtab2').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('auth-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('auth-register').style.display=tab==='register'?'block':'none';
+}
+
+function switchRegType(type,el){
+  el.closest('.modal-tabs').querySelectorAll('.mtab2').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('reg-fl-extra').style.display=type==='freelancer'?'block':'none';
+}
+
+// ── CHAT ──
+async function loadChatUsers(){
+  if(!currentUser) return;
+  const chatList=document.getElementById('chatUserList');
+  if(!chatList) return;
+  const{data:msgs}=await sb.from('nachrichten').select('von_user_id,zu_user_id').or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`).limit(100);
+  let partnerIds=new Set();
+  if(msgs) msgs.forEach(m=>{if(m.von_user_id!==currentUser.id)partnerIds.add(m.von_user_id);if(m.zu_user_id!==currentUser.id)partnerIds.add(m.zu_user_id);});
+  const{data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
+  if(!allUsers||!allUsers.length){chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.</div>`;return;}
+  const sorted=[...allUsers].sort((a,b)=>(partnerIds.has(a.id)?0:1)-(partnerIds.has(b.id)?0:1));
+  window._chatUsers=sorted;
+  chatList.innerHTML=sorted.map((u,idx)=>{
+    const init=(u.full_name||u.email||'?').charAt(0).toUpperCase();
+    const hasMsg=partnerIds.has(u.id);
+    const avatarHtml=u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:init;
+    return `<div class="ci ${activeChatUserId===u.id?'active':''}" onclick="startChatWithUser(${idx})" style="cursor:pointer">
+      <div class="ci-av" style="overflow:hidden">${avatarHtml}</div>
+      <div class="ci-info"><div class="ci-name">${u.full_name||u.email}</div><div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}${hasMsg?' · Unterhaltung':''}</div></div>
+      ${hasMsg?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
+    </div>`;
+  }).join('');
+}
+
+function startChatWithUser(idx){
+  const users=window._chatUsers||[];
+  const u=users[idx];
+  if(!u) return;
+  openChat(u.id,u.full_name||u.email||'Nutzer',u.avatar_url||'',u.role||'');
+}
+
+function showChatList(){
+  document.getElementById('chatActive').style.display='none';
+  document.getElementById('chatEmpty').style.display='flex';
+  const listPanel=document.getElementById('chatListPanel');
+  if(listPanel) listPanel.style.display='block';
+}
+
+function chatBookFreelancer(){
+  showView('home');
+  showToast('Suche den Freelancer und buche direkt aus seinem Profil','success');
+}
+
+async function openChat(userId,userName,avatarUrl,role){
+  activeChatUserId=userId;
+  avatarUrl=avatarUrl||''; role=role||'';
+  const chatName=document.getElementById('chatName');
+  const chatStatus=document.getElementById('chatStatus');
+  const chatAv=document.getElementById('chatAvatar');
+  if(chatName) chatName.textContent=userName;
+  if(chatStatus) chatStatus.textContent=role==='freelancer'?'👷 Freelancer':'👤 Kunde';
+  if(chatAv){if(avatarUrl)chatAv.innerHTML=`<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;else chatAv.textContent=(userName||'?').charAt(0).toUpperCase();}
+  const chatEmpty=document.getElementById('chatEmpty');
+  const chatActive=document.getElementById('chatActive');
+  const chatListPanel=document.getElementById('chatListPanel');
+  if(chatEmpty) chatEmpty.style.display='none';
+  if(chatActive) chatActive.style.display='flex';
+  const isMobile=window.innerWidth<=768;
+  if(isMobile&&chatListPanel) chatListPanel.style.display='none';
+  const backBtn=document.getElementById('chatBackBtn');
+  if(backBtn) backBtn.style.display=isMobile?'block':'none';
+  document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
+  await loadMessages();
+  if(chatSubscription) chatSubscription.unsubscribe();
+  chatSubscription=sb.channel('chat_'+currentUser.id+'_'+userId).on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{if(payload.new.von_user_id===activeChatUserId&&payload.new.zu_user_id===currentUser.id){appendMsg(payload.new.inhalt,false,userName);}}).subscribe();
+}
+
+async function loadMessages(){
+  if(!currentUser||!activeChatUserId) return;
+  const{data:msgs}=await sb.from('nachrichten').select('*').or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`).order('created_at',{ascending:true});
+  const container=document.getElementById('chatMsgs');
+  if(!container) return;
+  if(!msgs||!msgs.length){container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';return;}
+  container.innerHTML='';
+  msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id));
+}
+
+function appendMsg(text,isMe,senderName){
+  const msgs=document.getElementById('chatMsgs');
+  const init=isMe?(currentProfile?.full_name||'I').charAt(0).toUpperCase():(senderName||document.getElementById('chatName')?.textContent||'?').charAt(0).toUpperCase();
+  const d=document.createElement('div');
+  d.className='msg'+(isMe?' me':'');
+  let bubbleContent;
+  if(text&&text.startsWith('[IMG]')){
+    const src=text.slice(5);
+    bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="window.open('${src}','_blank')">`;
+  } else {
+    bubbleContent=`<div class="bubble">${text}</div>`;
+  }
+  d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendMsg(){
+  if(!currentUser){showToast('Bitte anmelden!','error');openModal('auth');return;}
+  if(!activeChatUserId){showToast('Bitte zuerst einen Nutzer auswählen!','error');return;}
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text) return;
+  const{error}=await sb.from('nachrichten').insert({von_user_id:currentUser.id,zu_user_id:activeChatUserId,inhalt:text,created_at:new Date().toISOString()});
+  if(!error){appendMsg(text,true);input.value='';}
+  else showToast('Fehler beim Senden','error');
+}
+
+async function sendChatImage(input){
+  if(!currentUser){showToast('Bitte anmelden!','error');return;}
+  if(!activeChatUserId){showToast('Bitte zuerst einen Nutzer auswählen!','error');return;}
+  const file=input.files[0];
+  if(!file) return;
+  if(file.size>3*1024*1024){showToast('Bild zu groß! Max. 3MB','error');return;}
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const base64=e.target.result;
+    const inhalt='[IMG]'+base64;
+    const{error}=await sb.from('nachrichten').insert({von_user_id:currentUser.id,zu_user_id:activeChatUserId,inhalt,created_at:new Date().toISOString()});
+    if(!error) appendMsg(inhalt,true);
+    else showToast('Fehler beim Senden','error');
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+// ── INIT ──
+async function init(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){currentUser=session.user;await loadProfile();updateNav();}
+  sb.auth.onAuthStateChange(async(_,s)=>{
+    currentUser=s?.user||null;
+    if(currentUser){await loadProfile();updateNav();if(document.getElementById('view-chat').classList.contains('active'))loadChatUsers();}
+    else{currentProfile=null;updateNav();}
+  });
+  const path=window.location.pathname.replace('/','').trim()||'home';
+  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
+  const start=valid.includes(path)?path:'home';
+  history.replaceState({view:start},'',window.location.pathname);
+  showView(start,false);
+  document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
+  setTimeout(autoDetectLocation,800);
+  if(window.Stripe) initStripe();
+  else window.addEventListener('load',initStripe);
+}
+init();
+
+</script>
 </body>
 </html>
