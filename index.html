@@ -1836,7 +1836,7 @@ function chatBookFreelancer(){
   }
 }
 
-async function openChat(userId, userName){
+async function openChat(userId, userName, avatarUrl, role){
   activeChatUserId=userId;
   document.querySelector('.chat-name').textContent=userName;
   document.querySelector('.chat-status').textContent='● Online';
