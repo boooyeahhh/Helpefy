@@ -6,6 +6,7 @@
 <title>Helpefy – Finde den perfekten Experten</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 <style>
@@ -1131,6 +1132,15 @@ const SUPABASE_URL = 'https://hkrkqqzpmpoyoocrbxra.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_sHnuja7A8iJBwvkA5zRDbg_9zkfHJ_i';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Stripe
+const STRIPE_KEY = 'pk_test_51T1tYFRK3iEHR2pEqOaXmM5mNDhU43xQ5xeczVp1yPN44KR841VYLuSxHXo31LAc9XyUHGgS4bInnyXEybt8APRq00NGr6EIQn';
+let stripe, stripeElements, stripeCard;
+function initStripe(){
+  if(window.Stripe && !stripe){
+    stripe = Stripe(STRIPE_KEY);
+  }
+}
+
 let currentUser = null, currentProfile = null;
 let curMode = 'freelancer', curFL = 0;
 let userLat = null, userLon = null, userCity = '';
@@ -1749,510 +1759,62 @@ async function doBook(){
 }
 
 async function confirmPayment(){
-  const name=document.getElementById('cardName').value.trim();
-  const num=document.getElementById('cardNum').value.trim();
-  const err=document.getElementById('pay-error');
-  const btn=document.getElementById('payBtn');
-  if(!name||!num){err.style.display='block';err.textContent='Bitte alle Felder ausfüllen.';return;}
-  btn.disabled=true; btn.textContent='Wird verarbeitet...';
+  const name = document.getElementById('cardName').value.trim();
+  const err = document.getElementById('pay-error');
+  const btn = document.getElementById('payBtn');
+
+  if(!name){err.style.display='block';err.textContent='Bitte Karteninhaber eingeben.';return;}
+  if(!stripe||!stripeCard){err.style.display='block';err.textContent='Stripe nicht geladen. Bitte Seite neu laden.';return;}
+
+  btn.disabled=true; btn.textContent='⏳ Wird verarbeitet...';
+  err.style.display='none';
+
+  const {paymentMethod, error} = await stripe.createPaymentMethod({
+    type:'card', card:stripeCard, billing_details:{name}
+  });
+
+  if(error){
+    err.style.display='block';
+    err.textContent=error.message;
+    btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen →';
+    return;
+  }
+
   const f=window._curFL||FL[curFL];
   const h=parseInt(document.getElementById('bHours').value)||1;
-  const gesamtPreis = f.price*h;
-  const provision = +(gesamtPreis*0.15).toFixed(2);
-  const freelancerErhaelt = +(gesamtPreis*0.85).toFixed(2);
-  await sb.from('auftraege').insert({kunde_id:currentUser.id,titel:f.role,beschreibung:'Buchung über Helpefy',kategorie:f.tags[0],preis:gesamtPreis,provision:provision,freelancer_erhaelt:freelancerErhaelt,datum:document.getElementById('bDate').value,status:'bezahlt'});
+  const preis=f?f.price*h:0;
+  const provision=+(preis*0.15).toFixed(2);
   const ref='HLF-2026-'+String(Math.floor(Math.random()*90000)+10000);
-  closeModal('payment');
-  document.getElementById('bookRef').textContent=ref;
-  btn.disabled=false; btn.textContent='Jetzt bezahlen →';
-  showView('success');
-  showToast('Buchung erfolgreich! 🎉','success');
-}
+  const completionCode=String(Math.floor(100000+Math.random()*900000));
 
-// ── DASHBOARD ──
-function switchDash(tab,el){
-  document.querySelectorAll('.sni').forEach(i=>i.classList.remove('active'));
-  if(el) el.classList.add('active');
-  ['overview','orders','saved','payments','settings'].forEach(t=>{
-    const e=document.getElementById('dash-'+t);
-    if(e) e.style.display=t===tab?'block':'none';
-  });
-  if(tab==='saved') renderSaved();
-  if(tab==='orders') renderDashOrders();
-}
-
-// ── CHAT ──
-async function loadChatUsers(){
-  if(!currentUser) return;
-  const chatList=document.getElementById('chatUserList');
-  if(!chatList) return;
-
-  // Load users who have exchanged messages with current user
-  const {data:msgs}=await sb.from('nachrichten')
-    .select('von_user_id,zu_user_id')
-    .or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`)
-    .limit(100);
-
-  // Get unique partner IDs
-  let partnerIds = new Set();
-  if(msgs) msgs.forEach(m=>{
-    if(m.von_user_id!==currentUser.id) partnerIds.add(m.von_user_id);
-    if(m.zu_user_id!==currentUser.id) partnerIds.add(m.zu_user_id);
-  });
-
-  // Also load all users (so you can start new chats)
-  const {data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
-
-  if(!allUsers||!allUsers.length){
-    chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.<br>Schreibe einem Freelancer aus seinem Profil.</div>`;
-    return;
-  }
-
-  // Sort: users with messages first
-  const sorted = [...allUsers].sort((a,b)=>{
-    const aHas = partnerIds.has(a.id) ? 0 : 1;
-    const bHas = partnerIds.has(b.id) ? 0 : 1;
-    return aHas - bHas;
-  });
-
-  chatList.innerHTML = sorted.map(u=>{
-    const init = (u.full_name||u.email||'?').charAt(0).toUpperCase();
-    const hasMsg = partnerIds.has(u.id);
-    const avatarHtml = u.avatar_url
-      ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-      : init;
-    return `<div class="ci ${activeChatUserId===u.id?'active':''}" onclick="openChat('${u.id}','${u.full_name||u.email||'Nutzer'}','${u.avatar_url||''}','${u.role||''}')">
-      <div class="ci-av" style="overflow:hidden">${avatarHtml}</div>
-      <div class="ci-info">
-        <div class="ci-name">${u.full_name||u.email}</div>
-        <div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}${hasMsg?' · Unterhaltung':''}</div>
-      </div>
-      ${hasMsg?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
-    </div>`;
-  }).join('');
-}
-
-function startChatWithUser(idx){
-  const users = window._chatUsers || [];
-  const u = users[idx];
-  if(!u) return;
-  openChat(u.id, u.full_name||u.email||'Nutzer', u.avatar_url||'', u.role||'');
-}
-
-function showChatList(){
-  // On mobile: show list, hide active chat
-  document.getElementById('chatActive').style.display='none';
-  document.getElementById('chatEmpty').style.display='flex';
-  const listPanel=document.getElementById('chatListPanel');
-  if(listPanel) listPanel.style.display='block';
-}
-
-function chatBookFreelancer(){
-  // Open booking for active chat partner
-  if(activeChatUserId){
-    showView('home');
-    showToast('Suche den Freelancer und buche direkt aus seinem Profil','success');
-  }
-}
-
-async function openChat(userId, userName, avatarUrl, role){
-  activeChatUserId = userId;
-  avatarUrl = avatarUrl || '';
-  role = role || '';
-
-  // Update chat header
-  const chatName = document.getElementById('chatName');
-  const chatStatus = document.getElementById('chatStatus');
-  const chatAv = document.getElementById('chatAvatar');
-  if(chatName) chatName.textContent = userName;
-  if(chatStatus) chatStatus.textContent = role==='freelancer'?'👷 Freelancer':'👤 Kunde';
-  if(chatAv){
-    if(avatarUrl) chatAv.innerHTML=`<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-    else chatAv.textContent=(userName||'?').charAt(0).toUpperCase();
-  }
-
-  // Show active chat panel, hide empty state
-  const chatEmpty = document.getElementById('chatEmpty');
-  const chatActive = document.getElementById('chatActive');
-  const chatListPanel = document.getElementById('chatListPanel');
-  if(chatEmpty) chatEmpty.style.display='none';
-  if(chatActive) chatActive.style.display='flex';
-
-  // Mobile: hide list, show back button
-  const isMobile = window.innerWidth <= 768;
-  if(isMobile && chatListPanel) chatListPanel.style.display='none';
-
-  // Load messages
-  document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
-  await loadMessages();
-
-  // Subscribe to real-time messages
-  if(chatSubscription) chatSubscription.unsubscribe();
-  chatSubscription=sb.channel('chat_'+currentUser.id+'_'+userId).on('postgres_changes',
-    {event:'INSERT',schema:'public',table:'nachrichten'},
-    payload=>{
-      if(payload.new.von_user_id===activeChatUserId&&payload.new.zu_user_id===currentUser.id){
-        appendMsg(payload.new.inhalt,false,userName);
-      }
-    }
-  ).subscribe();
-}
-
-async function loadMessages(){
-  if(!currentUser||!activeChatUserId) return;
-  const {data:msgs}=await sb.from('nachrichten')
-    .select('*')
-    .or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`)
-    .order('created_at',{ascending:true});
-  const container=document.getElementById('chatMsgs');
-  container.innerHTML='';
-  if(msgs&&msgs.length) msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id));
-}
-
-function appendMsg(text,isMe,senderName){
-  const msgs=document.getElementById('chatMsgs');
-  const init=isMe?(currentProfile?.full_name||'I').charAt(0).toUpperCase():(senderName||document.querySelector('.chat-name')?.textContent||'?').charAt(0).toUpperCase();
-  const d=document.createElement('div');
-  d.className='msg'+(isMe?' me':'');
-  
-  // Check if message is an image
-  let bubbleContent;
-  if(text.startsWith('[IMG]')){
-    const src=text.slice(5);
-    bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="window.open('${src}','_blank')">`;
+  if(window._payAuftragId){
+    await sb.from('auftraege').update({
+      status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
+    }).eq('id',window._payAuftragId);
+    window._payAuftragId=null;
   } else {
-    bubbleContent=`<div class="bubble">${text}</div>`;
-  }
-  
-  d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
-  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
-}
-
-async function sendMsg(){
-  if(!currentUser){showToast('Bitte anmelden!','error');openModal('auth');return;}
-  if(!activeChatUserId){showToast('Bitte zuerst einen Nutzer auswählen!','error');return;}
-  const input=document.getElementById('chatInput');
-  const text=input.value.trim();
-  if(!text) return;
-  const {error}=await sb.from('nachrichten').insert({
-    von_user_id:currentUser.id,
-    zu_user_id:activeChatUserId,
-    inhalt:text,
-    created_at:new Date().toISOString()
-  });
-  if(!error){appendMsg(text,true); input.value='';}
-  else showToast('Fehler beim Senden','error');
-}
-
-async function sendChatImage(input){
-  if(!currentUser){showToast('Bitte anmelden!','error');return;}
-  if(!activeChatUserId){showToast('Bitte zuerst einen Nutzer auswählen!','error');return;}
-  const file = input.files[0];
-  if(!file) return;
-  if(file.size > 3*1024*1024){showToast('Bild zu groß! Max. 3MB','error');return;}
-  
-  showToast('Bild wird gesendet...','');
-  const reader = new FileReader();
-  reader.onload = async e => {
-    const base64 = e.target.result;
-    // Save as special image message
-    const inhalt = '[IMG]' + base64;
-    const {error} = await sb.from('nachrichten').insert({
-      von_user_id: currentUser.id,
-      zu_user_id: activeChatUserId,
-      inhalt: inhalt,
-      created_at: new Date().toISOString()
+    await sb.from('auftraege').insert({
+      kunde_id:currentUser.id, titel:f?.role||'Buchung',
+      beschreibung:'Buchung über Helpefy', kategorie:f?.tags?.[0]||'Service',
+      preis:preis, provision:provision,
+      datum:document.getElementById('bDate').value,
+      status:'bezahlt', abschluss_code:completionCode,
+      stripe_payment_id:paymentMethod.id
     });
-    if(!error) appendMsg(inhalt, true);
-    else showToast('Fehler beim Senden','error');
-  };
-  reader.readAsDataURL(file);
-  input.value = '';
-}
-
-// ── JOBS ──
-let allJobsCache = [];
-
-// Job category → Unsplash search term
-const JOB_IMG_TERMS = {
-  'Reinigung':'professional+cleaning+service',
-  'Haushalt':'house+cleaning+maid',
-  'Handwerk':'handyman+repair+tools',
-  'Garten':'garden+landscaping+gardener',
-  'Umzug':'moving+boxes+relocation',
-  'Lernen':'tutoring+studying+education',
-  'IT & Digital':'computer+it+tech+support',
-  'Kreativ':'creative+design+art',
-  'Beauty':'beauty+salon+hair',
-  'Tiere':'pet+care+dog+walker',
-  'Transport':'delivery+transport+van',
-  'Events':'event+party+decoration',
-  'Sonstiges':'freelancer+professional+work',
-};
-
-// Picsum + category overlay - guaranteed to work, no API key needed
-// Each category gets a consistent beautiful photo
-// Direct working image URLs per category
-const JOB_IMGS = {
-  'Reinigung': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=300&fit=crop',
-  'Haushalt': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=300&fit=crop',
-  'Handwerk': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=300&fit=crop',
-  'Garten': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=300&fit=crop',
-  'Umzug': 'https://images.unsplash.com/photo-1600518464441-9306adb181b3?w=600&h=300&fit=crop',
-  'Lernen': 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=300&fit=crop',
-  'IT & Digital': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=300&fit=crop',
-  'Kreativ': 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&h=300&fit=crop',
-  'Beauty': 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=300&fit=crop',
-  'Tiere': 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=300&fit=crop',
-  'Transport': 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&h=300&fit=crop',
-  'Events': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=300&fit=crop',
-  'Sonstiges': 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=300&fit=crop',
-};
-
-function getJobImg(cat, customImg){
-  if(customImg) return `<img src="${customImg}" class="job-img" onerror="this.style.display='none'">`;
-  const url = JOB_IMGS[cat] || JOB_IMGS['Sonstiges'];
-  return `<img src="${url}" class="job-img" loading="lazy" onerror="this.style.display='none'" alt="${cat}">`;
-}
-
-function renderJobGrid(jobs){
-  const grid=document.getElementById('jobGrid');
-  const cnt=document.getElementById('jobCount');
-  if(cnt) cnt.textContent=jobs.length+' Jobs gefunden';
-  if(!grid) return;
-  if(!jobs.length){
-    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)"><div style="font-size:2.5rem">📋</div><div style="font-weight:600;margin:0.5rem 0">Keine Jobs gefunden</div><button class="btn-red" style="margin-top:0.5rem" onclick="loadRealJobs()">Alle anzeigen</button></div>`;
-    return;
   }
-  grid.innerHTML=jobs.map(j=>`<div class="job-card" style="overflow:hidden;padding:0">
-    ${getJobImg(j.cat, j.img)}
-    <div style="padding:1.25rem">
-      <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
-      <div class="job-title">${j.title}</div>
-      <div class="job-desc">${j.desc}</div>
-      <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
-      <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button></div>
-    </div>
-  </div>`).join('');
+
+  // Destroy card element so it can be remounted next time
+  stripeCard.destroy(); stripeCard=null;
+
+  closeModal('payment');
+  btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen →';
+  document.getElementById('bookRef').textContent=ref;
+  document.getElementById('completionCode').textContent=completionCode;
+  document.getElementById('completionCodeBox').style.display='block';
+  showView('success');
+  showToast('Zahlung erfolgreich! 🎉','success');
 }
 
-function filterJobs(type, el){
-  if(el){
-    el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
-    el.classList.add('active');
-  }
-  let results=[...allJobsCache];
-  if(type==='dringend') results=results.filter(j=>j.urgent);
-  else if(type==='bezahlt') results=results.filter(j=>j.budget&&j.budget!=='Verhandelbar');
-  renderJobGrid(results);
-}
-
-function showJobSuggestions(input){
-  const q=input.value.toLowerCase();
-  const sugg=document.getElementById('jobSugg');
-  if(!sugg||q.length<2){if(sugg)sugg.style.display='none';return;}
-  const cats=['Reinigung','Handwerk','IT & Digital','Garten','Umzug','Lernen','Kreativ','Beauty','Tiere','Transport','Events','Sonstiges'];
-  const matches=cats.filter(c=>c.toLowerCase().includes(q));
-  if(!matches.length){sugg.style.display='none';return;}
-  sugg.innerHTML=matches.map(c=>`<div class="sugg-item" onclick="document.getElementById('jobSearchInput').value='${c}';document.getElementById('jobSugg').style.display='none';searchJobs()">🔍 <strong>${c}</strong></div>`).join('');
-  sugg.style.display='block';
-}
-
-async function searchJobs(){
-  const q=document.getElementById('jobSearchInput')?.value?.trim()||'';
-  hideAllSugg();
-  if(!q){renderJobGrid(allJobsCache);return;}
-
-  const grid=document.getElementById('jobGrid');
-  if(grid) grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)"><div style="font-size:1.5rem">🤖</div><div style="font-size:0.9rem;margin-top:0.5rem">KI sucht passende Jobs...</div></div>`;
-
-  // Smart job search - alle Wörter einzeln und kombiniert suchen
-  const qLow = q.toLowerCase();
-  const words = qLow.split(/\s+/).filter(w=>w.length>2);
-  
-  // Semantische Job-Kategorien
-  const jobSemantics = {
-    'garten':['Garten'],'gartenarbeit':['Garten'],'pflanzen':['Garten'],
-    'putzen':['Reinigung','Haushalt'],'sauber':['Reinigung','Haushalt'],
-    'reinigung':['Reinigung'],'haushalt':['Haushalt'],
-    'handwerk':['Handwerk'],'reparatur':['Handwerk'],'montage':['Handwerk'],
-    'it':['IT & Digital'],'computer':['IT & Digital'],'wlan':['IT & Digital'],
-    'umzug':['Umzug'],'transport':['Umzug'],'tragen':['Umzug'],
-    'lernen':['Lernen'],'nachhilfe':['Lernen'],'mathe':['Lernen'],
-  };
-  
-  let catMatches = [];
-  Object.keys(jobSemantics).forEach(key=>{
-    if(qLow.includes(key)||words.some(w=>key.includes(w)||w.includes(key))){
-      catMatches=[...catMatches,...jobSemantics[key]];
-    }
-  });
-  
-  const results=allJobsCache.filter(j=>{
-    const txt=(j.title+' '+j.cat+' '+j.desc).toLowerCase();
-    return words.some(w=>txt.includes(w)) || catMatches.some(c=>j.cat.includes(c));
-  });
-  renderJobGrid(results.length ? results : allJobsCache.filter(j=>catMatches.some(c=>j.cat.includes(c))));
-}
-
-async function loadRealJobs(){
-  const {data:jobs}=await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
-  allJobsCache=[...(jobs||[]).map(j=>({cat:j.kategorie||'Sonstiges',title:j.titel,desc:j.beschreibung,loc:j.standort||'Deutschland',date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',urgent:j.dringend,offers:0,poster:j.profiles?.full_name||'Anonym'})),...JOBS];
-  renderJobGrid(allJobsCache);
-}
-
-async function postJob2(){
-  if(!currentUser){
-    document.getElementById('job-login-hint2').style.display='block';
-    openModal('auth');
-    return;
-  }
-  const titel=document.getElementById('jobTitel2').value.trim();
-  const desc=document.getElementById('jobDesc2').value.trim();
-  if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
-  const {error}=await sb.from('jobs').insert({
-    kunde_id:currentUser.id, titel, beschreibung:desc,
-    kategorie:document.getElementById('jobKat2').value,
-    budget_min:parseFloat(document.getElementById('jobBudgetMin2').value)||0,
-    budget_max:parseFloat(document.getElementById('jobBudgetMax2').value)||0,
-    standort:document.getElementById('jobStandort2').value,
-    datum:document.getElementById('jobDatum2').value||null,
-    dringend:document.getElementById('jobDringend2').checked,
-    status:'offen', created_at:new Date().toISOString()
-  });
-  if(error){showToast('Fehler: '+error.message,'error');return;}
-  ['jobTitel2','jobDesc2','jobBudgetMin2','jobBudgetMax2','jobStandort2'].forEach(id=>{
-    const e=document.getElementById(id); if(e) e.value='';
-  });
-  const suc=document.getElementById('job-posted-success2');
-  if(suc){suc.style.display='block';setTimeout(()=>suc.style.display='none',5000);}
-  showToast('Job veröffentlicht! 🎉','success');
-}
-
-async function postJob(){
-  if(!currentUser){showToast('Bitte anmelden!','error');openModal('auth');return;}
-  const titel=document.getElementById('jobTitel').value.trim();
-  const desc=document.getElementById('jobDesc').value.trim();
-  if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
-  const {error}=await sb.from('jobs').insert({
-    kunde_id:currentUser.id, titel, beschreibung:desc,
-    kategorie:document.getElementById('jobKat').value,
-    budget_min:parseFloat(document.getElementById('jobBudgetMin').value)||0,
-    budget_max:parseFloat(document.getElementById('jobBudgetMax').value)||0,
-    standort:document.getElementById('jobStandort').value,
-    datum:document.getElementById('jobDatum').value||null,
-    dringend:document.getElementById('jobDringend').checked,
-    status:'offen', created_at:new Date().toISOString()
-  });
-  if(error){showToast('Fehler: '+error.message,'error');return;}
-  ['jobTitel','jobDesc','jobBudgetMin','jobBudgetMax','jobStandort'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  const suc=document.getElementById('job-posted-success');
-  if(suc){suc.style.display='block';setTimeout(()=>suc.style.display='none',4000);}
-  showToast('Job gepostet! 🎉','success');
-  loadRealJobs();
-}
-
-// ── MODALS ──
-function openModal(n){document.getElementById('modal-'+n)?.classList.add('open');}
-function closeModal(n){document.getElementById('modal-'+n)?.classList.remove('open');}
-function switchAuthTab(t,el){
-  el.closest('.modal-tabs').querySelectorAll('.mtab2').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('auth-login').style.display=t==='login'?'block':'none';
-  document.getElementById('auth-register').style.display=t==='register'?'block':'none';
-}
-function switchRegType(t,el){
-  el.closest('.modal-tabs').querySelectorAll('.mtab2').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('reg-fl-extra').style.display=t==='freelancer'?'block':'none';
-}
-document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
-
-// ── LOCATION ──
-async function searchLocation(q,suggId){
-  const sugg=document.getElementById(suggId);
-  if(!sugg) return;
-  if(!q||q.length<2){sugg.style.display='none';return;}
-  clearTimeout(locTimer);
-  locTimer=setTimeout(async()=>{
-    try{
-      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&format=json&limit=5&addressdetails=1`);
-      const data=await res.json();
-      if(!data.length){sugg.style.display='none';return;}
-      sugg.innerHTML=data.map(d=>{
-        const city=d.address.city||d.address.town||d.address.village||d.address.municipality||d.display_name.split(',')[0];
-        const state=d.address.state||'';
-        return `<div class="loc-item" onclick="selectLocation('${city}','${suggId}',this.closest('.fg').querySelector('input'))"><strong>${city}</strong> <span>${state}</span></div>`;
-      }).join('');
-      sugg.style.display='block';
-    }catch(e){sugg.style.display='none';}
-  },300);
-}
-
-function selectLocation(val,suggId,input){
-  if(input) input.value=val;
-  const sugg=document.getElementById(suggId);
-  if(sugg) sugg.style.display='none';
-}
-
-function getMyLocation(){
-  if(!navigator.geolocation){showToast('Standort nicht verfügbar','error');return;}
-  const spinner=document.getElementById('locSpinner');
-  const locText=document.getElementById('locText');
-  if(spinner) spinner.style.display='inline';
-  if(locText) locText.textContent=' Wird ermittelt...';
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    userLat=pos.coords.latitude; userLon=pos.coords.longitude;
-    try{
-      const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
-      const data=await res.json();
-      userCity=data.address.city||data.address.town||data.address.village||'Dein Standort';
-    }catch(e){userCity='Dein Standort';}
-    updateLocationUI();
-    showToast('📍 '+userCity,'success');
-  },()=>{
-    if(spinner) spinner.style.display='none';
-    if(locText) locText.textContent='📍 Standort';
-    showToast('Standort-Zugriff verweigert','error');
-  },{enableHighAccuracy:true,timeout:8000});
-}
-
-function updateLocationUI(){
-  const spinner=document.getElementById('locSpinner');
-  const locText=document.getElementById('locText');
-  if(spinner) spinner.style.display='none';
-  if(locText) locText.textContent='📍 '+userCity;
-  const cl=document.getElementById('cityLabel'); if(cl) cl.textContent='📍 '+userCity;
-  const cls=document.getElementById('cityLabelSearch'); if(cls) cls.textContent='📍 '+userCity;
-  const ls=document.getElementById('locTextSearch'); if(ls) ls.textContent=userCity;
-  const hs=document.getElementById('heroSearch'); if(hs) hs.placeholder='Was brauchst du in '+userCity+'?';
-}
-
-function autoDetectLocation(){
-  if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    userLat=pos.coords.latitude; userLon=pos.coords.longitude;
-    try{
-      const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json`);
-      const data=await res.json();
-      userCity=data.address.city||data.address.town||data.address.village||'';
-      if(userCity) updateLocationUI();
-    }catch(e){}
-  },()=>{},{timeout:5000});
-}
-
-function getDistanceKm(lat1,lon1,lat2,lon2){
-  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.fg')&&!e.target.closest('.loc-sugg')) document.querySelectorAll('.loc-sugg').forEach(s=>s.style.display='none');
-  if(!e.target.closest('.search-bar')&&!e.target.closest('.search-sugg')) document.querySelectorAll('.search-sugg').forEach(s=>s.style.display='none');
-});
-
-// ── DASHBOARD ORDERS ──
 async function renderDashOrders(){
   if(!currentUser) return;
   const ordersEl=document.getElementById('dash-orders');
@@ -2513,6 +2075,9 @@ async function init(){
   showView(start,false);
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
   setTimeout(autoDetectLocation,800);
+  // Init Stripe
+  if(window.Stripe) initStripe();
+  else window.addEventListener('load', initStripe);
 }
 init();
 
