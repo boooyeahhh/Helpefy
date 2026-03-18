@@ -1561,7 +1561,7 @@ function switchMode(mode,el){
 
 // ── RENDER ──
 async function renderHome(){
-  const {data:realFL}=await sb.from('freelancers').select('*, profiles!freelancers_user_id_fkey(full_name, avatar_url)').limit(20);
+  const {data:realFL}=await sb.from('freelancers').select('*').limit(20);
   let all=[...FL];
   if(realFL&&realFL.length){
     const CAT_TAGS={
@@ -1580,7 +1580,7 @@ async function renderHome(){
     const rc=realFL.map(f=>{
       const kat=f.kategorie||'Sonstiges';
       const extraTags=CAT_TAGS[kat]||[kat];
-      return {name:f.profiles?.full_name||f.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
+      return {name:f.beschreibung?.split('–')[0]?.trim()||f.beschreibung?.split('-')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
     });
     all=[...rc,...FL];
   }
@@ -1681,7 +1681,7 @@ async function renderSearch(q){
   const query=(q||'').trim();
   
   // Load real freelancers from Supabase
-  const {data:realFL}=await sb.from('freelancers').select('*, profiles!freelancers_user_id_fkey(full_name, avatar_url)').limit(50);
+  const {data:realFL}=await sb.from('freelancers').select('*').limit(50);
   let all=[...FL];
   if(realFL&&realFL.length){
     const CAT_TAGS={
@@ -1700,7 +1700,7 @@ async function renderSearch(q){
     const rc=realFL.map(f=>{
       const kat=f.kategorie||'Sonstiges';
       const extraTags=CAT_TAGS[kat]||[kat];
-      return {name:f.profiles?.full_name||f.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
+      return {name:f.beschreibung?.split('–')[0]?.trim()||f.beschreibung?.split('-')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
     });
     all=[...rc,...FL];
   }
