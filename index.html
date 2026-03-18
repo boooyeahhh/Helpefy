@@ -817,11 +817,9 @@ nav{padding:0.75rem 1rem;}
         </div>
         <div class="price-box">
           <div class="pb-row"><span id="pbLabel">35 € × 2 Std</span><span id="pbSub">70,00 €</span></div>
-          <div class="pb-row total"><span>Gesamt</span><span id="pbTotal">80,50 €</span></div>
+          <div class="pb-row total"><span>Geschätzter Preis</span><span id="pbTotal">70,00 €</span></div>
           <span id="pbFee" style="display:none">0</span>
-        </div>
-        <div class="fg"><label>Zahlung</label>
-          <select><option>💳 Kreditkarte</option><option>🍎 Apple Pay</option><option>🅿️ PayPal</option></select>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:0.35rem">✓ Zahlung erst nach Annahme durch den Freelancer</div>
         </div>
         <button class="book-now" onclick="doBook()">📨 Anfrage senden →</button>
         <button class="chat-now" onclick="showView('chat')">💬 Nachricht senden</button>
@@ -1911,13 +1909,18 @@ async function doBook(){
   btn.disabled=false; btn.textContent='📨 Anfrage senden →';
   if(error){showToast('Fehler: '+error.message,'error');return;}
 
-  showToast('Anfrage gesendet! Der Freelancer wird benachrichtigt. 📨','success');
-  // Open chat with freelancer
-  if(f.real && f.id){
-    showView('chat');
-    setTimeout(()=>loadChatUsers(),500);
-  } else {
-    showView('dashboard');
+  showToast('✅ Anfrage gesendet! Der Freelancer meldet sich bald.','success');
+  // Stay on profile - just show success
+  const btn2 = document.querySelector('.book-now');
+  if(btn2){
+    btn2.textContent = '✅ Anfrage gesendet!';
+    btn2.style.background = 'var(--green)';
+    btn2.disabled = true;
+    setTimeout(()=>{
+      btn2.textContent = '📨 Anfrage senden →';
+      btn2.style.background = '';
+      btn2.disabled = false;
+    }, 4000);
   }
 }
 
