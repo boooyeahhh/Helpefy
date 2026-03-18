@@ -1312,8 +1312,9 @@ async function doRegister(){
       // Get avatar if uploaded (stored as base64 in profiles)
       const avatarEl=document.getElementById('regAvatarPreview')?.querySelector('img');
       const avatar=avatarEl?.src||null;
-      await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,avatar_url:avatar,created_at:new Date().toISOString()});
-      if(avatar) await sb.from('profiles').update({avatar_url:avatar}).eq('id',data.user.id);
+      const {error:flErr}=await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,avatar_url:window._regAvatarData||null,created_at:new Date().toISOString()});
+      if(flErr) console.error('Freelancer insert error:',flErr.message);
+      if(window._regAvatarData) await sb.from('profiles').update({avatar_url:window._regAvatarData}).eq('id',data.user.id);
     }
   }
   err.style.display='none';
