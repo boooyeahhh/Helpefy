@@ -1561,9 +1561,7 @@ function switchMode(mode,el){
 
 // ── RENDER ──
 async function renderHome(){
-  const {data:realFL}=await sb.from('freelancers').select('*').limit(20);
-  const {data:profilesData}=await sb.from('profiles').select('id,full_name,avatar_url');
-  const profileMap={}; (profilesData||[]).forEach(p=>profileMap[p.id]=p);
+  const {data:realFL}=await sb.from('freelancers').select('*, profiles!freelancers_user_id_fkey(full_name, avatar_url)').limit(20);
   let all=[...FL];
   if(realFL&&realFL.length){
     const CAT_TAGS={
@@ -1582,8 +1580,7 @@ async function renderHome(){
     const rc=realFL.map(f=>{
       const kat=f.kategorie||'Sonstiges';
       const extraTags=CAT_TAGS[kat]||[kat];
-      const prof=profileMap[f.user_id]||{};
-      return {name:prof.full_name||f.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||prof.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
+      return {name:f.profiles?.full_name||f.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
     });
     all=[...rc,...FL];
   }
@@ -1684,9 +1681,7 @@ async function renderSearch(q){
   const query=(q||'').trim();
   
   // Load real freelancers from Supabase
-  const {data:realFL}=await sb.from('freelancers').select('*').limit(50);
-  const {data:profilesData}=await sb.from('profiles').select('id,full_name,avatar_url');
-  const profileMap={}; (profilesData||[]).forEach(p=>profileMap[p.id]=p);
+  const {data:realFL}=await sb.from('freelancers').select('*, profiles!freelancers_user_id_fkey(full_name, avatar_url)').limit(50);
   let all=[...FL];
   if(realFL&&realFL.length){
     const CAT_TAGS={
@@ -1705,8 +1700,7 @@ async function renderSearch(q){
     const rc=realFL.map(f=>{
       const kat=f.kategorie||'Sonstiges';
       const extraTags=CAT_TAGS[kat]||[kat];
-      const prof=profileMap[f.user_id]||{};
-      return {name:prof.full_name||f.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||prof.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
+      return {name:f.profiles?.full_name||f.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
     });
     all=[...rc,...FL];
   }
@@ -2038,7 +2032,7 @@ async function renderDashOrders(){
               <div style="display:flex;gap:0.35rem;margin-top:0.25rem;flex-wrap:wrap">
                 <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
                 <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
-                <button onclick="showView('chat')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">💬 Chat</button>
+                <button onclick="openChatWithOrder('${o.id}','${isFreelancer?o.kunde_id:o.freelancer_id}')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">💬 Chat</button>
               </div>`:''}
             ${(o.status==='anfrage'||o.status==='offen')&&!isFreelancer?`
               <div style="font-size:0.72rem;color:var(--muted);margin-top:0.25rem">⏳ Warte auf Antwort...</div>
@@ -2051,7 +2045,7 @@ async function renderDashOrders(){
                   style="padding:0.4rem 1rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600">
                   💳 Jetzt bezahlen
                 </button>
-                <button onclick="showView('chat')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif">💬 Chat</button>
+                <button onclick="openChatWithOrder('${o.id}','${isFreelancer?o.kunde_id:o.freelancer_id}')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif">💬 Chat</button>
               </div>`:''}
             ${o.status==='bezahlt'&&!isFreelancer?`
               <div style="font-size:0.72rem;color:var(--muted);text-align:right;margin-bottom:0.25rem">Warte auf Abschluss...</div>
@@ -2093,9 +2087,25 @@ function payAuftrag(id, titel, preis){
   openModal('payment');
 }
 
+async function openChatWithOrder(auftragId, userId){
+  if(!userId){showView('chat');return;}
+  // Load user profile and open chat directly
+  const {data:prof} = await sb.from('profiles').select('*').eq('id',userId).single();
+  if(prof){
+    showView('chat');
+    setTimeout(()=>openChat(prof.id, prof.full_name||prof.email, prof.avatar_url||'', prof.role||''), 300);
+  } else {
+    showView('chat');
+  }
+}
+
 async function updateAuftrag(id, status){
   const {error} = await sb.from('auftraege').update({status}).eq('id',id);
-  if(error) console.error('Update error:', error.message);
+  if(error){
+    showToast('Fehler: '+error.message,'error');
+    console.error('Update error:', error);
+    return;
+  }
   showToast(status==='angenommen'?'Auftrag angenommen! ✅':status==='abgelehnt'?'Auftrag abgelehnt.':'Status aktualisiert.','success');
   renderDashOrders();
 }
