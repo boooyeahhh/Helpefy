@@ -345,6 +345,10 @@ nav{padding:0.75rem 1rem;}
   <a class="mobile-menu-item" onclick="showView('job-posten');toggleMenu()">📝 Jobs posten</a>
   <a class="mobile-menu-item" onclick="showView('dashboard');toggleMenu()">📊 Dashboard</a>
   <a class="mobile-menu-item" onclick="showView('chat');toggleMenu()">💬 Nachrichten</a>
+  <div id="mobileAuthBtns" style="padding:0.75rem 1rem;display:flex;gap:0.5rem;border-top:1px solid var(--border);margin-top:0.25rem">
+    <button class="btn-ghost" style="flex:1" onclick="openModal('auth');toggleMenu()">Anmelden</button>
+    <button class="btn-red" style="flex:1" onclick="openModal('auth');toggleMenu()">Registrieren</button>
+  </div>
 </div>
 
 <!-- ══ HOME ══ -->
@@ -1155,7 +1159,13 @@ function selectSuggestion(val,inputId,suggId){
 
 function toggleMenu(){
   const m=document.getElementById('mobileMenu');
-  m.style.display=m.style.display==='none'?'block':'none';
+  const isOpen = m.style.display==='none';
+  m.style.display=isOpen?'block':'none';
+  // Show/hide auth buttons based on login state
+  if(isOpen){
+    const authBtns=document.getElementById('mobileAuthBtns');
+    if(authBtns) authBtns.style.display=currentUser?'none':'flex';
+  }
 }
 // Close menu on outside click
 document.addEventListener('click',e=>{
