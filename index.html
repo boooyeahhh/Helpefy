@@ -1983,7 +1983,10 @@ async function renderDashOrders(){
               </button>`:''}
             ${o.status==='bezahlt'&&isFreelancer?`
               <div style="font-size:0.72rem;color:var(--green);font-weight:500;margin-bottom:0.25rem">💰 Zahlung erhalten!</div>
-              <div style="font-size:0.7rem;color:var(--muted)">Warte auf Abschluss-Code vom Kunden</div>`:''}
+              <button onclick="openCodeEntry('${o.id}')"
+                style="padding:0.35rem 0.85rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;margin-top:0.25rem">
+                🔑 Code vom Kunden eingeben
+              </button>`:''}
             ${o.status==='abgeschlossen'?`<div style="font-size:0.72rem;color:var(--green);text-align:right;font-weight:500">✅ Abgeschlossen</div>`:''}
           </div>
         </div>`).join('')}
