@@ -1383,7 +1383,14 @@ async function saveSettings(){
   // Update profile
   const profileUpdate = {full_name:name};
   if(avatar) profileUpdate.avatar_url = avatar;
-  await sb.from('profiles').update(profileUpdate).eq('id',currentUser.id);
+  const {error:profileErr} = await sb.from('profiles').update(profileUpdate).eq('id',currentUser.id);
+  if(profileErr){
+    console.error('Profile update error:', profileErr);
+    // If avatar too large, try without it
+    if(avatar && profileErr.message){
+      await sb.from('profiles').update({full_name:name}).eq('id',currentUser.id);
+    }
+  }
 
   // Update freelancer data if freelancer
   if(currentProfile?.role==='freelancer'){
@@ -1532,51 +1539,48 @@ const SEMANTIC_MAP = {
 
 function smartSearch(query, freelancers){
   const q = query.toLowerCase().trim();
+  const words = q.split(/\s+/).filter(w => w.length > 2);
   
-  // 1. Exakter Semantik-Match aus SEMANTIC_MAP
-  let semanticTerms = [];
+  // Build all search terms
+  let allTerms = new Set();
+  
+  // Add query itself and its expansions
+  allTerms.add(q);
+  expandQuery(q).forEach(t => allTerms.add(t.toLowerCase()));
+  
+  // SEMANTIC_MAP: only exact or startsWith matches to avoid false positives
   Object.keys(SEMANTIC_MAP).forEach(key => {
-    if(q.includes(key) || key.includes(q)){
-      semanticTerms = [...semanticTerms, ...SEMANTIC_MAP[key]];
+    if(q === key || q.includes(key) || key.startsWith(q)){
+      SEMANTIC_MAP[key].forEach(s => allTerms.add(s.toLowerCase()));
     }
   });
   
-  // 2. Synonym-Erweiterung aus SYNONYMS
-  const expanded = expandQuery(q);
-  
-  // 3. Alle Suchbegriffe kombinieren
-  const allTerms = [...new Set([...expanded, ...semanticTerms])];
-  
-  // 4. Einzelne Wörter der Query auch durchsuchen (für "jemand für mein garten")
-  const words = q.split(/\s+/).filter(w => w.length > 2);
+  // For multi-word queries, check each word
   words.forEach(w => {
-    expanded.forEach(t => allTerms.push(t));
-    // Jedes Wort einzeln in SYNONYMS nachschlagen
-    if(SYNONYMS[w]) SYNONYMS[w].forEach(s => allTerms.push(s.toLowerCase()));
+    if(SYNONYMS[w]) SYNONYMS[w].forEach(s => allTerms.add(s.toLowerCase()));
+    // Only startsWith for short words to avoid "garten" matching "gartenarbeiter" wrongly
     Object.keys(SYNONYMS).forEach(k => {
-      if(k.startsWith(w)) {
-        SYNONYMS[k].forEach(s => allTerms.push(s.toLowerCase()));
+      if(k === w || (w.length > 3 && k.startsWith(w))){
+        SYNONYMS[k].forEach(s => allTerms.add(s.toLowerCase()));
       }
     });
-    // Jedes Wort einzeln in SEMANTIC_MAP
     Object.keys(SEMANTIC_MAP).forEach(key => {
-      if(key.includes(w) || w.includes(key)){
-        SEMANTIC_MAP[key].forEach(s => allTerms.push(s));
+      if(key === w || key.startsWith(w) || w.startsWith(key)){
+        SEMANTIC_MAP[key].forEach(s => allTerms.add(s.toLowerCase()));
       }
     });
   });
+
+  const terms = [...allTerms];
   
-  // 5. Freelancer filtern
+  // Score each freelancer
   return freelancers.filter(f => {
-    const fields = [
-      f.name, f.role,
-      ...(f.tags||[]),
-      ...(f.services||[]),
-      f.bio||'',
-      f.loc||''
-    ].map(s => s.toLowerCase()).join(' ');
+    const roleAndTags = [f.role, ...(f.tags||[]), ...(f.services||[])].map(s => s.toLowerCase()).join(' ');
+    const allFields = [f.name, f.bio||'', f.loc||''].map(s => s.toLowerCase()).join(' ') + ' ' + roleAndTags;
     
-    return allTerms.some(term => fields.includes(term.toLowerCase()));
+    // Must match in role/tags for specificity, or match in all fields broadly
+    return terms.some(term => roleAndTags.includes(term)) || 
+           terms.some(term => term.length > 4 && allFields.includes(term));
   });
 }
 
