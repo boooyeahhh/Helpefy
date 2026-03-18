@@ -316,7 +316,12 @@ nav{padding:0.75rem 1rem;}
 .loc-btn span:last-child{display:none;}
 .loc-btn::after{content:'📍';}
 .jobs-layout{display:block!important;}
-#jobPostForm{display:none!important;}.hero{padding:3rem 1rem 2.5rem;}.section{padding:2.5rem 1rem;}.cat-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));}.fl-grid{grid-template-columns:1fr 1fr;}.job-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr 1fr;}.dcontent{grid-template-columns:1fr;}.dash-layout{grid-template-columns:1fr;}.sidebar{display:none;}.chat-layout{grid-template-columns:1fr;}.chat-list{display:block;width:100%;}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}}
+#jobPostForm{display:none!important;}.hero{padding:3rem 1rem 2.5rem;}.section{padding:2.5rem 1rem;}.cat-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));}.fl-grid{grid-template-columns:1fr 1fr;}.job-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr 1fr;}.dcontent{grid-template-columns:1fr;}.dash-layout{grid-template-columns:1fr;}.sidebar{display:block;position:fixed;bottom:0;left:0;right:0;z-index:150;background:white;border-top:1.5px solid var(--border);border-right:none;padding:0.5rem 0.25rem;height:auto;}
+.snav{flex-direction:row;overflow-x:auto;gap:0;scrollbar-width:none;}
+.snav::-webkit-scrollbar{display:none;}
+.sni{flex-direction:column;gap:0.15rem;padding:0.4rem 0.5rem;font-size:0.62rem;min-width:56px;text-align:center;border-radius:8px;}
+.su-wrap{display:none;}
+.dash-content{padding:1rem;padding-bottom:5rem;}.chat-layout{grid-template-columns:1fr;}.chat-list{display:block;width:100%;}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}}
 @media(max-width:480px){.fl-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}}
 </style>
 <nav>
@@ -1167,7 +1172,7 @@ const JOBS = [
 const SYNONYMS = {
   'elektro':['Elektrik','Elektronik','Elektriker'],'elektriker':['Elektrik','Elektronik'],
   'strom':['Elektrik'],'steckdose':['Elektrik'],'kabel':['Elektrik'],
-  'it':['IT-Expertin','IT & Digital','PC','WLAN','Software'],
+  'it':['IT-Expertin','IT & Digital','PC','WLAN','Software','it & digital','digital'],
   'computer':['IT & Digital','PC'],'pc':['IT & Digital','PC-Hilfe'],
   'laptop':['IT & Digital','PC-Hilfe'],'internet':['IT & Digital','WLAN'],
   'wlan':['IT & Digital','WLAN'],'wifi':['WLAN'],'drucker':['IT & Digital'],
@@ -1311,9 +1316,20 @@ async function doRegister(){
       if(avatar) await sb.from('profiles').update({avatar_url:avatar}).eq('id',data.user.id);
     }
   }
-  err.style.display='none'; suc.style.display='block';
-  suc.textContent='✅ Konto erstellt! Du kannst dich jetzt anmelden.';
+  err.style.display='none';
   btn.disabled=false; btn.textContent='Konto erstellen';
+  // Auto-login after registration
+  const {data:loginData, error:loginErr} = await sb.auth.signInWithPassword({email, password:pass});
+  if(!loginErr && loginData.user){
+    currentUser = loginData.user;
+    closeModal('auth');
+    await loadProfile(); updateNav();
+    showView('home');
+    showToast('Willkommen bei Helpefy! 🎉','success');
+  } else {
+    suc.style.display='block';
+    suc.textContent='✅ Konto erstellt! Bitte anmelden.';
+  }
 }
 
 async function doLogout(){
@@ -1606,9 +1622,13 @@ function smartSearch(query, freelancers){
     const roleAndTags = [f.role, ...(f.tags||[]), ...(f.services||[])].map(s => s.toLowerCase()).join(' ');
     const allFields = [f.name, f.bio||'', f.loc||''].map(s => s.toLowerCase()).join(' ') + ' ' + roleAndTags;
     
-    // Must match in role/tags for specificity, or match in all fields broadly
-    return terms.some(term => roleAndTags.includes(term)) || 
-           terms.some(term => term.length > 4 && allFields.includes(term));
+    // Direct query match in any field
+    if(allFields.includes(q)) return true;
+    // Term match in role/tags (most important)
+    if(terms.some(term => term.length >= 2 && roleAndTags.includes(term))) return true;
+    // Longer term match anywhere
+    if(terms.some(term => term.length > 4 && allFields.includes(term))) return true;
+    return false;
   });
 }
 
@@ -1748,8 +1768,10 @@ function togglePill(el){
   if(txt.includes('verfügbar')||txt.includes('Verfügbar')) r=r.filter(f=>f.avail);
   else if(txt.includes('bewertet')||txt.includes('Bewertung')) r=[...all].sort((a,b)=>b.rating-a.rating);
   else if(txt.includes('Günstig')) r=[...all].sort((a,b)=>a.price-b.price);
-  // "Alle" resets to current search
-  const grid=document.getElementById('searchGrid')||document.getElementById('homeGrid');
+  // else "Alle" → use full list
+  const searchGrid=document.getElementById('searchGrid');
+  const homeGrid=document.getElementById('homeGrid');
+  const grid=searchGrid&&searchGrid.offsetParent?searchGrid:homeGrid;
   if(grid) grid.innerHTML=r.map((f,i)=>flCard(f,all.indexOf(f))).join('');
 }
 function toggleRadius(){
