@@ -1654,24 +1654,21 @@ function smartSearch(query, freelancers){
   
   const terms = [...relevantTerms];
   
+  // Split each field into individual words for exact matching
   return freelancers.filter(f => {
-    // Primary: match in role or category (most specific)
-    const role = (f.role||'').toLowerCase();
-    const tags = (f.tags||[]).map(t=>t.toLowerCase());
-    const services = (f.services||[]).map(s=>s.toLowerCase());
-    const roleTagStr = [role, ...tags, ...services].join(' ');
+    const roleWords = (f.role||'').toLowerCase().split(/[\s,&-]+/);
+    const tagWords = (f.tags||[]).flatMap(t => t.toLowerCase().split(/[\s,&-]+/));
+    const serviceWords = (f.services||[]).flatMap(s => s.toLowerCase().split(/[\s,&-]+/));
+    const allWords = new Set([...roleWords, ...tagWords, ...serviceWords]);
     
-    // Check if ANY search term matches role/tags/services
-    const matchesRoleOrTag = terms.some(t => t.length > 1 && roleTagStr.includes(t));
-    if(matchesRoleOrTag) return true;
+    // Also keep full phrases for multi-word matches like "it & digital"
+    const roleTagStr = [f.role||'', ...(f.tags||[]), ...(f.services||[])].join(' ').toLowerCase();
     
-    // Secondary: bio match only for longer queries
-    if(q.length > 4){
-      const bio = (f.bio||'').toLowerCase();
-      if(terms.some(t => t.length > 4 && bio.includes(t))) return true;
-    }
-    
-    return false;
+    return terms.some(t => {
+      if(!t || t.length < 2) return false;
+      // Exact word match OR full phrase match
+      return allWords.has(t) || roleTagStr.includes(t);
+    });
   });
 }
 
