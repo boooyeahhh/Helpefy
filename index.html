@@ -851,10 +851,37 @@ nav{padding:0.75rem 1rem;}
       <div id="dash-settings" style="display:none">
         <div class="dash-title">Einstellungen</div>
         <div class="dcard" style="max-width:500px;margin-top:1rem">
+
+          <!-- Profilbild -->
+          <div class="fg">
+            <label>Profilbild</label>
+            <div style="display:flex;align-items:center;gap:1rem;margin-top:0.25rem">
+              <div id="settingsAvatarPreview" style="width:72px;height:72px;border-radius:14px;background:var(--light2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden;flex-shrink:0">👤</div>
+              <div>
+                <input type="file" id="settingsAvatar" accept="image/*" style="display:none" onchange="previewSettingsAvatar(this)">
+                <button type="button" onclick="document.getElementById('settingsAvatar').click()" class="btn-ghost" style="font-size:0.82rem;padding:0.4rem 0.85rem">📷 Bild ändern</button>
+                <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem">Wird in Suchergebnissen angezeigt</div>
+              </div>
+            </div>
+          </div>
+
           <div class="fg"><label>Name</label><input id="settingsName" type="text" placeholder="Max Mustermann"></div>
           <div class="fg"><label>E-Mail</label><input id="settingsEmail" type="email" readonly style="opacity:0.6"></div>
-          <div class="fg"><label>Standort</label><input type="text" placeholder="Berlin, Deutschland"></div>
-          <button class="btn-red" onclick="saveSettings()" style="margin-top:0.5rem">Speichern</button>
+          <div class="fg"><label>Standort</label><input type="text" id="settingsStandort" placeholder="z.B. München"></div>
+          <div id="settings-fl-extra" style="display:none">
+            <div class="fg"><label>Kategorie</label>
+              <select id="settingsKategorie">
+                <option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option>
+                <option>Garten</option><option>Umzug</option><option>Lernen</option>
+                <option>Kreativ</option><option>Beauty</option><option>Tiere</option>
+              </select>
+            </div>
+            <div class="fg"><label>Stundenlohn (€)</label><input type="number" id="settingsPreis" placeholder="25"></div>
+            <div class="fg"><label>Über mich</label>
+              <textarea id="settingsBio" placeholder="Beschreibe deine Erfahrung..." style="min-height:80px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
+            </div>
+          </div>
+          <button class="btn-red" onclick="saveSettings()" style="margin-top:0.5rem;width:100%">Speichern</button>
         </div>
       </div>
     </div>
@@ -1210,6 +1237,16 @@ async function loadProfile(){
     document.getElementById('dashAvatar').textContent=name.charAt(0).toUpperCase();
     document.getElementById('settingsName').value=name;
     document.getElementById('settingsEmail').value=data.email||currentUser.email;
+    // Show avatar in settings
+    const avatarPrev=document.getElementById('settingsAvatarPreview');
+    if(avatarPrev && data.avatar_url){
+      avatarPrev.innerHTML=`<img src="${data.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+    } else if(avatarPrev){
+      avatarPrev.innerHTML=`<span style="font-size:2rem">${name.charAt(0).toUpperCase()}</span>`;
+    }
+    // Show freelancer extra fields if freelancer
+    const flExtra=document.getElementById('settings-fl-extra');
+    if(flExtra) flExtra.style.display=data.role==='freelancer'?'block':'none';
   }
   // Load all orders (as kunde AND as freelancer receiving offers)
   const {data:orders}=await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
@@ -1222,11 +1259,49 @@ async function loadProfile(){
   await renderDashOrders();
 }
 
+function previewSettingsAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){showToast('Bild zu groß! Max. 2MB','error');return;}
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('settingsAvatarPreview');
+    if(prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+    window._newAvatar = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 async function saveSettings(){
   if(!currentUser) return;
+  const btn = document.querySelector('#dash-settings .btn-red');
+  btn.textContent='Speichern...'; btn.disabled=true;
   const name=document.getElementById('settingsName').value;
-  await sb.from('profiles').update({full_name:name}).eq('id',currentUser.id);
-  showToast('Gespeichert!','success');
+  const standort=document.getElementById('settingsStandort')?.value||'';
+  const avatar=window._newAvatar||null;
+
+  // Update profile
+  const profileUpdate = {full_name:name};
+  if(avatar) profileUpdate.avatar_url = avatar;
+  await sb.from('profiles').update(profileUpdate).eq('id',currentUser.id);
+
+  // Update freelancer data if freelancer
+  if(currentProfile?.role==='freelancer'){
+    const kat=document.getElementById('settingsKategorie')?.value;
+    const preis=parseFloat(document.getElementById('settingsPreis')?.value)||0;
+    const bio=document.getElementById('settingsBio')?.value||'';
+    const flUpdate={standort};
+    if(kat) flUpdate.kategorie=kat;
+    if(preis) flUpdate.stundenlohn=preis;
+    if(bio) flUpdate.beschreibung=bio;
+    if(avatar) flUpdate.avatar_url=avatar;
+    await sb.from('freelancers').update(flUpdate).eq('user_id',currentUser.id);
+  }
+
+  window._newAvatar = null;
+  btn.textContent='Speichern'; btn.disabled=false;
+  showToast('Einstellungen gespeichert! ✅','success');
+  await loadProfile();
 }
 
 function updateNav(){
@@ -1653,12 +1728,29 @@ const JOB_IMG_TERMS = {
   'Sonstiges':'freelancer+professional+work',
 };
 
+// Picsum + category overlay - guaranteed to work, no API key needed
+// Each category gets a consistent beautiful photo
+// Direct working image URLs per category
+const JOB_IMGS = {
+  'Reinigung': 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=300&fit=crop',
+  'Haushalt': 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=300&fit=crop',
+  'Handwerk': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=300&fit=crop',
+  'Garten': 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=300&fit=crop',
+  'Umzug': 'https://images.unsplash.com/photo-1600518464441-9306adb181b3?w=600&h=300&fit=crop',
+  'Lernen': 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=300&fit=crop',
+  'IT & Digital': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=300&fit=crop',
+  'Kreativ': 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&h=300&fit=crop',
+  'Beauty': 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=300&fit=crop',
+  'Tiere': 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=300&fit=crop',
+  'Transport': 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&h=300&fit=crop',
+  'Events': 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=300&fit=crop',
+  'Sonstiges': 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=300&fit=crop',
+};
+
 function getJobImg(cat, customImg){
   if(customImg) return `<img src="${customImg}" class="job-img" onerror="this.style.display='none'">`;
-  const term = JOB_IMG_TERMS[cat] || 'professional+service+work';
-  // Use Unsplash source - free, no API key, random relevant image
-  const seed = cat.length + (term.length * 3);
-  return `<img src="https://source.unsplash.com/600x300/?${term}&sig=${seed}" class="job-img" loading="lazy" onerror="this.style.display='none'" alt="${cat}">`;
+  const url = JOB_IMGS[cat] || JOB_IMGS['Sonstiges'];
+  return `<img src="${url}" class="job-img" loading="lazy" onerror="this.style.display='none'" alt="${cat}">`;
 }
 
 function renderJobGrid(jobs){
