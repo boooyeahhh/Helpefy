@@ -799,7 +799,16 @@ nav{padding:0.75rem 1rem;}
             <option value="4">4 Stunden</option>
           </select>
         </div>
-        <div class="fg"><label>Details</label><textarea placeholder="Was soll gemacht werden?"></textarea></div>
+        <div class="fg"><label>Details</label><textarea id="bookDetails" placeholder="Was soll gemacht werden? Je mehr Details desto besser." style="min-height:80px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea></div>
+        <div class="fg">
+          <label>Fotos hinzufügen <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+          <div id="bookImgArea" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.35rem">
+            <label style="width:64px;height:64px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.4rem;background:var(--light);flex-shrink:0">
+              📷<input type="file" accept="image/*" multiple style="display:none" onchange="previewBookImages(this)">
+            </label>
+          </div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem">z.B. Foto vom Problem, Raum oder Gerät</div>
+        </div>
         <div class="price-box">
           <div class="pb-row"><span id="pbLabel">35 € × 2 Std</span><span id="pbSub">70,00 €</span></div>
           <div class="pb-row"><span>Helpefy Service (15%)</span><span id="pbFee">10,50 €</span></div>
@@ -937,9 +946,8 @@ nav{padding:0.75rem 1rem;}
         </div>
         <div class="messages" id="chatMsgs" style="flex:1;min-height:0;overflow-y:auto"></div>
         <div class="chat-input-area">
-          <label style="cursor:pointer;padding:0.5rem;color:var(--muted);font-size:1.2rem;flex-shrink:0" title="Bild senden">
-            📷
-            <input type="file" accept="image/*" style="display:none" onchange="sendChatImage(this)">
+          <label style="cursor:pointer;width:40px;height:40px;border-radius:10px;background:var(--light2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;align-self:flex-end;margin-bottom:2px;transition:background 0.2s" title="Bild senden" onmouseover="this.style.background='var(--red-light)'" onmouseout="this.style.background='var(--light2)'">
+            📷<input type="file" accept="image/*" style="display:none" onchange="sendChatImage(this)">
           </label>
           <textarea class="chat-input" id="chatInput" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
           <button class="send-btn" onclick="sendMsg()">➤</button>
@@ -2337,6 +2345,24 @@ function previewAvatar(input){
     if(prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`;
   };
   reader.readAsDataURL(file);
+}
+
+function previewBookImages(input){
+  const area = document.getElementById('bookImgArea');
+  if(!area) return;
+  Array.from(input.files).forEach(file=>{
+    if(file.size > 3*1024*1024){showToast('Bild zu groß! Max 3MB','error');return;}
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText='width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid var(--border)';
+      img.onclick = ()=>img.remove();
+      img.title = 'Klicken zum Entfernen';
+      area.insertBefore(img, area.lastElementChild);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function previewJobImages(input){
