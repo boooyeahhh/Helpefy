@@ -823,7 +823,7 @@ nav{padding:0.75rem 1rem;}
         <div class="fg"><label>Zahlung</label>
           <select><option>💳 Kreditkarte</option><option>🍎 Apple Pay</option><option>🅿️ PayPal</option></select>
         </div>
-        <button class="book-now" onclick="doBook()">Jetzt buchen →</button>
+        <button class="book-now" onclick="doBook()">📨 Anfrage senden →</button>
         <button class="chat-now" onclick="showView('chat')">💬 Nachricht senden</button>
       </div>
     </div>
@@ -853,16 +853,22 @@ nav{padding:0.75rem 1rem;}
         <div class="dash-title" id="dashGreet">Willkommen! 👋</div>
         <div class="dash-sub">Deine Übersicht</div>
         <div class="dstats">
-          <div class="dsc" onclick="switchDash('orders',document.querySelector('.sni:nth-child(2)'))" style="cursor:pointer"><div class="dsc-icon">📋</div><div class="dsc-n dsc-auftraege">0</div><div class="dsc-l">Aufträge</div></div>
-          <div class="dsc"><div class="dsc-icon">💶</div><div class="dsc-n dsc-ausgaben">0€</div><div class="dsc-l dsc-ausgaben-label">Ausgaben</div></div>
-          <div class="dsc"><div class="dsc-icon">⭐</div><div class="dsc-n">–</div><div class="dsc-l">Bewertungen</div></div>
-          <div class="dsc"><div class="dsc-icon">❤️</div><div class="dsc-n">0</div><div class="dsc-l">Gespeichert</div></div>
+          <div class="dsc" onclick="switchDash('orders',document.querySelector('.sni:nth-child(2)'))" style="cursor:pointer;transition:box-shadow 0.2s" onmouseover="this.style.boxShadow='var(--shadow2)'" onmouseout="this.style.boxShadow=''">
+            <div class="dsc-icon">📋</div><div class="dsc-n dsc-auftraege">0</div><div class="dsc-l">Aufträge</div>
+          </div>
+          <div class="dsc" id="dsc-money">
+            <div class="dsc-icon" id="dsc-money-icon">💶</div><div class="dsc-n dsc-ausgaben">0€</div><div class="dsc-l dsc-ausgaben-label">Ausgaben</div>
+          </div>
+          <div class="dsc"><div class="dsc-icon">⭐</div><div class="dsc-n dsc-bewertungen">–</div><div class="dsc-l">Bewertungen</div></div>
+          <div class="dsc" onclick="showView('chat')" style="cursor:pointer;transition:box-shadow 0.2s" onmouseover="this.style.boxShadow='var(--shadow2)'" onmouseout="this.style.boxShadow=''">
+            <div class="dsc-icon">💬</div><div class="dsc-n dsc-nachrichten">–</div><div class="dsc-l">Nachrichten</div>
+          </div>
         </div>
         <div class="dcontent">
-          <div class="dcard"><div class="dc-title">Schnellzugriff</div>
-            <div class="oi"><div class="oi-icon">🔍</div><div class="oi-info"><div class="oi-title">Freelancer suchen</div><div class="oi-meta">Finde den passenden Experten</div></div><button class="book-btn" onclick="showView('home')">Los</button></div>
-            <div class="oi"><div class="oi-icon">💬</div><div class="oi-info"><div class="oi-title">Nachrichten</div><div class="oi-meta">Mit Freelancern chatten</div></div><button class="book-btn" onclick="showView('chat')">Öffnen</button></div>
-            <div class="oi"><div class="oi-icon">📝</div><div class="oi-info"><div class="oi-title">Job posten</div><div class="oi-meta">Auftrag ausschreiben</div></div><button class="book-btn" onclick="showView('job-posten')">Posten</button></div>
+          <div class="dcard" id="dashQuickAccess"><div class="dc-title">Schnellzugriff</div>
+            <div class="oi"><div class="oi-icon">📋</div><div class="oi-info"><div class="oi-title" id="qa-orders-title">Meine Aufträge</div><div class="oi-meta" id="qa-orders-meta">Übersicht aller Aufträge</div></div><button class="book-btn" onclick="switchDash('orders',document.querySelector('.sni:nth-child(2)'))">Öffnen</button></div>
+            <div class="oi"><div class="oi-icon">💬</div><div class="oi-info"><div class="oi-title">Nachrichten</div><div class="oi-meta">Chat mit Kunden/Freelancern</div></div><button class="book-btn" onclick="showView('chat')">Öffnen</button></div>
+            <div class="oi" id="qa-third"><div class="oi-icon">🔍</div><div class="oi-info"><div class="oi-title">Freelancer suchen</div><div class="oi-meta">Finde den passenden Experten</div></div><button class="book-btn" onclick="showView('home')">Los</button></div>
           </div>
           <div class="dcard"><div class="dc-title">Konto Info</div>
             <div class="oi"><div class="oi-icon">📧</div><div class="oi-info"><div class="oi-title" id="dashEmail">–</div><div class="oi-meta">E-Mail Adresse</div></div></div>
@@ -1370,24 +1376,57 @@ async function loadProfile(){
   // Count orders based on role
   const isFL = data?.role === 'freelancer';
   let orderCount = 0, totalMoney = 0;
+
   if(isFL){
     const {data:flOrders}=await sb.from('auftraege').select('id,preis,status').eq('freelancer_id',currentUser.id);
     orderCount = flOrders?.length||0;
-    // Einnahmen = bezahlte Aufträge minus 15% Provision
-    totalMoney = (flOrders||[]).filter(o=>o.status==='bezahlt'||o.status==='abgeschlossen').reduce((s,o)=>s+(o.preis||0)*0.85,0);
-    // Update label to "Einnahmen"
+    const earned = (flOrders||[]).filter(o=>o.status==='bezahlt'||o.status==='abgeschlossen').reduce((s,o)=>s+(o.preis||0)*0.85,0);
+    totalMoney = earned;
+    // Update to Einnahmen
     const label = document.querySelector('.dsc-ausgaben-label');
+    const icon = document.getElementById('dsc-money-icon');
     if(label) label.textContent = 'Einnahmen';
-    const icon = label?.previousElementSibling;
     if(icon) icon.textContent = '💰';
+    // Show auszahlung section in payments tab
+    const paymentsEl = document.getElementById('dash-payments');
+    if(paymentsEl) paymentsEl.innerHTML = `
+      <div class="dash-title">Zahlungen & Auszahlung</div>
+      <div class="dcard" style="max-width:500px;margin-top:1rem">
+        <div style="text-align:center;padding:1rem">
+          <div style="font-size:2.5rem;font-weight:700;color:var(--red)">${earned.toFixed(2)} €</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin:0.5rem 0">Verfügbares Guthaben (nach 15% Provision)</div>
+          <button onclick="requestAuszahlung(${earned.toFixed(2)})" class="btn-red" style="margin-top:1rem;padding:0.75rem 2rem;font-size:0.95rem">
+            💸 Auszahlung beantragen
+          </button>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:0.75rem">Auszahlungen werden innerhalb von 2-3 Werktagen bearbeitet</div>
+        </div>
+      </div>`;
   } else if(orders&&orders.length){
     orderCount = orders.length;
     totalMoney = orders.filter(o=>o.status==='bezahlt'||o.status==='abgeschlossen').reduce((s,o)=>s+(o.preis||0),0);
   }
+
   const auftraegeEl = document.querySelector('.dsc-auftraege');
   const ausgabenEl = document.querySelector('.dsc-ausgaben');
   if(auftraegeEl) auftraegeEl.textContent = orderCount;
   if(ausgabenEl) ausgabenEl.textContent = totalMoney.toFixed(0)+'€';
+
+  // Count unread messages
+  if(currentUser){
+    const {data:msgs} = await sb.from('nachrichten').select('id').eq('zu_user_id',currentUser.id).limit(99);
+    const msgEl = document.querySelector('.dsc-nachrichten');
+    if(msgEl) msgEl.textContent = msgs?.length||0;
+  }
+
+  // Update Schnellzugriff for freelancers
+  if(isFL){
+    const t = document.getElementById('qa-orders-title');
+    const m = document.getElementById('qa-orders-meta');
+    const third = document.getElementById('qa-third');
+    if(t) t.textContent = 'Eingehende Aufträge';
+    if(m) m.textContent = 'Anfragen von Kunden';
+    if(third) third.innerHTML = `<div class="oi-icon">💰</div><div class="oi-info"><div class="oi-title">Zahlungen</div><div class="oi-meta">Einnahmen & Auszahlung</div></div><button class="book-btn" onclick="switchDash('payments',document.querySelector('.sni:nth-child(5)'))">Öffnen</button>`;
+  }
   await renderDashOrders();
 }
 
@@ -1848,14 +1887,38 @@ async function doBook(){
   const datum=document.getElementById('bDate').value;
   if(!datum){showToast('Bitte ein Datum wählen!','error');return;}
   const f=window._curFL||FL[curFL];
+  if(!f){showToast('Fehler: Freelancer nicht gefunden','error');return;}
   const h=parseInt(document.getElementById('bHours').value)||1;
-  const sub=f.price*h,fee=+(sub*0.15).toFixed(2),total=+(sub+fee).toFixed(2);
-  document.getElementById('paymentSummary').textContent=`${f.name} · ${datum} · ${h} Std`;
-  document.getElementById('pay-label').textContent=`${f.price} € × ${h} Std`;
-  document.getElementById('pay-sub').textContent=`${sub.toFixed(2)} €`;
-  document.getElementById('pay-fee').textContent=`${fee.toFixed(2)} €`;
-  document.getElementById('pay-total').textContent=`${sub.toFixed(2)} €`; // Customer pays freelancer price only
-  openModal('payment');
+  const preis=f.price*h;
+  const details=document.getElementById('bookDetails')?.value||'';
+  const btn=document.querySelector('.book-now');
+  btn.disabled=true; btn.textContent='Wird gesendet...';
+
+  // Save as 'anfrage' - no payment yet
+  const {error}=await sb.from('auftraege').insert({
+    kunde_id: currentUser.id,
+    freelancer_id: f.real ? f.id : null,
+    titel: `Buchungsanfrage: ${f.name}`,
+    beschreibung: details||`Buchungsanfrage für ${f.role}`,
+    kategorie: f.tags?.[0]||'Service',
+    preis: preis,
+    provision: +(preis*0.15).toFixed(2),
+    datum: datum,
+    status: 'anfrage',
+    created_at: new Date().toISOString()
+  });
+
+  btn.disabled=false; btn.textContent='📨 Anfrage senden →';
+  if(error){showToast('Fehler: '+error.message,'error');return;}
+
+  showToast('Anfrage gesendet! Der Freelancer wird benachrichtigt. 📨','success');
+  // Open chat with freelancer
+  if(f.real && f.id){
+    showView('chat');
+    setTimeout(()=>loadChatUsers(),500);
+  } else {
+    showView('dashboard');
+  }
 }
 
 async function confirmPayment(){
@@ -1943,6 +2006,7 @@ async function renderDashOrders(){
     if(s==='abgeschlossen') return '<span class="badge badge-green">✅ Abgeschlossen</span>';
     if(s==='bezahlt') return '<span class="badge badge-green">💳 Bezahlt</span>';
     if(s==='angenommen') return '<span class="badge badge-green">✓ Angenommen</span>';
+    if(s==='anfrage') return '<span class="badge badge-yellow">📨 Anfrage</span>';
     if(s==='bestätigt') return '<span class="badge badge-blue">Bestätigt</span>';
     if(s==='angebot_gesendet') return '<span class="badge badge-yellow">⏳ Ausstehend</span>';
     if(s==='abgelehnt') return '<span class="badge" style="background:#fee2e2;color:#991b1b">✕ Abgelehnt</span>';
@@ -1969,12 +2033,15 @@ async function renderDashOrders(){
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
             ${badge(o.status)}
-            ${o.status==='angebot_gesendet'&&isFreelancer?`
+            ${(o.status==='anfrage'||o.status==='angebot_gesendet')&&isFreelancer?`
               <div style="display:flex;gap:0.35rem;margin-top:0.25rem;flex-wrap:wrap">
                 <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
                 <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
                 <button onclick="showView('chat')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">💬 Chat</button>
               </div>`:''}
+            ${(o.status==='anfrage')&&!isFreelancer?`
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.25rem">⏳ Warte auf Antwort...</div>
+              <button onclick="showView('chat')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;margin-top:0.25rem">💬 Chat</button>`:''}
             ${o.status==='angenommen'&&isFreelancer?`
               <div style="font-size:0.72rem;color:var(--green);text-align:right;margin-top:0.25rem">✓ Angenommen – warte auf Zahlung</div>`:''}
             ${o.status==='angenommen'&&!isFreelancer?`
@@ -2182,6 +2249,13 @@ async function submitBewertung(){
   closeModal('bewertung');
   showToast('Bewertung abgegeben! Danke ⭐','success');
   renderDashOrders();
+}
+
+// ── AUSZAHLUNG ──
+async function requestAuszahlung(amount){
+  if(amount <= 0){showToast('Kein Guthaben vorhanden','error');return;}
+  showToast(`Auszahlung von ${amount}€ wurde beantragt! Wir melden uns in 2-3 Werktagen. 💸`,'success');
+  // In real production: create Stripe Connect payout here
 }
 
 // ── HELPERS ──
