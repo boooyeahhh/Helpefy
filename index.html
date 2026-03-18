@@ -85,7 +85,9 @@ nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between
 .fl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:1.25rem;}
 .fl-card{background:var(--white);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:all 0.2s;}
 .fl-card:hover{transform:translateY(-3px);box-shadow:var(--shadow2);}
-.fl-img{width:100%;height:180px;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);display:flex;align-items:center;justify-content:center;font-size:4.5rem;position:relative;}
+.fl-img{width:100%;height:180px;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);display:flex;align-items:center;justify-content:center;font-size:4.5rem;position:relative;overflow:hidden;}
+.fl-img img{width:100%;height:100%;object-fit:cover;}
+.job-img{width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:0.75rem;}
 .avail-badge{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:0.3rem;background:var(--green);color:white;font-size:0.68rem;font-weight:600;padding:0.25rem 0.6rem;border-radius:2rem;}
 .avail-dot{width:5px;height:5px;border-radius:50%;background:white;}
 .fl-body{padding:1rem;}
@@ -360,7 +362,7 @@ nav{padding:0.75rem 1rem;}
       <div style="position:relative;z-index:10">
         <div class="search-bar">
           <span>🔍</span>
-          <input id="heroSearch" placeholder="Was brauchst du? z.B. Elektriker, Reinigung..."
+          <input id="heroSearch" autocomplete="off" name="search" placeholder="Was brauchst du? z.B. Elektriker, Reinigung..."
             onkeydown="if(event.key==='Enter'){hideAllSugg();doSearch();}"
             oninput="showSearchSuggestions(this,'heroSugg')"
             autocomplete="off">
@@ -446,7 +448,7 @@ nav{padding:0.75rem 1rem;}
           <div style="position:relative;margin-bottom:1.25rem">
             <div class="search-bar">
               <span>🔍</span>
-              <input id="jobSearchInput" placeholder="Jobs suchen z.B. Reinigung, Handwerk..."
+              <input id="jobSearchInput" autocomplete="off" name="jobsearch" placeholder="Jobs suchen z.B. Reinigung, Handwerk..."
                 onkeydown="if(event.key==='Enter'){hideAllSugg();searchJobs();}"
                 oninput="showJobSuggestions(this)"
                 autocomplete="off">
@@ -683,6 +685,16 @@ nav{padding:0.75rem 1rem;}
           <option>Transport</option><option>Events</option><option>Sonstiges</option>
         </select>
       </div>
+      <div class="fg">
+        <label>Fotos hinzufügen (optional)</label>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.25rem" id="jobImgPreviewArea">
+          <label style="width:80px;height:80px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.5rem;background:var(--light);flex-shrink:0" title="Foto hinzufügen">
+            +
+            <input type="file" accept="image/*" multiple style="display:none" onchange="previewJobImages(this)">
+          </label>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.35rem">Zeig deinen Garten, Zimmer oder was gemacht werden soll</div>
+      </div>
       <div class="fg"><label>Beschreibung</label><textarea id="jobDesc2" placeholder="Was genau soll gemacht werden? Je mehr Details, desto besser." style="min-height:120px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light);transition:border-color 0.2s" onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--border)'"></textarea></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
         <div class="fg"><label>Budget min (€)</label><input type="number" id="jobBudgetMin2" placeholder="50"></div>
@@ -710,7 +722,7 @@ nav{padding:0.75rem 1rem;}
       <div style="position:relative;max-width:680px">
         <div class="search-bar">
           <span>🔍</span>
-          <input id="searchInput" placeholder="Was brauchst du? z.B. Reinigung, Elektriker..."
+          <input id="searchInput" autocomplete="off" name="search2" placeholder="Was brauchst du? z.B. Reinigung, Elektriker..."
             onkeydown="if(event.key==='Enter'){hideAllSugg();doSearch();}"
             oninput="showSearchSuggestions(this,'searchSugg')"
             autocomplete="off">
@@ -934,6 +946,17 @@ nav{padding:0.75rem 1rem;}
       <div id="reg-fl-extra" style="display:none">
         <div class="fg"><label>Kategorie</label><select id="regKategorie"><option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option><option>Garten</option><option>Umzug</option><option>Lernen</option></select></div>
         <div class="fg"><label>Stundenlohn (€)</label><input type="number" id="regPreis" placeholder="25"></div>
+        <div class="fg">
+          <label>Profilbild</label>
+          <div style="display:flex;align-items:center;gap:1rem;margin-top:0.25rem">
+            <div id="regAvatarPreview" style="width:60px;height:60px;border-radius:12px;background:var(--light2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;overflow:hidden;flex-shrink:0">👤</div>
+            <div>
+              <input type="file" id="regAvatar" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+              <button type="button" onclick="document.getElementById('regAvatar').click()" class="btn-ghost" style="font-size:0.82rem;padding:0.4rem 0.85rem">📷 Bild hochladen</button>
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem">JPG, PNG · max. 2MB</div>
+            </div>
+          </div>
+        </div>
       </div>
       <button class="form-submit" id="regBtn" onclick="doRegister()">Konto erstellen</button>
     </div>
@@ -1154,7 +1177,11 @@ async function doRegister(){
     if(isFL){
       const kat=document.getElementById('regKategorie').value;
       const preis=parseFloat(document.getElementById('regPreis').value)||25;
-      await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,created_at:new Date().toISOString()});
+      // Get avatar if uploaded (stored as base64 in profiles)
+      const avatarEl=document.getElementById('regAvatarPreview')?.querySelector('img');
+      const avatar=avatarEl?.src||null;
+      await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,avatar_url:avatar,created_at:new Date().toISOString()});
+      if(avatar) await sb.from('profiles').update({avatar_url:avatar}).eq('id',data.user.id);
     }
   }
   err.style.display='none'; suc.style.display='block';
@@ -1252,7 +1279,7 @@ async function renderHome(){
   const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').eq('verfuegbar',true).limit(20);
   let all=[...FL];
   if(realFL&&realFL.length){
-    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
+    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
     all=[...rc,...FL];
   }
   window.ALL_FL=all;
@@ -1366,7 +1393,7 @@ async function renderSearch(q){
   const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').limit(50);
   let all=[...FL];
   if(realFL&&realFL.length){
-    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
+    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
     all=[...rc,...FL];
   }
   window.ALL_FL=all;
@@ -1410,8 +1437,11 @@ function renderSaved(){
 }
 
 function flCard(f,i){
+  const imgContent = f.avatar
+    ? `<img src="${f.avatar}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=\'font-size:4rem\'>${f.emoji||'👤'}</span>'">`
+    : `<span style="font-size:4rem">${f.emoji||'👤'}</span>`;
   return `<div class="fl-card" onclick="openProfileByData(${i})">
-    <div class="fl-img"><span style="font-size:4rem">${f.emoji||'👤'}</span>${f.avail?'<div class="avail-badge"><div class="avail-dot"></div>Verfügbar</div>':''}</div>
+    <div class="fl-img">${imgContent}${f.avail?'<div class="avail-badge"><div class="avail-dot"></div>Verfügbar</div>':''}</div>
     <div class="fl-body">
       <div class="fl-top"><div class="fl-name">${f.name}</div><div class="fl-price">${f.price} €<span>/Std</span></div></div>
       <div class="fl-role">${f.role}</div>
@@ -1606,6 +1636,31 @@ async function sendMsg(){
 // ── JOBS ──
 let allJobsCache = [];
 
+// Job category → Unsplash search term
+const JOB_IMG_TERMS = {
+  'Reinigung':'professional+cleaning+service',
+  'Haushalt':'house+cleaning+maid',
+  'Handwerk':'handyman+repair+tools',
+  'Garten':'garden+landscaping+gardener',
+  'Umzug':'moving+boxes+relocation',
+  'Lernen':'tutoring+studying+education',
+  'IT & Digital':'computer+it+tech+support',
+  'Kreativ':'creative+design+art',
+  'Beauty':'beauty+salon+hair',
+  'Tiere':'pet+care+dog+walker',
+  'Transport':'delivery+transport+van',
+  'Events':'event+party+decoration',
+  'Sonstiges':'freelancer+professional+work',
+};
+
+function getJobImg(cat, customImg){
+  if(customImg) return `<img src="${customImg}" class="job-img" onerror="this.style.display='none'">`;
+  const term = JOB_IMG_TERMS[cat] || 'professional+service+work';
+  // Use Unsplash source - free, no API key, random relevant image
+  const seed = cat.length + (term.length * 3);
+  return `<img src="https://source.unsplash.com/600x300/?${term}&sig=${seed}" class="job-img" loading="lazy" onerror="this.style.display='none'" alt="${cat}">`;
+}
+
 function renderJobGrid(jobs){
   const grid=document.getElementById('jobGrid');
   const cnt=document.getElementById('jobCount');
@@ -1615,12 +1670,15 @@ function renderJobGrid(jobs){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)"><div style="font-size:2.5rem">📋</div><div style="font-weight:600;margin:0.5rem 0">Keine Jobs gefunden</div><button class="btn-red" style="margin-top:0.5rem" onclick="loadRealJobs()">Alle anzeigen</button></div>`;
     return;
   }
-  grid.innerHTML=jobs.map(j=>`<div class="job-card">
-    <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
-    <div class="job-title">${j.title}</div>
-    <div class="job-desc">${j.desc}</div>
-    <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
-    <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button></div>
+  grid.innerHTML=jobs.map(j=>`<div class="job-card" style="overflow:hidden;padding:0">
+    ${getJobImg(j.cat, j.img)}
+    <div style="padding:1.25rem">
+      <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
+      <div class="job-title">${j.title}</div>
+      <div class="job-desc">${j.desc}</div>
+      <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
+      <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button></div>
+    </div>
   </div>`).join('');
 }
 
@@ -1918,6 +1976,36 @@ async function updateAuftrag(id, status){
 }
 
 // ── ANGEBOT ──
+// Image handling
+let jobImageBase64 = [];
+
+function previewAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('regAvatarPreview');
+    if(prev) prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:10px">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewJobImages(input){
+  const area = document.getElementById('jobImgPreviewArea');
+  if(!area) return;
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:10px;border:2px solid var(--border)';
+      area.insertBefore(img, area.lastElementChild);
+      jobImageBase64.push(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 let currentJobData = null;
 function applyForJob(btn){
   if(!currentUser){openModal('auth');return;}
