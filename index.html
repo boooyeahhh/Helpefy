@@ -1654,20 +1654,20 @@ function smartSearch(query, freelancers){
   
   const terms = [...relevantTerms];
   
-  // Split each field into individual words for exact matching
   return freelancers.filter(f => {
-    const roleWords = (f.role||'').toLowerCase().split(/[\s,&-]+/);
-    const tagWords = (f.tags||[]).flatMap(t => t.toLowerCase().split(/[\s,&-]+/));
-    const serviceWords = (f.services||[]).flatMap(s => s.toLowerCase().split(/[\s,&-]+/));
-    const allWords = new Set([...roleWords, ...tagWords, ...serviceWords]);
-    
-    // Also keep full phrases for multi-word matches like "it & digital"
-    const roleTagStr = [f.role||'', ...(f.tags||[]), ...(f.services||[])].join(' ').toLowerCase();
+    const allText = [f.role||'', ...(f.tags||[]), ...(f.services||[])].join(' ').toLowerCase();
+    // Split into words for boundary check
+    const allWords = allText.split(/[\s,&\/\-]+/).filter(Boolean);
     
     return terms.some(t => {
       if(!t || t.length < 2) return false;
-      // Exact word match OR full phrase match
-      return allWords.has(t) || roleTagStr.includes(t);
+      // Exact word match (boundary safe)
+      if(allWords.some(w => w === t)) return true;
+      // Phrase match for longer terms like "it & digital"
+      if(t.length > 4 && allText.includes(t)) return true;
+      // Startswith for things like "gärtn" matching "gärtner"
+      if(t.length > 3 && allWords.some(w => w.startsWith(t))) return true;
+      return false;
     });
   });
 }
