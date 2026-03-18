@@ -315,7 +315,7 @@ nav{padding:0.75rem 1rem;}
 .loc-btn span:last-child{display:none;}
 .loc-btn::after{content:'📍';}
 .jobs-layout{display:block!important;}
-#jobPostForm{display:none!important;}.hero{padding:3rem 1rem 2.5rem;}.section{padding:2.5rem 1rem;}.cat-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));}.fl-grid{grid-template-columns:1fr 1fr;}.job-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr 1fr;}.dcontent{grid-template-columns:1fr;}.dash-layout{grid-template-columns:1fr;}.sidebar{display:none;}.chat-layout{grid-template-columns:1fr;}.chat-list{display:none;}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}}
+#jobPostForm{display:none!important;}.hero{padding:3rem 1rem 2.5rem;}.section{padding:2.5rem 1rem;}.cat-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));}.fl-grid{grid-template-columns:1fr 1fr;}.job-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr 1fr;}.dcontent{grid-template-columns:1fr;}.dash-layout{grid-template-columns:1fr;}.sidebar{display:none;}.chat-layout{grid-template-columns:1fr;}.chat-list{display:block;width:100%;}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}}
 @media(max-width:480px){.fl-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}}
 </style>
 <nav>
@@ -902,30 +902,44 @@ nav{padding:0.75rem 1rem;}
 <!-- ══ CHAT ══ -->
 <div id="view-chat" class="view">
   <div class="chat-layout">
-    <div class="chat-list">
-      <div class="chat-list-header">Nachrichten</div>
-      <div id="chatUserList">
-        <div style="padding:1rem;font-size:0.82rem;color:var(--muted);text-align:center">Bitte anmelden um Nachrichten zu sehen</div>
+    <!-- Kontaktliste -->
+    <div class="chat-list" id="chatListPanel">
+      <div class="chat-list-header" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Nachrichten</span>
       </div>
-    </div>
-    <div class="chat-main">
-      <div class="chat-header">
-        <div class="chat-av">👩</div>
-        <div><div class="chat-name">Maria K.</div><div class="chat-status">● Online</div></div>
-        <div style="margin-left:auto;display:flex;gap:0.5rem">
-          <button class="btn-ghost" style="font-size:0.8rem" onclick="openProfile(0)">Profil</button>
-          <button class="btn-red" style="font-size:0.8rem" onclick="openProfile(0)">Buchen</button>
+      <div id="chatUserList">
+        <div style="padding:2rem 1rem;text-align:center;color:var(--muted)">
+          <div style="font-size:2rem;margin-bottom:0.5rem">💬</div>
+          <div style="font-size:0.85rem">Noch keine Unterhaltungen</div>
         </div>
       </div>
-      <div class="messages" id="chatMsgs">
-        <div class="msg"><div class="msg-av">👩</div><div><div class="bubble">Hallo! Ich habe deine Buchungsanfrage erhalten. Ich bin ab 8 Uhr verfügbar. Passt das?</div><div class="msg-time">09:30</div></div></div>
-        <div class="msg me"><div class="msg-av">M</div><div><div class="bubble">Super! 8 Uhr passt perfekt.</div><div class="msg-time">09:35</div></div></div>
-        <div class="msg"><div class="msg-av">👩</div><div><div class="bubble">Ich bringe mein eigenes Reinigungsmittel mit 🧹</div><div class="msg-time">09:38</div></div></div>
-        <div class="msg"><div class="msg-av">👩</div><div><div class="bubble">Ich bin morgen ab 8 verfügbar! Bis dann 😊</div><div class="msg-time">09:42</div></div></div>
+    </div>
+    <!-- Chat Bereich -->
+    <div class="chat-main" id="chatMainPanel">
+      <!-- Kein Chat ausgewählt -->
+      <div id="chatEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);padding:2rem;text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem">💬</div>
+        <div style="font-size:1rem;font-weight:600;margin-bottom:0.5rem">Wähle eine Unterhaltung</div>
+        <div style="font-size:0.85rem">Oder schreib einem Freelancer direkt aus seinem Profil</div>
       </div>
-      <div class="chat-input-area">
-        <textarea class="chat-input" id="chatInput" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
-        <button class="send-btn" onclick="sendMsg()">➤</button>
+      <!-- Aktiver Chat -->
+      <div id="chatActive" style="display:none;flex-direction:column;height:100%">
+        <div class="chat-header">
+          <button id="chatBackBtn" onclick="showChatList()" style="display:none;background:none;border:none;cursor:pointer;font-size:1.2rem;margin-right:0.5rem;color:var(--muted)">←</button>
+          <div id="chatAvatar" class="chat-av">?</div>
+          <div>
+            <div class="chat-name" id="chatName">–</div>
+            <div class="chat-status" id="chatStatus">● Online</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:0.5rem">
+            <button class="btn-red" style="font-size:0.8rem" id="chatBookBtn" onclick="chatBookFreelancer()">Buchen</button>
+          </div>
+        </div>
+        <div class="messages" id="chatMsgs"></div>
+        <div class="chat-input-area">
+          <textarea class="chat-input" id="chatInput" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+          <button class="send-btn" onclick="sendMsg()">➤</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1380,7 +1394,24 @@ async function renderHome(){
   const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').eq('verfuegbar',true).limit(20);
   let all=[...FL];
   if(realFL&&realFL.length){
-    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
+    const CAT_TAGS={
+      'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
+      'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe','Putzkraft'],
+      'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],
+      'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen','Gartenarbeit','Rasenmähen'],
+      'Umzug':['Umzug','Transport','Umzugshelfer','Möbel','Einzug','Auszug'],
+      'Lernen':['Nachhilfe','Lernen','Mathe','Englisch','Tutor','Unterricht','Abitur'],
+      'Kreativ':['Design','Kreativ','Grafik','Logo','Website','Foto','Video'],
+      'Beauty':['Beauty','Friseur','Haare','Massage','Wellness','Kosmetik'],
+      'Tiere':['Tiere','Hund','Katze','Gassi','Haustier','Tiersitter'],
+      'Transport':['Transport','Lieferung','Fahrdienst','Van'],
+      'Events':['Events','Party','Hochzeit','Dekoration','Catering'],
+    };
+    const rc=realFL.map(f=>{
+      const kat=f.kategorie||'Sonstiges';
+      const extraTags=CAT_TAGS[kat]||[kat];
+      return {name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.id};
+    });
     all=[...rc,...FL];
   }
   window.ALL_FL=all;
@@ -1494,7 +1525,24 @@ async function renderSearch(q){
   const {data:realFL}=await sb.from('freelancers').select('*, profiles(full_name)').limit(50);
   let all=[...FL];
   if(realFL&&realFL.length){
-    const rc=realFL.map(f=>({name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:f.kategorie||'Dienstleister',tags:[f.kategorie||'Service'],price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar,bio:f.beschreibung||'Freelancer auf Helpefy.',services:[f.kategorie||'Service'],revs:[],real:true,id:f.id}));
+    const CAT_TAGS={
+      'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
+      'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe','Putzkraft'],
+      'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],
+      'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen','Gartenarbeit','Rasenmähen'],
+      'Umzug':['Umzug','Transport','Umzugshelfer','Möbel','Einzug','Auszug'],
+      'Lernen':['Nachhilfe','Lernen','Mathe','Englisch','Tutor','Unterricht','Abitur'],
+      'Kreativ':['Design','Kreativ','Grafik','Logo','Website','Foto','Video'],
+      'Beauty':['Beauty','Friseur','Haare','Massage','Wellness','Kosmetik'],
+      'Tiere':['Tiere','Hund','Katze','Gassi','Haustier','Tiersitter'],
+      'Transport':['Transport','Lieferung','Fahrdienst','Van'],
+      'Events':['Events','Party','Hochzeit','Dekoration','Catering'],
+    };
+    const rc=realFL.map(f=>{
+      const kat=f.kategorie||'Sonstiges';
+      const extraTags=CAT_TAGS[kat]||[kat];
+      return {name:f.profiles?.full_name||'Freelancer',emoji:'👤',avatar:f.avatar_url||f.profiles?.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.id};
+    });
     all=[...rc,...FL];
   }
   window.ALL_FL=all;
@@ -1674,10 +1722,67 @@ function switchDash(tab,el){
 // ── CHAT ──
 async function loadChatUsers(){
   if(!currentUser) return;
-  const {data:users}=await sb.from('profiles').select('*').neq('id',currentUser.id);
   const chatList=document.getElementById('chatUserList');
-  if(chatList&&users){
-    chatList.innerHTML=users.map(u=>`<div class="ci" onclick="openChat('${u.id}','${u.full_name||u.email}')"><div class="ci-av">${(u.full_name||u.email||'?').charAt(0).toUpperCase()}</div><div class="ci-info"><div class="ci-name">${u.full_name||u.email}</div><div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}</div></div></div>`).join('');
+  if(!chatList) return;
+
+  // Load users who have exchanged messages with current user
+  const {data:msgs}=await sb.from('nachrichten')
+    .select('von_user_id,zu_user_id')
+    .or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`)
+    .limit(100);
+
+  // Get unique partner IDs
+  let partnerIds = new Set();
+  if(msgs) msgs.forEach(m=>{
+    if(m.von_user_id!==currentUser.id) partnerIds.add(m.von_user_id);
+    if(m.zu_user_id!==currentUser.id) partnerIds.add(m.zu_user_id);
+  });
+
+  // Also load all users (so you can start new chats)
+  const {data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
+
+  if(!allUsers||!allUsers.length){
+    chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.<br>Schreibe einem Freelancer aus seinem Profil.</div>`;
+    return;
+  }
+
+  // Sort: users with messages first
+  const sorted = [...allUsers].sort((a,b)=>{
+    const aHas = partnerIds.has(a.id) ? 0 : 1;
+    const bHas = partnerIds.has(b.id) ? 0 : 1;
+    return aHas - bHas;
+  });
+
+  chatList.innerHTML = sorted.map(u=>{
+    const init = (u.full_name||u.email||'?').charAt(0).toUpperCase();
+    const hasMsg = partnerIds.has(u.id);
+    const avatarHtml = u.avatar_url
+      ? `<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      : init;
+    return `<div class="ci ${activeChatUserId===u.id?'active':''}" onclick="openChat('${u.id}','${u.full_name||u.email||'Nutzer'}','${u.avatar_url||''}','${u.role||''}')">
+      <div class="ci-av" style="overflow:hidden">${avatarHtml}</div>
+      <div class="ci-info">
+        <div class="ci-name">${u.full_name||u.email}</div>
+        <div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}${hasMsg?' · Unterhaltung':''}</div>
+      </div>
+      ${hasMsg?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
+    </div>`;
+  }).join('');
+}
+
+function showChatList(){
+  // On mobile: show list, hide active chat
+  document.getElementById('chatActive').style.display='none';
+  document.getElementById('chatEmpty').style.display='flex';
+  const listPanel=document.getElementById('chatListPanel');
+  if(listPanel) listPanel.style.display='block';
+}
+
+function chatBookFreelancer(){
+  // Open booking for active chat partner
+  if(activeChatUserId){
+    showView('home');
+    showToast('Suche den Freelancer und buche direkt aus seinem Profil','success');
   }
 }
 
