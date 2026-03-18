@@ -520,13 +520,145 @@ nav{padding:0.75rem 1rem;}
           <div class="footer-logo"><div class="fl-icon">H</div><div class="fl-text">Helpefy</div></div>
           <div class="footer-desc">Die einfachste Möglichkeit, Hilfe für alltägliche Aufgaben zu finden.</div>
         </div>
-        <div class="footer-col"><h4>Für Kunden</h4><ul><li>Freelancer finden</li><li>Auftrag posten</li><li>Support</li></ul></div>
-        <div class="footer-col"><h4>Für Freelancer</h4><ul><li>Registrieren</li><li>Jobs finden</li><li>Einnahmen</li></ul></div>
-        <div class="footer-col"><h4>Unternehmen</h4><ul><li>Über uns</li><li>Datenschutz</li><li>Impressum</li></ul></div>
+        <div class="footer-col"><h4>Für Kunden</h4><ul>
+          <li onclick="switchMode('freelancer');showView('home')">Freelancer finden</li>
+          <li onclick="showView('job-posten')">Auftrag posten</li>
+          <li onclick="showView('kontakt')">Support</li>
+        </ul></div>
+        <div class="footer-col"><h4>Für Freelancer</h4><ul>
+          <li onclick="openModal('auth')">Registrieren</li>
+          <li onclick="switchMode('jobs');showView('home')">Jobs finden</li>
+          <li onclick="showView('dashboard')">Einnahmen</li>
+        </ul></div>
+        <div class="footer-col"><h4>Rechtliches</h4><ul>
+          <li onclick="showView('impressum')">Impressum</li>
+          <li onclick="showView('datenschutz')">Datenschutz</li>
+          <li onclick="showView('agb')">AGB</li>
+        </ul></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 Helpefy GmbH · Deutschland</span><span>DSGVO-konform · 15% Provision</span></div>
+      <div class="footer-bottom"><span>© 2026 Helpefy · Christopher Simon Russell · Ulm</span><span>DSGVO-konform · 15% Provision</span></div>
     </div>
   </footer>
+</div>
+
+<!-- ══ IMPRESSUM ══ -->
+<div id="view-impressum" class="view">
+  <div style="max-width:800px;margin:0 auto;padding:3rem 1.5rem">
+    <button onclick="history.back()||showView('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem;font-family:Inter,sans-serif">← Zurück</button>
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:2rem">Impressum</h1>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:2rem;line-height:1.8;color:var(--text)">
+      <h2 style="font-size:1.1rem;font-weight:600;margin-bottom:1rem">Angaben gemäß § 5 TMG</h2>
+      <p><strong>Christopher Simon Russell</strong><br>
+      Wagnerstraße 63<br>
+      89077 Ulm<br>
+      Deutschland</p>
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">Kontakt</h2>
+      <p>E-Mail: christopher_russell@web.de<br>
+      Website: helpefy.de</p>
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">Steuerliche Angaben</h2>
+      <p>Steuernummer: wird nachgetragen</p>
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
+      <p>Christopher Simon Russell<br>Wagnerstraße 63, 89077 Ulm</p>
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">Streitschlichtung</h2>
+      <p>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr" style="color:var(--red)">https://ec.europa.eu/consumers/odr</a>. Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DATENSCHUTZ ══ -->
+<div id="view-datenschutz" class="view">
+  <div style="max-width:800px;margin:0 auto;padding:3rem 1.5rem">
+    <button onclick="showView('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem;font-family:Inter,sans-serif">← Zurück</button>
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:2rem">Datenschutzerklärung</h1>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:2rem;line-height:1.8;color:var(--text)">
+      <h2 style="font-size:1.1rem;font-weight:600;margin-bottom:1rem">1. Verantwortlicher</h2>
+      <p>Christopher Simon Russell, Wagnerstraße 63, 89077 Ulm<br>E-Mail: christopher_russell@web.de</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">2. Erhebung und Verarbeitung personenbezogener Daten</h2>
+      <p>Wir erheben und verarbeiten folgende personenbezogene Daten:<br>
+      • Name und E-Mail-Adresse bei der Registrierung<br>
+      • Standortdaten (nur mit Ihrer Einwilligung)<br>
+      • Nachrichten zwischen Nutzern<br>
+      • Buchungs- und Zahlungsdaten</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">3. Zweck der Datenverarbeitung</h2>
+      <p>Ihre Daten werden ausschließlich zur Bereitstellung der Helpefy-Plattform verwendet – zur Vermittlung zwischen Kunden und Freelancern, zur Abwicklung von Buchungen und zur Kommunikation.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">4. Datenspeicherung</h2>
+      <p>Ihre Daten werden sicher bei Supabase (EU-Server) gespeichert und gemäß DSGVO verarbeitet. Zahlungsdaten werden nicht auf unseren Servern gespeichert.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">5. Ihre Rechte</h2>
+      <p>Sie haben das Recht auf:<br>
+      • Auskunft über Ihre gespeicherten Daten<br>
+      • Berichtigung unrichtiger Daten<br>
+      • Löschung Ihrer Daten<br>
+      • Widerspruch gegen die Verarbeitung<br><br>
+      Kontakt: christopher_russell@web.de</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">6. Cookies</h2>
+      <p>Helpefy verwendet technisch notwendige Cookies für die Anmeldung und Sitzungsverwaltung. Es werden keine Tracking- oder Werbe-Cookies eingesetzt.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">7. Provision</h2>
+      <p>Helpefy erhebt eine Vermittlungsprovision von 15% auf jede erfolgreich abgewickelte Buchung. Diese wird transparent vor jeder Buchung angezeigt.</p>
+
+      <p style="margin-top:1.5rem;color:var(--muted);font-size:0.85rem">Stand: März 2026</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AGB ══ -->
+<div id="view-agb" class="view">
+  <div style="max-width:800px;margin:0 auto;padding:3rem 1.5rem">
+    <button onclick="showView('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem;font-family:Inter,sans-serif">← Zurück</button>
+    <h1 style="font-size:2rem;font-weight:700;margin-bottom:2rem">Allgemeine Geschäftsbedingungen</h1>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:2rem;line-height:1.8;color:var(--text)">
+      <h2 style="font-size:1.1rem;font-weight:600;margin-bottom:1rem">§ 1 Geltungsbereich</h2>
+      <p>Diese Allgemeinen Geschäftsbedingungen gelten für alle Nutzer der Plattform Helpefy, betrieben von Christopher Simon Russell, Wagnerstraße 63, 89077 Ulm.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 2 Leistungsbeschreibung</h2>
+      <p>Helpefy ist eine Vermittlungsplattform, die Kunden mit Freelancern und Dienstleistern zusammenbringt. Helpefy ist kein Vertragspartner der zwischen Kunden und Freelancern geschlossenen Verträge, sondern lediglich Vermittler.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 3 Registrierung und Nutzerkonto</h2>
+      <p>• Die Registrierung auf Helpefy ist kostenlos.<br>
+      • Nutzer müssen mindestens 18 Jahre alt sein.<br>
+      • Jeder Nutzer darf nur ein Konto erstellen.<br>
+      • Zugangsdaten sind vertraulich zu behandeln.<br>
+      • Helpefy behält sich vor, Konten bei Verstößen zu sperren.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 4 Provision und Zahlung</h2>
+      <p>• Helpefy erhebt eine Vermittlungsprovision von 15% auf den vereinbarten Auftragswert.<br>
+      • Die Provision wird automatisch bei der Zahlung abgezogen.<br>
+      • Zahlungen erfolgen sicher über zertifizierte Zahlungsdienstleister.<br>
+      • Der Freelancer erhält 85% des vereinbarten Betrags.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 5 Pflichten der Nutzer</h2>
+      <p>Nutzer verpflichten sich:<br>
+      • Keine falschen Angaben zu machen<br>
+      • Vereinbarte Aufträge zuverlässig durchzuführen (Freelancer)<br>
+      • Vereinbarte Zahlungen zu leisten (Kunden)<br>
+      • Keine rechtswidrigen Inhalte zu veröffentlichen<br>
+      • Andere Nutzer respektvoll zu behandeln</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 6 Stornierung und Rückerstattung</h2>
+      <p>• Stornierungen bis 24 Stunden vor dem vereinbarten Termin sind kostenlos.<br>
+      • Bei späteren Stornierungen können Gebühren anfallen.<br>
+      • Im Streitfall entscheidet Helpefy als Vermittler über eine mögliche Rückerstattung.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 7 Haftung</h2>
+      <p>Helpefy haftet nicht für Schäden, die durch die vermittelten Dienstleistungen entstehen. Die Haftung beschränkt sich auf grobe Fahrlässigkeit und Vorsatz seitens Helpefy. Für die Qualität der Dienstleistungen sind die jeweiligen Freelancer verantwortlich.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 8 Bewertungen</h2>
+      <p>Nutzer können nach Abschluss eines Auftrags Bewertungen abgeben. Bewertungen müssen wahrheitsgemäß und sachlich sein. Helpefy behält sich vor, unangemessene Bewertungen zu entfernen.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 9 Änderungen der AGB</h2>
+      <p>Helpefy behält sich vor, diese AGB jederzeit zu ändern. Nutzer werden über wesentliche Änderungen per E-Mail informiert.</p>
+
+      <h2 style="font-size:1.1rem;font-weight:600;margin:1.5rem 0 1rem">§ 10 Anwendbares Recht</h2>
+      <p>Es gilt deutsches Recht. Gerichtsstand ist Ulm.</p>
+
+      <p style="margin-top:1.5rem;color:var(--muted);font-size:0.85rem">Stand: März 2026 · Christopher Simon Russell · Wagnerstraße 63, 89077 Ulm</p>
+    </div>
+  </div>
 </div>
 
 <!-- ══ JOB POSTEN ══ -->
@@ -1847,7 +1979,7 @@ async function init(){
     else{currentProfile=null;updateNav();}
   });
   const path=window.location.pathname.replace('/','').trim()||'home';
-  const valid=['home','search','profile','dashboard','chat'];
+  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
   const start=valid.includes(path)?path:'home';
   history.replaceState({view:start},'',window.location.pathname);
   showView(start,false);
