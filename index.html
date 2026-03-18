@@ -349,6 +349,9 @@ nav{padding:0.75rem 1rem;}
     <button class="btn-ghost" style="flex:1" onclick="openModal('auth');toggleMenu()">Anmelden</button>
     <button class="btn-red" style="flex:1" onclick="openModal('auth');toggleMenu()">Registrieren</button>
   </div>
+  <div id="mobileLogoutBtn" style="display:none;padding:0.5rem 1rem;border-top:1px solid var(--border)">
+    <button onclick="doLogout();toggleMenu()" style="width:100%;padding:0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:9px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">🚪 Abmelden</button>
+  </div>
 </div>
 
 <!-- ══ HOME ══ -->
@@ -1164,7 +1167,9 @@ function toggleMenu(){
   // Show/hide auth buttons based on login state
   if(isOpen){
     const authBtns=document.getElementById('mobileAuthBtns');
+    const logoutBtn=document.getElementById('mobileLogoutBtn');
     if(authBtns) authBtns.style.display=currentUser?'none':'flex';
+    if(logoutBtn) logoutBtn.style.display=currentUser?'block':'none';
   }
 }
 // Close menu on outside click
