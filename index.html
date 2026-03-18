@@ -1743,6 +1743,37 @@ function calcPrice(){
   document.getElementById('pbTotal').textContent=`${total.toFixed(2)} €`;
 }
 
+function openModal(n){
+  const el = document.getElementById('modal-'+n);
+  if(!el) return;
+  el.classList.add('open');
+  if(n==='payment'){
+    initStripe();
+    setTimeout(()=>{
+      if(stripe && !stripeCard){
+        stripeElements = stripe.elements({locale:'de'});
+        stripeCard = stripeElements.create('card',{
+          style:{
+            base:{fontSize:'16px',fontFamily:'Inter,sans-serif',color:'#1a1a1a','::placeholder':{color:'#aaa'}},
+            invalid:{color:'#991b1b'}
+          },
+          hidePostalCode:true
+        });
+        stripeCard.mount('#stripe-card-element');
+        stripeCard.on('change',e=>{
+          const err=document.getElementById('pay-error');
+          if(e.error){err.style.display='block';err.textContent=e.error.message;}
+          else err.style.display='none';
+        });
+      }
+    },150);
+  }
+}
+
+function closeModal(n){
+  document.getElementById('modal-'+n)?.classList.remove('open');
+}
+
 async function doBook(){
   if(!currentUser){showToast('Bitte zuerst anmelden!','error');openModal('auth');return;}
   const datum=document.getElementById('bDate').value;
