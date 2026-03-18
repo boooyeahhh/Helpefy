@@ -1109,11 +1109,14 @@ nav{padding:0.75rem 1rem;}
       <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:600;padding:0.5rem 0 0;border-top:1px solid var(--border);margin-top:0.25rem"><span>Gesamt</span><span id="pay-total" style="color:var(--red)">–</span></div>
     </div>
 
-    <div class="fg"><label>Karteninhaber</label><input type="text" id="cardName" placeholder="Max Mustermann"></div>
-
+    <div class="fg"><label>Karteninhaber</label><input type="text" id="cardName" placeholder="Max Mustermann" autocomplete="cc-name"></div>
+    <div class="fg">
+      <label>Kartendaten (Stripe gesichert)</label>
+      <div id="stripe-card-element" style="padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:9px;background:white;min-height:44px"></div>
+    </div>
     <div id="pay-error" class="error-msg"></div>
-    <button class="form-submit" id="payBtn" onclick="confirmPayment()">Jetzt bezahlen →</button>
-    <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.5rem">🔒 Sichere Zahlung · SSL verschlüsselt</p>
+    <button class="form-submit" id="payBtn" onclick="confirmPayment()">🔒 Jetzt bezahlen →</button>
+    <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.5rem">🔒 SSL verschlüsselt · Powered by <strong>Stripe</strong></p>
   </div>
 </div>
 
