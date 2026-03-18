@@ -1635,51 +1635,42 @@ const SEMANTIC_MAP = {
 
 function smartSearch(query, freelancers){
   const q = query.toLowerCase().trim();
-  const words = q.split(/\s+/).filter(w => w.length > 2);
+  const words = q.split(/\s+/).filter(w => w.length > 1);
   
-  // Build all search terms
-  let allTerms = new Set();
+  // Get relevant terms from SYNONYMS and SEMANTIC_MAP
+  let relevantTerms = new Set();
+  relevantTerms.add(q);
   
-  // Add query itself and its expansions
-  allTerms.add(q);
-  expandQuery(q).forEach(t => allTerms.add(t.toLowerCase()));
-  
-  // SEMANTIC_MAP: only exact or startsWith matches to avoid false positives
-  Object.keys(SEMANTIC_MAP).forEach(key => {
-    if(q === key || q.includes(key) || key.startsWith(q)){
-      SEMANTIC_MAP[key].forEach(s => allTerms.add(s.toLowerCase()));
-    }
-  });
-  
-  // For multi-word queries, check each word
+  // Exact synonym match
   words.forEach(w => {
-    if(SYNONYMS[w]) SYNONYMS[w].forEach(s => allTerms.add(s.toLowerCase()));
-    // Only startsWith for short words to avoid "garten" matching "gartenarbeiter" wrongly
+    if(SYNONYMS[w]) SYNONYMS[w].forEach(s => relevantTerms.add(s.toLowerCase()));
     Object.keys(SYNONYMS).forEach(k => {
-      if(k === w || (w.length > 3 && k.startsWith(w))){
-        SYNONYMS[k].forEach(s => allTerms.add(s.toLowerCase()));
-      }
+      if(k === w) SYNONYMS[k].forEach(s => relevantTerms.add(s.toLowerCase()));
     });
     Object.keys(SEMANTIC_MAP).forEach(key => {
-      if(key === w || key.startsWith(w) || w.startsWith(key)){
-        SEMANTIC_MAP[key].forEach(s => allTerms.add(s.toLowerCase()));
-      }
+      if(key === w || key.startsWith(w)) SEMANTIC_MAP[key].forEach(s => relevantTerms.add(s.toLowerCase()));
     });
   });
-
-  const terms = [...allTerms];
   
-  // Score each freelancer
+  const terms = [...relevantTerms];
+  
   return freelancers.filter(f => {
-    const roleAndTags = [f.role, ...(f.tags||[]), ...(f.services||[])].map(s => s.toLowerCase()).join(' ');
-    const allFields = [f.name, f.bio||'', f.loc||''].map(s => s.toLowerCase()).join(' ') + ' ' + roleAndTags;
+    // Primary: match in role or category (most specific)
+    const role = (f.role||'').toLowerCase();
+    const tags = (f.tags||[]).map(t=>t.toLowerCase());
+    const services = (f.services||[]).map(s=>s.toLowerCase());
+    const roleTagStr = [role, ...tags, ...services].join(' ');
     
-    // Direct query match in any field
-    if(allFields.includes(q)) return true;
-    // Term match in role/tags (most important)
-    if(terms.some(term => term.length >= 2 && roleAndTags.includes(term))) return true;
-    // Longer term match anywhere
-    if(terms.some(term => term.length > 4 && allFields.includes(term))) return true;
+    // Check if ANY search term matches role/tags/services
+    const matchesRoleOrTag = terms.some(t => t.length > 1 && roleTagStr.includes(t));
+    if(matchesRoleOrTag) return true;
+    
+    // Secondary: bio match only for longer queries
+    if(q.length > 4){
+      const bio = (f.bio||'').toLowerCase();
+      if(terms.some(t => t.length > 4 && bio.includes(t))) return true;
+    }
+    
     return false;
   });
 }
