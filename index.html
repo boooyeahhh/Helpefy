@@ -937,6 +937,10 @@ nav{padding:0.75rem 1rem;}
         </div>
         <div class="messages" id="chatMsgs"></div>
         <div class="chat-input-area">
+          <label style="cursor:pointer;padding:0.5rem;color:var(--muted);font-size:1.2rem;flex-shrink:0" title="Bild senden">
+            📷
+            <input type="file" accept="image/*" style="display:none" onchange="sendChatImage(this)">
+          </label>
           <textarea class="chat-input" id="chatInput" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
           <button class="send-btn" onclick="sendMsg()">➤</button>
         </div>
@@ -951,7 +955,15 @@ nav{padding:0.75rem 1rem;}
     <div class="success-emoji">🎉</div>
     <div class="success-title">Buchung erfolgreich!</div>
     <div class="booking-ref" id="bookRef">HLF-2026-00847</div>
-    <p style="font-size:0.95rem;color:var(--muted);max-width:440px;line-height:1.8;margin-bottom:1.5rem">Deine Buchung wurde bestätigt. Du erhältst eine Bestätigungs-E-Mail!</p>
+    <p style="font-size:0.95rem;color:var(--muted);max-width:440px;line-height:1.8;margin-bottom:1rem">Deine Buchung wurde bestätigt!</p>
+    
+    <!-- Completion Code Box -->
+    <div id="completionCodeBox" style="display:none;background:var(--white);border:2px solid var(--red);border-radius:16px;padding:1.5rem;max-width:380px;margin:0 auto 1.5rem;text-align:center">
+      <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem">🔑 Dein Abschlusscode</div>
+      <div id="completionCode" style="font-size:2.5rem;font-weight:700;letter-spacing:0.5rem;color:var(--red);font-family:monospace">------</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:0.75rem;line-height:1.6">Gib diesen Code dem Freelancer<br>nach Abschluss des Auftrags.<br><strong>Erst dann wird der Auftrag bestätigt.</strong></div>
+    </div>
+    
     <div class="success-btns">
       <button class="btn-red" onclick="showView('chat')">💬 Zum Chat</button>
       <button class="btn-ghost" onclick="showView('dashboard')">📊 Dashboard</button>
@@ -1032,6 +1044,44 @@ nav{padding:0.75rem 1rem;}
     </div>
     <div id="angebot-error" class="error-msg"></div>
     <button class="form-submit" onclick="submitAngebot()">Angebot absenden →</button>
+  </div>
+</div>
+
+<!-- CODE EINGABE MODAL (für Freelancer) -->
+<div class="modal-overlay" id="modal-code">
+  <div class="modal" style="text-align:center">
+    <button class="modal-close" onclick="closeModal('code')">✕</button>
+    <div style="font-size:2.5rem;margin-bottom:0.5rem">🔑</div>
+    <div class="modal-title">Abschlusscode eingeben</div>
+    <div class="modal-sub">Lass dir den Code vom Kunden geben um den Auftrag abzuschliessen.</div>
+    <div class="fg">
+      <input type="text" id="codeInput" placeholder="6-stelliger Code" maxlength="6"
+        style="text-align:center;font-size:1.5rem;letter-spacing:0.4rem;font-family:monospace;font-weight:700"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    </div>
+    <div id="code-error" class="error-msg"></div>
+    <button class="form-submit" onclick="verifyCode()">Auftrag abschliessen ✓</button>
+  </div>
+</div>
+
+<!-- BEWERTUNGS MODAL -->
+<div class="modal-overlay" id="modal-bewertung">
+  <div class="modal" style="text-align:center">
+    <button class="modal-close" onclick="closeModal('bewertung')">✕</button>
+    <div style="font-size:2.5rem;margin-bottom:0.5rem">⭐</div>
+    <div class="modal-title">Auftrag abgeschlossen!</div>
+    <div class="modal-sub">Wie war deine Erfahrung? Bewerte den Freelancer.</div>
+    <div style="display:flex;justify-content:center;gap:0.5rem;margin:1rem 0;font-size:2rem" id="starRating">
+      <span onclick="setStar(1)" style="cursor:pointer">☆</span>
+      <span onclick="setStar(2)" style="cursor:pointer">☆</span>
+      <span onclick="setStar(3)" style="cursor:pointer">☆</span>
+      <span onclick="setStar(4)" style="cursor:pointer">☆</span>
+      <span onclick="setStar(5)" style="cursor:pointer">☆</span>
+    </div>
+    <div class="fg">
+      <textarea id="bewertungText" placeholder="Schreib etwas über deine Erfahrung..." style="min-height:80px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
+    </div>
+    <button class="form-submit" onclick="submitBewertung()">Bewertung abgeben ⭐</button>
   </div>
 </div>
 
@@ -1819,7 +1869,17 @@ function appendMsg(text,isMe,senderName){
   const init=isMe?(currentProfile?.full_name||'I').charAt(0).toUpperCase():(senderName||document.querySelector('.chat-name')?.textContent||'?').charAt(0).toUpperCase();
   const d=document.createElement('div');
   d.className='msg'+(isMe?' me':'');
-  d.innerHTML=`<div class="msg-av">${init}</div><div><div class="bubble">${text}</div><div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+  
+  // Check if message is an image
+  let bubbleContent;
+  if(text.startsWith('[IMG]')){
+    const src=text.slice(5);
+    bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="window.open('${src}','_blank')">`;
+  } else {
+    bubbleContent=`<div class="bubble">${text}</div>`;
+  }
+  
+  d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
   msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
 }
 
@@ -1837,6 +1897,32 @@ async function sendMsg(){
   });
   if(!error){appendMsg(text,true); input.value='';}
   else showToast('Fehler beim Senden','error');
+}
+
+async function sendChatImage(input){
+  if(!currentUser){showToast('Bitte anmelden!','error');return;}
+  if(!activeChatUserId){showToast('Bitte zuerst einen Nutzer auswählen!','error');return;}
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 3*1024*1024){showToast('Bild zu groß! Max. 3MB','error');return;}
+  
+  showToast('Bild wird gesendet...','');
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const base64 = e.target.result;
+    // Save as special image message
+    const inhalt = '[IMG]' + base64;
+    const {error} = await sb.from('nachrichten').insert({
+      von_user_id: currentUser.id,
+      zu_user_id: activeChatUserId,
+      inhalt: inhalt,
+      created_at: new Date().toISOString()
+    });
+    if(!error) appendMsg(inhalt, true);
+    else showToast('Fehler beim Senden','error');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }
 
 // ── JOBS ──
@@ -2136,7 +2222,8 @@ async function renderDashOrders(){
     .order('created_at',{ascending:false});
 
   const badge=s=>{
-    if(s==='bezahlt') return '<span class="badge badge-green">✅ Bezahlt</span>';
+    if(s==='abgeschlossen') return '<span class="badge badge-green">✅ Abgeschlossen</span>';
+    if(s==='bezahlt') return '<span class="badge badge-green">💳 Bezahlt</span>';
     if(s==='angenommen') return '<span class="badge badge-green">✓ Angenommen</span>';
     if(s==='bestätigt') return '<span class="badge badge-blue">Bestätigt</span>';
     if(s==='angebot_gesendet') return '<span class="badge badge-yellow">⏳ Ausstehend</span>';
@@ -2172,7 +2259,13 @@ async function renderDashOrders(){
                 style="padding:0.4rem 1rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;margin-top:0.25rem">
                 💳 Jetzt bezahlen
               </button>`:''}
-            ${o.status==='bezahlt'?`<div style="font-size:0.72rem;color:var(--muted);text-align:right">Ref: HLF-${o.id?.slice(0,8).toUpperCase()||'XXXX'}</div>`:''}
+            ${o.status==='bezahlt'?`
+              <div style="font-size:0.72rem;color:var(--muted);text-align:right;margin-bottom:0.25rem">Warte auf Abschluss...</div>
+              <button onclick="openCodeEntry('${o.id}')"
+                style="padding:0.35rem 0.85rem;background:#f0fdf4;color:#15803d;border:1.5px solid #15803d;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
+                🔑 Code eingeben
+              </button>`:''}
+            ${o.status==='abgeschlossen'?`<div style="font-size:0.72rem;color:var(--green);text-align:right">✅ Vollständig abgeschlossen</div>`:''}
           </div>
         </div>`).join('')}
     </div>`;
@@ -2270,6 +2363,67 @@ async function submitAngebot(){
   showToast('Angebot erfolgreich gesendet! 🎉','success');
   // Refresh dashboard orders if open
   if(document.getElementById('view-dashboard').classList.contains('active')) loadProfile();
+}
+
+// ── ABSCHLUSSCODE SYSTEM ──
+let currentRating = 0;
+let currentVerifyAuftragId = null;
+
+function openCodeEntry(auftragId){
+  currentVerifyAuftragId = auftragId;
+  document.getElementById('codeInput').value='';
+  document.getElementById('code-error').style.display='none';
+  openModal('code');
+}
+
+async function verifyCode(){
+  const code = document.getElementById('codeInput').value.trim();
+  const err = document.getElementById('code-error');
+  if(code.length !== 6){err.style.display='block';err.textContent='Bitte 6-stelligen Code eingeben.';return;}
+  
+  // Check code against database
+  const {data:order} = await sb.from('auftraege')
+    .select('*')
+    .eq('abschluss_code', code)
+    .eq('status','bezahlt')
+    .single();
+  
+  if(!order){err.style.display='block';err.textContent='Falscher Code. Bitte nochmal versuchen.';return;}
+  
+  // Mark order as completed
+  await sb.from('auftraege').update({status:'abgeschlossen'}).eq('id', order.id);
+  currentVerifyAuftragId = order.id;
+  closeModal('code');
+  
+  // Show rating modal for customer
+  setStar(0);
+  openModal('bewertung');
+  showToast('Code korrekt! Auftrag abgeschlossen ✅','success');
+}
+
+function setStar(n){
+  currentRating = n;
+  const stars = document.getElementById('starRating').children;
+  for(let i=0;i<5;i++){
+    stars[i].textContent = i < n ? '⭐' : '☆';
+  }
+}
+
+async function submitBewertung(){
+  if(currentRating===0){showToast('Bitte Sterne vergeben!','error');return;}
+  const text = document.getElementById('bewertungText').value.trim();
+  
+  await sb.from('bewertungen').insert({
+    auftrag_id: currentVerifyAuftragId,
+    von_user_id: currentUser.id,
+    sterne: currentRating,
+    kommentar: text,
+    created_at: new Date().toISOString()
+  });
+  
+  closeModal('bewertung');
+  showToast('Bewertung abgegeben! Danke ⭐','success');
+  renderDashOrders();
 }
 
 // ── HELPERS ──
