@@ -216,7 +216,7 @@ nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between
 .ci-right{display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;}
 .ci-time{font-size:0.68rem;color:var(--muted);}
 .ci-unread{width:18px;height:18px;border-radius:50%;background:var(--red);color:white;font-size:0.6rem;display:flex;align-items:center;justify-content:center;}
-.chat-main{display:flex;flex-direction:column;}
+.chat-main{display:flex;flex-direction:column;min-height:0;}
 .chat-header{padding:1rem 1.5rem;background:var(--white);border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:0.75rem;}
 .chat-av{width:38px;height:38px;border-radius:50%;background:var(--light2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
 .chat-name{font-size:0.9rem;font-weight:600;}
@@ -917,13 +917,13 @@ nav{padding:0.75rem 1rem;}
     <!-- Chat Bereich -->
     <div class="chat-main" id="chatMainPanel">
       <!-- Kein Chat ausgewählt -->
-      <div id="chatEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);padding:2rem;text-align:center">
+      <div id="chatEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);padding:2rem;text-align:center;min-height:200px">
         <div style="font-size:3rem;margin-bottom:1rem">💬</div>
         <div style="font-size:1rem;font-weight:600;margin-bottom:0.5rem">Wähle eine Unterhaltung</div>
         <div style="font-size:0.85rem">Oder schreib einem Freelancer direkt aus seinem Profil</div>
       </div>
       <!-- Aktiver Chat -->
-      <div id="chatActive" style="display:none;flex-direction:column;height:100%">
+      <div id="chatActive" style="display:none;flex-direction:column;flex:1;min-height:0;">
         <div class="chat-header">
           <button id="chatBackBtn" onclick="showChatList()" style="display:none;background:none;border:none;cursor:pointer;font-size:1.2rem;margin-right:0.5rem;color:var(--muted)">←</button>
           <div id="chatAvatar" class="chat-av">?</div>
@@ -935,7 +935,7 @@ nav{padding:0.75rem 1rem;}
             <button class="btn-red" style="font-size:0.8rem" id="chatBookBtn" onclick="chatBookFreelancer()">Buchen</button>
           </div>
         </div>
-        <div class="messages" id="chatMsgs"></div>
+        <div class="messages" id="chatMsgs" style="flex:1;min-height:0;overflow-y:auto"></div>
         <div class="chat-input-area">
           <label style="cursor:pointer;padding:0.5rem;color:var(--muted);font-size:1.2rem;flex-shrink:0" title="Bild senden">
             📷
@@ -1818,6 +1818,13 @@ async function loadChatUsers(){
       ${hasMsg?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
     </div>`;
   }).join('');
+}
+
+function startChatWithUser(idx){
+  const users = window._chatUsers || [];
+  const u = users[idx];
+  if(!u) return;
+  openChat(u.id, u.full_name||u.email||'Nutzer', u.avatar_url||'', u.role||'');
 }
 
 function showChatList(){
