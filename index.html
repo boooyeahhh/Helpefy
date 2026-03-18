@@ -1837,13 +1837,39 @@ function chatBookFreelancer(){
 }
 
 async function openChat(userId, userName, avatarUrl, role){
-  activeChatUserId=userId;
-  document.querySelector('.chat-name').textContent=userName;
-  document.querySelector('.chat-status').textContent='● Online';
-  document.getElementById('chatMsgs').innerHTML='';
+  activeChatUserId = userId;
+  avatarUrl = avatarUrl || '';
+  role = role || '';
+
+  // Update chat header
+  const chatName = document.getElementById('chatName');
+  const chatStatus = document.getElementById('chatStatus');
+  const chatAv = document.getElementById('chatAvatar');
+  if(chatName) chatName.textContent = userName;
+  if(chatStatus) chatStatus.textContent = role==='freelancer'?'👷 Freelancer':'👤 Kunde';
+  if(chatAv){
+    if(avatarUrl) chatAv.innerHTML=`<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    else chatAv.textContent=(userName||'?').charAt(0).toUpperCase();
+  }
+
+  // Show active chat panel, hide empty state
+  const chatEmpty = document.getElementById('chatEmpty');
+  const chatActive = document.getElementById('chatActive');
+  const chatListPanel = document.getElementById('chatListPanel');
+  if(chatEmpty) chatEmpty.style.display='none';
+  if(chatActive) chatActive.style.display='flex';
+
+  // Mobile: hide list, show back button
+  const isMobile = window.innerWidth <= 768;
+  if(isMobile && chatListPanel) chatListPanel.style.display='none';
+
+  // Load messages
+  document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
   await loadMessages();
+
+  // Subscribe to real-time messages
   if(chatSubscription) chatSubscription.unsubscribe();
-  chatSubscription=sb.channel('chat_'+currentUser.id).on('postgres_changes',
+  chatSubscription=sb.channel('chat_'+currentUser.id+'_'+userId).on('postgres_changes',
     {event:'INSERT',schema:'public',table:'nachrichten'},
     payload=>{
       if(payload.new.von_user_id===activeChatUserId&&payload.new.zu_user_id===currentUser.id){
