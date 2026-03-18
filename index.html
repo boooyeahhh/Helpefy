@@ -1907,11 +1907,22 @@ async function renderDashOrders(){
 
   const isFreelancer = currentProfile?.role === 'freelancer';
 
-  // Load orders - for freelancer load from freelancer_id too
-  const {data:orders}=await sb.from('auftraege')
-    .select('*')
-    .eq('kunde_id',currentUser.id)
-    .order('created_at',{ascending:false});
+  let orders = [];
+  if(isFreelancer){
+    // Freelancer sees all orders addressed to them (via freelancer_id) + their own sent ones
+    const {data:flOrders}=await sb.from('auftraege')
+      .select('*, profiles!auftraege_kunde_id_fkey(full_name)')
+      .eq('freelancer_id',currentUser.id)
+      .order('created_at',{ascending:false});
+    orders = flOrders || [];
+  } else {
+    // Kunde sees their own orders
+    const {data:myOrders}=await sb.from('auftraege')
+      .select('*')
+      .eq('kunde_id',currentUser.id)
+      .order('created_at',{ascending:false});
+    orders = myOrders || [];
+  }
 
   const badge=s=>{
     if(s==='abgeschlossen') return '<span class="badge badge-green">✅ Abgeschlossen</span>';
@@ -1928,36 +1939,49 @@ async function renderDashOrders(){
     return;
   }
 
+  const title = isFreelancer ? 'Eingehende Aufträge' : 'Meine Aufträge & Angebote';
   ordersEl.innerHTML=`
-    <div class="dash-title">Meine Aufträge & Angebote</div>
+    <div class="dash-title">${title}</div>
     <div class="dcard" style="max-width:100%;margin-top:1rem">
       ${orders.map(o=>`
         <div class="oi" style="padding:1rem 0;flex-wrap:wrap;gap:0.5rem">
-          <div class="oi-icon" style="font-size:1.5rem">${o.status==='bezahlt'?'✅':o.status==='abgelehnt'?'❌':'📋'}</div>
+          <div class="oi-icon" style="font-size:1.5rem">${o.status==='bezahlt'||o.status==='abgeschlossen'?'✅':o.status==='abgelehnt'?'❌':'📋'}</div>
           <div class="oi-info" style="flex:1;min-width:200px">
             <div class="oi-title" style="font-size:0.9rem">${o.titel||'Auftrag'}</div>
+            ${isFreelancer&&o.profiles?`<div class="oi-meta" style="color:var(--red);font-weight:500">👤 Von: ${o.profiles.full_name||'Kunde'}</div>`:''}
             <div class="oi-meta">${o.datum?new Date(o.datum).toLocaleDateString('de-DE'):''} ${o.preis?'· <strong>'+o.preis.toFixed(2)+' €</strong>':''}</div>
             ${o.beschreibung&&o.beschreibung!=='Buchung über Helpefy'?`<div class="oi-meta" style="font-style:italic;margin-top:0.25rem;color:var(--muted)">"${o.beschreibung.slice(0,80)}${o.beschreibung.length>80?'...':''}"</div>`:''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
             ${badge(o.status)}
-            ${o.status==='angebot_gesendet'?`
+            ${(o.status==='angebot_gesendet'||o.status==='bezahlt')&&isFreelancer?`
               <div style="display:flex;gap:0.35rem;margin-top:0.25rem">
                 <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
                 <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
               </div>`:''}
-            ${o.status==='angenommen'?`
+            ${o.status==='angebot_gesendet'&&!isFreelancer?`
+              <div style="display:flex;gap:0.35rem;margin-top:0.25rem">
+                <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
+                <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
+              </div>`:''}
+            ${o.status==='angenommen'&&!isFreelancer?`
               <button onclick="payAuftrag('${o.id}','${(o.titel||'').replace(/'/g,'')}',${o.preis||0})"
                 style="padding:0.4rem 1rem;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;margin-top:0.25rem">
                 💳 Jetzt bezahlen
               </button>`:''}
-            ${o.status==='bezahlt'?`
+            ${o.status==='bezahlt'&&!isFreelancer?`
               <div style="font-size:0.72rem;color:var(--muted);text-align:right;margin-bottom:0.25rem">Warte auf Abschluss...</div>
               <button onclick="openCodeEntry('${o.id}')"
                 style="padding:0.35rem 0.85rem;background:#f0fdf4;color:#15803d;border:1.5px solid #15803d;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
                 🔑 Code eingeben
               </button>`:''}
-            ${o.status==='abgeschlossen'?`<div style="font-size:0.72rem;color:var(--green);text-align:right">✅ Vollständig abgeschlossen</div>`:''}
+            ${o.status==='bezahlt'&&isFreelancer?`
+              <div style="font-size:0.72rem;color:var(--muted);text-align:right;margin-bottom:0.25rem">Zahlung erhalten ✅</div>
+              <button onclick="openCodeEntry('${o.id}')"
+                style="padding:0.35rem 0.85rem;background:#f0fdf4;color:#15803d;border:1.5px solid #15803d;border-radius:8px;font-size:0.78rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">
+                🔑 Code eingeben
+              </button>`:''}
+            ${o.status==='abgeschlossen'?`<div style="font-size:0.72rem;color:var(--green);text-align:right">✅ Abgeschlossen</div>`:''}
           </div>
         </div>`).join('')}
     </div>`;
@@ -1978,8 +2002,9 @@ function payAuftrag(id, titel, preis){
 }
 
 async function updateAuftrag(id, status){
-  await sb.from('auftraege').update({status}).eq('id',id);
-  showToast(status==='angenommen'?'Auftrag angenommen! ✅':'Auftrag abgelehnt.','success');
+  const {error} = await sb.from('auftraege').update({status}).eq('id',id);
+  if(error) console.error('Update error:', error.message);
+  showToast(status==='angenommen'?'Auftrag angenommen! ✅':status==='abgelehnt'?'Auftrag abgelehnt.':'Status aktualisiert.','success');
   renderDashOrders();
 }
 
