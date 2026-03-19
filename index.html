@@ -2411,7 +2411,7 @@ async function submitBewertung(){
   
   closeModal('bewertung');
   showToast('Bewertung abgegeben! Danke ⭐','success');
-  renderDashOrders();
+  await renderDashOrders();
 }
 
 // ── AUSZAHLUNG ──
