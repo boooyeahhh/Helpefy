@@ -1956,7 +1956,6 @@ async function confirmPayment(){
   try {
     const chargeRes = await fetch('https://hkrkqqzpmpoyoocrbxra.supabase.co/functions/v1/stripe-payment', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({paymentMethodId:paymentMethod.id, amount:preis, auftragId:window._payAuftragId||''})
     });
     const chargeData = await chargeRes.json();
