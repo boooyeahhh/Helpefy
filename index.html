@@ -1807,6 +1807,9 @@ function openProfileByData(i){
   const f=all[i];
   if(!f) return;
   curFL=i; window._curFL=f;
+  // Save to localStorage for refresh
+  if(f.real && f.id) localStorage.setItem('hlf_profile_id', f.id);
+  else localStorage.removeItem('hlf_profile_id');
   document.getElementById('pEmoji').textContent=f.emoji||'👤';
   document.getElementById('pName').textContent=f.name;
   document.getElementById('pRole').textContent=f.role;
