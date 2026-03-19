@@ -1954,7 +1954,7 @@ async function confirmPayment(){
 
   // Charge via Edge Function
   try {
-    const chargeRes = await fetch('https://hkrkqqzpmpoyoocrbxra.supabase.co/functions/v1/stripe-payment', {
+    const chargeRes = await fetch('https://hkrkqqzpmpoyoocrbxra.supabase.co/functions/v1/hyper-endpoint', {
       method: 'POST',
       body: JSON.stringify({paymentMethodId:paymentMethod.id, amount:preis, auftragId:window._payAuftragId||''})
     });
