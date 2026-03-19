@@ -1519,15 +1519,39 @@ function compressImage(file, maxSizeKB=200, quality=0.7){
   });
 }
 
-function previewSettingsAvatar(input){
+async function previewSettingsAvatar(input){
   const file = input.files[0];
   if(!file) return;
+  
+  // Show preview immediately
   compressImage(file, 150).then(compressed=>{
     const prev = document.getElementById('settingsAvatarPreview');
     if(prev) prev.innerHTML = `<img src="${compressed}" style="width:100%;height:100%;object-fit:cover">`;
-    window._newAvatar = compressed;
-    showToast('Bild bereit zum Speichern ✅','success');
   });
+
+  // Upload to Supabase Storage
+  showToast('Bild wird hochgeladen...','');
+  const fileExt = file.name.split('.').pop();
+  const fileName = `avatar_${currentUser.id}.${fileExt}`;
+  
+  const {data, error} = await sb.storage.from('avatars').upload(fileName, file, {
+    upsert: true,
+    contentType: file.type
+  });
+  
+  if(error){
+    // Fallback to base64 if storage fails
+    compressImage(file, 100).then(compressed=>{
+      window._newAvatar = compressed;
+      showToast('Bild bereit ✅','success');
+    });
+    return;
+  }
+  
+  // Get public URL
+  const {data:{publicUrl}} = sb.storage.from('avatars').getPublicUrl(fileName);
+  window._newAvatar = publicUrl;
+  showToast('Bild hochgeladen ✅','success');
 }
 
 async function saveSettings(){
@@ -1536,19 +1560,37 @@ async function saveSettings(){
   btn.textContent='Speichern...'; btn.disabled=true;
   const name=document.getElementById('settingsName').value;
   const standort=document.getElementById('settingsStandort')?.value||'';
-  const avatar=window._newAvatar||null;
+  let avatarUrl = null;
+
+  // Upload avatar to Supabase Storage if new one selected
+  if(window._newAvatar){
+    try {
+      // Convert base64 to blob
+      const base64 = window._newAvatar.split(',')[1];
+      const byteArr = Uint8Array.from(atob(base64), c=>c.charCodeAt(0));
+      const blob = new Blob([byteArr], {type:'image/jpeg'});
+      const fileName = `avatar_${currentUser.id}_${Date.now()}.jpg`;
+      
+      const {data:uploadData, error:uploadErr} = await sb.storage
+        .from('avatars')
+        .upload(fileName, blob, {upsert:true, contentType:'image/jpeg'});
+      
+      if(!uploadErr){
+        const {data:urlData} = sb.storage.from('avatars').getPublicUrl(fileName);
+        avatarUrl = urlData.publicUrl;
+      } else {
+        // Fallback: save base64 directly (smaller images only)
+        if(window._newAvatar.length < 100000) avatarUrl = window._newAvatar;
+      }
+    } catch(e) {
+      if(window._newAvatar.length < 100000) avatarUrl = window._newAvatar;
+    }
+  }
 
   // Update profile
   const profileUpdate = {full_name:name};
-  if(avatar) profileUpdate.avatar_url = avatar;
-  const {error:profileErr} = await sb.from('profiles').update(profileUpdate).eq('id',currentUser.id);
-  if(profileErr){
-    console.error('Profile update error:', profileErr);
-    // If avatar too large, try without it
-    if(avatar && profileErr.message){
-      await sb.from('profiles').update({full_name:name}).eq('id',currentUser.id);
-    }
-  }
+  if(avatarUrl) profileUpdate.avatar_url = avatarUrl;
+  await sb.from('profiles').update(profileUpdate).eq('id',currentUser.id);
 
   // Update freelancer data if freelancer
   if(currentProfile?.role==='freelancer'){
@@ -1559,7 +1601,7 @@ async function saveSettings(){
     if(kat) flUpdate.kategorie=kat;
     if(preis) flUpdate.stundenlohn=preis;
     if(bio) flUpdate.beschreibung=bio;
-    if(avatar) flUpdate.avatar_url=avatar;
+    if(avatarUrl) flUpdate.avatar_url=avatarUrl;
     await sb.from('freelancers').update(flUpdate).eq('user_id',currentUser.id);
   }
 
