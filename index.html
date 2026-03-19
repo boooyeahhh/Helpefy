@@ -1126,10 +1126,9 @@ nav{padding:0.75rem 1rem;}
     </div>
 
     <div class="fg"><label>Karteninhaber</label><input type="text" id="cardName" placeholder="Max Mustermann" autocomplete="cc-name"></div>
-    <div class="fg"><label>Kartennummer</label><input type="text" id="cardNumber" placeholder="4242 4242 4242 4242" maxlength="19" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/(.{4})/g,'$1 ').trim()"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <div class="fg"><label>Ablaufdatum</label><input type="text" id="cardExpiry" placeholder="MM/JJ" maxlength="5" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/^(.{2})/,'$1/')"></div>
-      <div class="fg"><label>CVC</label><input type="text" id="cardCvc" placeholder="123" maxlength="3"></div>
+    <div class="fg">
+      <label>Kartendaten (Stripe gesichert)</label>
+      <div id="stripe-card-element" style="padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:9px;background:white;min-height:44px"></div>
     </div>
     <div id="pay-error" class="error-msg"></div>
     <button class="form-submit" id="payBtn" onclick="confirmPayment()">🔒 Jetzt bezahlen →</button>
@@ -1852,7 +1851,19 @@ function openModal(n){
   if(n==='payment'){
     initStripe();
     setTimeout(()=>{
-      // Using manual card fields - no element mount needed
+      if(stripe && !stripeCard){
+        stripeElements = stripe.elements({locale:'de'});
+        stripeCard = stripeElements.create('card',{
+          style:{base:{fontSize:'16px',fontFamily:'Inter,sans-serif',color:'#1a1a1a','::placeholder':{color:'#aaa'}},invalid:{color:'#991b1b'}},
+          hidePostalCode:true
+        });
+        stripeCard.mount('#stripe-card-element');
+        stripeCard.on('change',e=>{
+          const er=document.getElementById('pay-error');
+          if(e.error){er.style.display='block';er.textContent=e.error.message;}
+          else er.style.display='none';
+        });
+      }
     },150);
   }
 }
@@ -1916,29 +1927,15 @@ async function confirmPayment(){
   const btn = document.getElementById('payBtn');
 
   if(!name){err.style.display='block';err.textContent='Bitte Karteninhaber eingeben.';return;}
-  if(!stripe){ initStripe(); }
-  if(!stripe){err.style.display='block';err.textContent='Stripe nicht geladen. Bitte Seite neu laden.';return;}
+  if(!stripe||!stripeCard){err.style.display='block';err.textContent='Stripe nicht geladen. Bitte Seite neu laden.';return;}
 
   btn.disabled=true; btn.textContent='⏳ Wird verarbeitet...';
   err.style.display='none';
 
-  const cardNumber = document.getElementById('cardNumber')?.value.replace(/\s/g,'');
-  const cardExpiry = document.getElementById('cardExpiry')?.value;
-  const cardCvc = document.getElementById('cardCvc')?.value;
-  
-  if(!cardNumber||cardNumber.length<15){err.style.display='block';err.textContent='Bitte Kartennummer eingeben.';btn.disabled=false;btn.textContent='🔒 Jetzt bezahlen →';return;}
-  
-  const [expMonth, expYear] = (cardExpiry||'').split('/');
+  if(!stripeCard){err.style.display='block';err.textContent='Bitte Seite neu laden.';btn.disabled=false;btn.textContent='🔒 Jetzt bezahlen →';return;}
   
   const {paymentMethod, error} = await stripe.createPaymentMethod({
-    type:'card',
-    card: {
-      number: cardNumber,
-      exp_month: parseInt(expMonth)||12,
-      exp_year: parseInt('20'+(expYear||'26')),
-      cvc: cardCvc||'123'
-    },
-    billing_details:{name}
+    type:'card', card:stripeCard, billing_details:{name}
   });
 
   if(error){
@@ -1963,8 +1960,7 @@ async function confirmPayment(){
     window._payAuftragId=null;
   }
 
-  // Clear card fields
-  ['cardNumber','cardExpiry','cardCvc','cardName'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  if(stripeCard){stripeCard.destroy();stripeCard=null;}
 
   closeModal('payment');
   btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen →';
