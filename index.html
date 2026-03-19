@@ -1911,7 +1911,12 @@ function openProfileByData(i){
   // Save to localStorage for refresh
   if(f.real && f.id) localStorage.setItem('hlf_profile_id', f.id);
   else localStorage.removeItem('hlf_profile_id');
-  document.getElementById('pEmoji').textContent=f.emoji||'👤';
+  const pEmoji = document.getElementById('pEmoji');
+  if(f.avatar){
+    pEmoji.innerHTML = `<img src="${f.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.parentElement.textContent='👤'">`;
+  } else {
+    pEmoji.textContent = f.emoji||'👤';
+  }
   document.getElementById('pName').textContent=f.name;
   document.getElementById('pRole').textContent=f.role;
   document.getElementById('pRating').textContent=f.rating;
