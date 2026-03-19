@@ -2713,12 +2713,15 @@ async function confirmPayment2(){
 // ── INIT ──
 async function init(){
   const{data:{session}}=await sb.auth.getSession();
-  if(session){currentUser=session.user;await loadProfile();updateNav();}
+  if(session){currentUser=session.user;await loadProfile();}
+  updateNav();
+  
   sb.auth.onAuthStateChange(async(_,s)=>{
     currentUser=s?.user||null;
     if(currentUser){await loadProfile();updateNav();if(document.getElementById('view-chat').classList.contains('active'))loadChatUsers();}
     else{currentProfile=null;updateNav();}
   });
+  
   const path=window.location.pathname.replace('/','').trim()||'home';
   const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb','pay'];
   const start=valid.includes(path)?path:'home';
