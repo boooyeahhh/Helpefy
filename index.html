@@ -1145,7 +1145,14 @@ nav{padding:0.75rem 1rem;}
 // ── CONFIG ──
 const SUPABASE_URL = 'https://hkrkqqzpmpoyoocrbxra.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_sHnuja7A8iJBwvkA5zRDbg_9zkfHJ_i';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    storage: window.localStorage
+  }
+});
 
 // Stripe
 const STRIPE_KEY = 'pk_test_51T1tYFRK3iEHR2pEqOaXmM5mNDhU43xQ5xeczVp1yPN44KR841VYLuSxHXo31LAc9XyUHGgS4bInnyXEybt8APRq00NGr6EIQn';
