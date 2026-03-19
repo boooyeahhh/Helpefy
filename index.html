@@ -1916,7 +1916,8 @@ async function confirmPayment(){
   const btn = document.getElementById('payBtn');
 
   if(!name){err.style.display='block';err.textContent='Bitte Karteninhaber eingeben.';return;}
-  if(!stripe||!stripeCard){err.style.display='block';err.textContent='Stripe nicht geladen. Bitte Seite neu laden.';return;}
+  if(!stripe){ initStripe(); }
+  if(!stripe){err.style.display='block';err.textContent='Stripe nicht geladen. Bitte Seite neu laden.';return;}
 
   btn.disabled=true; btn.textContent='⏳ Wird verarbeitet...';
   err.style.display='none';
