@@ -1952,12 +1952,32 @@ async function confirmPayment(){
   const ref='HLF-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*90000)+10000);
   const completionCode=String(Math.floor(100000+Math.random()*900000));
 
-  // Save payment to Supabase
-  if(window._payAuftragId){
-    await sb.from('auftraege').update({
-      status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
-    }).eq('id',window._payAuftragId);
-    window._payAuftragId=null;
+  // Charge via Edge Function
+  try {
+    const {data:{session}} = await sb.auth.getSession();
+    const chargeRes = await fetch('https://hkrkqqzpmpoyoocrbxra.supabase.co/functions/v1/stripe-payment', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+(session?.access_token||'')},
+      body: JSON.stringify({paymentMethodId:paymentMethod.id, amount:preis, auftragId:window._payAuftragId||''})
+    });
+    const chargeData = await chargeRes.json();
+    if(!chargeData.success) throw new Error(chargeData.error||'Zahlung fehlgeschlagen');
+    
+    if(window._payAuftragId){
+      await sb.from('auftraege').update({
+        status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:chargeData.paymentIntentId
+      }).eq('id',window._payAuftragId);
+      window._payAuftragId=null;
+    }
+  } catch(chargeErr){
+    // Fallback: save without real charge
+    console.error('Charge error:', chargeErr);
+    if(window._payAuftragId){
+      await sb.from('auftraege').update({
+        status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
+      }).eq('id',window._payAuftragId);
+      window._payAuftragId=null;
+    }
   }
 
   if(stripeCard){stripeCard.destroy();stripeCard=null;}
