@@ -2098,14 +2098,15 @@ async function renderDashOrders(){
 }
 
 function payAuftrag(id, titel, preis){
-  // Store order id so payment page can access it
-  localStorage.setItem('hlf_pay_id', id);
-  localStorage.setItem('hlf_pay_titel', titel);
-  localStorage.setItem('hlf_pay_preis', preis);
-  // Open payment page in browser (App Store compatible)
-  const payUrl = 'https://helpefy.de/pay?id='+id+'&preis='+preis+'&titel='+encodeURIComponent(titel);
-  window.open(payUrl, '_blank');
-  showToast('Zahlung wird im Browser geöffnet...','success');
+  const fee = +(preis*0.15).toFixed(2);
+  const total = preis;
+  document.getElementById('paymentSummary').textContent = titel;
+  document.getElementById('pay-label').textContent = 'Auftrag: '+titel;
+  document.getElementById('pay-sub').textContent = preis.toFixed(2)+' €';
+  document.getElementById('pay-fee').textContent = fee.toFixed(2)+' €';
+  document.getElementById('pay-total').textContent = total.toFixed(2)+' €';
+  window._payAuftragId = id;
+  openModal('payment');
 }
 
 async function openChatWithOrder(auftragId, userId){
