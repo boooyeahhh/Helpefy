@@ -1517,9 +1517,9 @@ async function saveSettings(){
 
 function updateNav(){
   // Restore saved view after login
-  const savedView = sessionStorage.getItem('hlf_view');
+  const savedView = localStorage.getItem('hlf_view');
   if(savedView && currentUser){
-    sessionStorage.removeItem('hlf_view');
+    localStorage.removeItem('hlf_view');
     showView(savedView, false);
   }
   const nr=document.getElementById('navRight');
@@ -2738,7 +2738,7 @@ async function init(){
   const start=valid.includes(path)?path:'home';
   if(path==='pay'){ setTimeout(initPayPage, 800); }
   // Check if we have a saved view from before refresh
-  const lastView = sessionStorage.getItem('hlf_current_view');
+  const lastView = localStorage.getItem('hlf_current_view');
   const finalStart = (lastView && valid.includes(lastView)) ? lastView : start;
   history.replaceState({view:finalStart},'',window.location.pathname);
   showView(finalStart,false);
