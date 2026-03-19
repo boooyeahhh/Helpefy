@@ -1516,6 +1516,12 @@ async function saveSettings(){
 }
 
 function updateNav(){
+  // Restore saved view after login
+  const savedView = sessionStorage.getItem('hlf_view');
+  if(savedView && currentUser){
+    sessionStorage.removeItem('hlf_view');
+    showView(savedView, false);
+  }
   const nr=document.getElementById('navRight');
   const nrm=document.getElementById('navRightMobile');
   if(currentUser){
@@ -2731,8 +2737,11 @@ async function init(){
   const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb','pay'];
   const start=valid.includes(path)?path:'home';
   if(path==='pay'){ setTimeout(initPayPage, 800); }
-  history.replaceState({view:start},'',window.location.pathname);
-  showView(start,false);
+  // Check if we have a saved view from before refresh
+  const lastView = sessionStorage.getItem('hlf_current_view');
+  const finalStart = (lastView && valid.includes(lastView)) ? lastView : start;
+  history.replaceState({view:finalStart},'',window.location.pathname);
+  showView(finalStart,false);
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
   setTimeout(autoDetectLocation,800);
   if(window.Stripe) initStripe();
