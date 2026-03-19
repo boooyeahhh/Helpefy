@@ -1554,8 +1554,23 @@ function showView(n, push=true){
   el.classList.add('active');
   window.scrollTo(0,0);
   if(n==='home') renderHome();
-  if(n==='dashboard'){if(!currentUser){openModal('auth');return;}loadProfile();}
-  if(n==='chat'){if(!currentUser){openModal('auth');return;}loadChatUsers();}
+  if(n==='dashboard'){
+    if(!currentUser){
+      // Wait briefly for session to load before showing login
+      setTimeout(()=>{
+        if(!currentUser) openModal('auth');
+        else { loadProfile(); }
+      }, 800);
+    } else { loadProfile(); }
+  }
+  if(n==='chat'){
+    if(!currentUser){
+      setTimeout(()=>{
+        if(!currentUser) openModal('auth');
+        else { loadChatUsers(); }
+      }, 800);
+    } else { loadChatUsers(); }
+  }
   if(push){
     const titles={home:'Helpefy',search:'Helpefy – Suche',profile:'Helpefy – Profil',dashboard:'Helpefy – Dashboard',chat:'Helpefy – Nachrichten',success:'Helpefy – Buchung'};
     history.pushState({view:n},'','/'+(n==='home'?'':n));
