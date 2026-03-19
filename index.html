@@ -2601,6 +2601,7 @@ async function sendChatImage(input){
 
 // ── PAYMENT PAGE ──
 async function initPayPage(){
+  showView('pay');
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id') || localStorage.getItem('hlf_pay_id');
   const preis = parseFloat(params.get('preis') || localStorage.getItem('hlf_pay_preis') || 0);
@@ -2684,7 +2685,7 @@ async function init(){
   const path=window.location.pathname.replace('/','').trim()||'home';
   const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb','pay'];
   const start=valid.includes(path)?path:'home';
-  if(path==='pay') setTimeout(initPayPage, 500);
+  if(path==='pay'){ setTimeout(initPayPage, 800); }
   history.replaceState({view:start},'',window.location.pathname);
   showView(start,false);
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
