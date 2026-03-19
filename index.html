@@ -1802,6 +1802,18 @@ function flCard(f,i){
     </div></div>`;
 }
 
+async function loadProfileById(userId){
+  const {data:fl} = await sb.from('freelancers').select('*').eq('user_id',userId).single();
+  if(!fl) return;
+  const CAT_TAGS={'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],'Handwerk':['Handwerk','Handwerker','Reparatur','Elektrik','Sanitär'],'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen'],'Haushalt':['Haushalt','Reinigung','Putzen'],'Umzug':['Umzug','Transport','Möbel'],'Lernen':['Nachhilfe','Mathe','Englisch','Tutor'],'Kreativ':['Design','Grafik','Logo'],'Beauty':['Beauty','Friseur','Massage'],'Tiere':['Tiere','Hund','Katze'],'Events':['Events','Party','Hochzeit']};
+  const kat = fl.kategorie||'Sonstiges';
+  const f = {name:fl.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:fl.avatar_url||null,role:kat,tags:CAT_TAGS[kat]||[kat],price:fl.stundenlohn||25,rating:fl.bewertung_schnitt||5.0,reviews:fl.auftraege_count||0,loc:fl.standort||'Deutschland',avail:fl.verfuegbar!==false,bio:fl.beschreibung||'',services:CAT_TAGS[kat]||[kat],revs:[],real:true,id:fl.user_id};
+  window._curFL = f;
+  if(!window.ALL_FL || !window.ALL_FL.length) window.ALL_FL = [f];
+  else window.ALL_FL[0] = f;
+  openProfileByData(window.ALL_FL.indexOf(f) >= 0 ? window.ALL_FL.indexOf(f) : 0);
+}
+
 function openProfileByData(i){
   const all=window.ALL_FL||FL;
   const f=all[i];
