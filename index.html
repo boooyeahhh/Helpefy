@@ -2131,6 +2131,11 @@ async function renderDashOrders(){
     o._asFreelancer = o.freelancer_id === currentUser.id && o.kunde_id !== currentUser.id;
   });
 
+  // Check which orders already have a rating from current user
+  const {data:myBewertungen} = await sb.from('bewertungen').select('auftrag_id').eq('von_user_id',currentUser.id);
+  const ratedIds = new Set((myBewertungen||[]).map(b=>b.auftrag_id));
+  orders.forEach(o => o._hatBewertet = ratedIds.has(o.id));
+
   const badge=s=>{
     if(s==='abgeschlossen') return '<span class="badge badge-green">✅ Abgeschlossen</span>';
     if(s==='bezahlt') return '<span class="badge badge-green">💳 Bezahlt</span>';
