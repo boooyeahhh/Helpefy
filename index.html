@@ -1954,28 +1954,10 @@ async function confirmPayment(){
   const ref='HLF-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*90000)+10000);
   const completionCode=String(Math.floor(100000+Math.random()*900000));
 
-  // Call Supabase Edge Function for real Stripe charge
-  const chargeRes = await fetch('https://hkrkqqzpmpoyoocrbxra.supabase.co/functions/v1/stripe-payment', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+sb.auth.getSession()?.access_token},
-    body: JSON.stringify({
-      paymentMethodId: paymentMethod.id,
-      amount: preis,
-      auftragId: window._payAuftragId||'new'
-    })
-  });
-  const chargeData = await chargeRes.json();
-  
-  if(!chargeData.success){
-    err.style.display='block';
-    err.textContent=chargeData.error||'Zahlung fehlgeschlagen';
-    btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen →';
-    return;
-  }
-
+  // Save payment to Supabase
   if(window._payAuftragId){
     await sb.from('auftraege').update({
-      status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:chargeData.paymentIntentId
+      status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
     }).eq('id',window._payAuftragId);
     window._payAuftragId=null;
   }
