@@ -1555,6 +1555,14 @@ window.addEventListener('popstate',e=>{
   else showView('home',false);
 });
 
+// Fix pull-to-refresh / hard refresh 404
+window.addEventListener('pageshow', e=>{
+  if(e.persisted) return; // back/forward cache
+  const path=window.location.pathname.replace('/','').trim();
+  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
+  if(valid.includes(path)) showView(path,false);
+});
+
 function switchMode(mode,el){
   curMode=mode;
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
@@ -1785,6 +1793,20 @@ function openProfileByData(i){
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('pServices').innerHTML=(f.services||[f.role]).map(s=>`<span class="sp">${s}</span>`).join('');
   document.getElementById('pRevTitle').textContent=`Bewertungen (${f.reviews})`;
+  // Load real reviews from Supabase
+  if(f.real && f.id){
+    sb.from('bewertungen').select('*, profiles!bewertungen_von_user_id_fkey(full_name)').eq('zu_user_id',f.id).order('created_at',{ascending:false}).then(({data:revs})=>{
+      const el=document.getElementById('pReviews');
+      if(!el) return;
+      if(!revs||!revs.length){el.innerHTML='<div style="color:var(--muted);font-size:0.85rem">Noch keine Bewertungen.</div>';return;}
+      el.innerHTML=revs.map(r=>`<div class="review-item"><div class="ri-header"><span class="ri-name">${r.profiles?.full_name||'Anonym'}</span><span class="ri-stars">${'★'.repeat(r.sterne)}</span></div><div class="ri-text">${r.kommentar||''}</div></div>`).join('');
+      document.getElementById('pRevTitle').textContent=`Bewertungen (${revs.length})`;
+      document.getElementById('pRevCount').textContent=revs.length;
+      const avg=revs.reduce((s,r)=>s+r.sterne,0)/revs.length;
+      document.getElementById('pRating').textContent=avg.toFixed(1);
+      document.getElementById('pRatBig').textContent=avg.toFixed(1);
+    });
+  }
   document.getElementById('pReviews').innerHTML=(f.revs||[]).length?f.revs.map(r=>`<div class="review-item"><div class="ri-header"><span class="ri-name">${r.n}</span><span class="ri-stars">${'★'.repeat(r.r)}</span></div><div class="ri-text">${r.t}</div></div>`).join(''):'<div style="color:var(--muted);font-size:0.85rem">Noch keine Bewertungen.</div>';
   calcPrice(); showView('profile');
 }
@@ -2269,13 +2291,29 @@ async function submitBewertung(){
   if(currentRating===0){showToast('Bitte Sterne vergeben!','error');return;}
   const text = document.getElementById('bewertungText').value.trim();
   
+  // Get the auftrag to find freelancer_id
+  const {data:auftrag} = await sb.from('auftraege').select('freelancer_id').eq('id',currentVerifyAuftragId).single();
+  
   await sb.from('bewertungen').insert({
     auftrag_id: currentVerifyAuftragId,
     von_user_id: currentUser.id,
+    zu_user_id: auftrag?.freelancer_id||null,
     sterne: currentRating,
     kommentar: text,
     created_at: new Date().toISOString()
   });
+  
+  // Update freelancer average rating
+  if(auftrag?.freelancer_id){
+    const {data:allBewertungen} = await sb.from('bewertungen').select('sterne').eq('zu_user_id', auftrag.freelancer_id);
+    if(allBewertungen?.length){
+      const avg = allBewertungen.reduce((s,b)=>s+b.sterne,0)/allBewertungen.length;
+      await sb.from('freelancers').update({
+        bewertung_schnitt: Math.round(avg*10)/10,
+        auftraege_count: allBewertungen.length
+      }).eq('user_id', auftrag.freelancer_id);
+    }
+  }
   
   closeModal('bewertung');
   showToast('Bewertung abgegeben! Danke ⭐','success');
