@@ -2713,8 +2713,13 @@ async function confirmPayment2(){
 // ── INIT ──
 async function init(){
   const{data:{session}}=await sb.auth.getSession();
-  if(session){currentUser=session.user;await loadProfile();}
-  updateNav();
+  if(session){
+    currentUser=session.user;
+    await loadProfile();
+    updateNav();
+  } else {
+    updateNav();
+  }
   
   sb.auth.onAuthStateChange(async(_,s)=>{
     currentUser=s?.user||null;
