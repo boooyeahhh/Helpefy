@@ -1423,11 +1423,58 @@ async function loadProfile(){
   if(auftraegeEl) auftraegeEl.textContent = orderCount;
   if(ausgabenEl) ausgabenEl.textContent = totalMoney.toFixed(0)+'€';
 
+  // Show bewertungen count
+  if(currentUser){
+    const bewertungenQuery = isFL 
+      ? sb.from('bewertungen').select('sterne').eq('zu_user_id',currentUser.id)
+      : sb.from('bewertungen').select('sterne').eq('von_user_id',currentUser.id);
+    const {data:bewertungen} = await bewertungenQuery;
+    const bewEl = document.querySelector('.dsc-bewertungen');
+    if(bewEl && bewertungen?.length){
+      const avg = bewertungen.reduce((s,b)=>s+b.sterne,0)/bewertungen.length;
+      bewEl.textContent = avg.toFixed(1) + ' ⭐';
+    } else if(bewEl) {
+      bewEl.textContent = '–';
+    }
+  }
+
   // Count unread messages
   if(currentUser){
     const {data:msgs} = await sb.from('nachrichten').select('id').eq('zu_user_id',currentUser.id).limit(99);
     const msgEl = document.querySelector('.dsc-nachrichten');
     if(msgEl) msgEl.textContent = msgs?.length||0;
+  }
+
+  // Load bewertungen for freelancer
+  if(isFL && currentUser){
+    const {data:bewertungen} = await sb.from('bewertungen').select('*').eq('zu_user_id',currentUser.id).order('created_at',{ascending:false});
+    const bewEl = document.querySelector('.dsc-bewertungen');
+    if(bewEl) bewEl.textContent = bewertungen?.length||0;
+    
+    // Show in payments/overview
+    if(bewertungen?.length){
+      const avg = bewertungen.reduce((s,b)=>s+b.sterne,0)/bewertungen.length;
+      const bewertungHtml = bewertungen.map(b=>`
+        <div style="padding:0.75rem 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:500">${'⭐'.repeat(b.sterne)}${'☆'.repeat(5-b.sterne)}</span>
+            <span style="font-size:0.75rem;color:var(--muted)">${new Date(b.created_at).toLocaleDateString('de')}</span>
+          </div>
+          ${b.kommentar?`<div style="font-size:0.85rem;color:var(--text);margin-top:0.25rem">"${b.kommentar}"</div>`:''}
+        </div>`).join('');
+      
+      const overviewEl = document.getElementById('dash-overview');
+      if(overviewEl && !document.getElementById('dash-bewertungen-section')){
+        const bewSection = document.createElement('div');
+        bewSection.id = 'dash-bewertungen-section';
+        bewSection.className = 'dcard';
+        bewSection.style.marginTop = '1rem';
+        bewSection.innerHTML = `
+          <div class="dc-title">⭐ Meine Bewertungen (Ø ${avg.toFixed(1)})</div>
+          ${bewertungHtml}`;
+        overviewEl.appendChild(bewSection);
+      }
+    }
   }
 
   // Update Schnellzugriff for freelancers
@@ -2149,10 +2196,11 @@ async function renderDashOrders(){
             ${o.status==='abgeschlossen'&&!o._asFreelancer?`
               <div style="display:flex;flex-direction:column;gap:0.35rem;align-items:flex-end">
                 <div style="font-size:0.72rem;color:var(--green);font-weight:500">✅ Abgeschlossen</div>
+                ${o._hatBewertet?'<div style="font-size:0.72rem;color:var(--muted)">⭐ Bewertet</div>':`
                 <button onclick="currentVerifyAuftragId='${o.id}';window._reviewAuftragId='${o.id}';setStar(0);openModal('bewertung')"
                   style="padding:0.3rem 0.75rem;background:#fef9c3;color:#854d0e;border:1.5px solid #d97706;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif">
                   ⭐ Bewertung abgeben
-                </button>
+                </button>`}
               </div>`:''}
             ${o.status==='abgeschlossen'&&o._asFreelancer?`<div style="font-size:0.72rem;color:var(--green);text-align:right;font-weight:500">✅ Abgeschlossen</div>`:''}
           </div>
