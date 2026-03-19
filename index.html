@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Helpefy – Finde den perfekten Experten</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Helpefy">
+<meta name="theme-color" content="#E8352A">
+<meta name="description" content="Finde lokale Freelancer für jeden Job – schnell, einfach, sicher.">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="apple-touch-startup-image" href="/splash.png">
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
 </head>
@@ -1940,25 +1948,35 @@ async function confirmPayment(){
 
   const f=window._curFL||FL[curFL];
   const h=parseInt(document.getElementById('bHours').value)||1;
-  const preis=f?f.price*h:0;
+  const preis=f?f.price*h:parseFloat(document.getElementById('pay-sub')?.textContent)||0;
   const provision=+(preis*0.15).toFixed(2);
-  const ref='HLF-2026-'+String(Math.floor(Math.random()*90000)+10000);
+  const ref='HLF-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*90000)+10000);
   const completionCode=String(Math.floor(100000+Math.random()*900000));
+
+  // Call Supabase Edge Function for real Stripe charge
+  const chargeRes = await fetch('https://hkrkqqzpmpoyoocrbxra.supabase.co/functions/v1/stripe-payment', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+sb.auth.getSession()?.access_token},
+    body: JSON.stringify({
+      paymentMethodId: paymentMethod.id,
+      amount: preis,
+      auftragId: window._payAuftragId||'new'
+    })
+  });
+  const chargeData = await chargeRes.json();
+  
+  if(!chargeData.success){
+    err.style.display='block';
+    err.textContent=chargeData.error||'Zahlung fehlgeschlagen';
+    btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen →';
+    return;
+  }
 
   if(window._payAuftragId){
     await sb.from('auftraege').update({
-      status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
+      status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:chargeData.paymentIntentId
     }).eq('id',window._payAuftragId);
     window._payAuftragId=null;
-  } else {
-    await sb.from('auftraege').insert({
-      kunde_id:currentUser.id, titel:f?.role||'Buchung',
-      beschreibung:'Buchung über Helpefy', kategorie:f?.tags?.[0]||'Service',
-      preis:preis, provision:provision,
-      datum:document.getElementById('bDate').value,
-      status:'bezahlt', abschluss_code:completionCode,
-      stripe_payment_id:paymentMethod.id
-    });
   }
 
   // Destroy card element so it can be remounted next time
@@ -2080,17 +2098,14 @@ async function renderDashOrders(){
 }
 
 function payAuftrag(id, titel, preis){
-  // Open payment modal pre-filled
-  const fee = +(preis*0.15).toFixed(2);
-  const total = +(preis+fee).toFixed(2);
-  document.getElementById('paymentSummary').textContent = titel;
-  document.getElementById('pay-label').textContent = 'Auftrag: '+titel;
-  document.getElementById('pay-sub').textContent = preis.toFixed(2)+' €';
-  document.getElementById('pay-fee').textContent = fee.toFixed(2)+' €';
-  document.getElementById('pay-total').textContent = total.toFixed(2)+' €';
-  // Store order id for after payment
-  window._payAuftragId = id;
-  openModal('payment');
+  // Store order id so payment page can access it
+  localStorage.setItem('hlf_pay_id', id);
+  localStorage.setItem('hlf_pay_titel', titel);
+  localStorage.setItem('hlf_pay_preis', preis);
+  // Open payment page in browser (App Store compatible)
+  const payUrl = 'https://helpefy.de/pay?id='+id+'&preis='+preis+'&titel='+encodeURIComponent(titel);
+  window.open(payUrl, '_blank');
+  showToast('Zahlung wird im Browser geöffnet...','success');
 }
 
 async function openChatWithOrder(auftragId, userId){
@@ -2584,6 +2599,79 @@ async function sendChatImage(input){
   input.value='';
 }
 
+// ── PAYMENT PAGE ──
+async function initPayPage(){
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id') || localStorage.getItem('hlf_pay_id');
+  const preis = parseFloat(params.get('preis') || localStorage.getItem('hlf_pay_preis') || 0);
+  const titel = params.get('titel') || localStorage.getItem('hlf_pay_titel') || 'Buchung';
+  
+  if(!id) return;
+  
+  window._payAuftragId = id;
+  const fee = +(preis*0.15).toFixed(2);
+  const total = preis; // Kunde zahlt nur Freelancer-Preis
+  
+  const info = document.getElementById('pay-page-info');
+  if(info) info.innerHTML = `
+    <div style="font-weight:600;margin-bottom:0.5rem">${decodeURIComponent(titel)}</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:0.25rem">
+      <span>Betrag</span><span>${preis.toFixed(2)} €</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem;margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">
+      <span>Gesamt</span><span style="color:var(--red)">${total.toFixed(2)} €</span>
+    </div>`;
+  
+  // Init Stripe card for pay page
+  if(window.Stripe){
+    const s = Stripe('pk_test_51T1tYFRK3iEHR2pEqOaXmM5mNDhU43xQ5xeczVp1yPN44KR841VYLuSxHXo31LAc9XyUHGgS4bInnyXEybt8APRq00NGr6EIQn');
+    const el = s.elements({locale:'de'});
+    const card = el.create('card',{style:{base:{fontSize:'16px',fontFamily:'Inter,sans-serif'}}});
+    card.mount('#stripe-card-element2');
+    window._stripePayPage = {stripe:s, card};
+  }
+}
+
+async function confirmPayment2(){
+  const {stripe, card} = window._stripePayPage||{};
+  const name = document.getElementById('cardName2')?.value.trim();
+  const err = document.getElementById('pay-error2');
+  const btn = document.querySelector('#view-pay .btn-red');
+  
+  if(!name){err.style.display='block';err.textContent='Bitte Karteninhaber eingeben.';return;}
+  if(!stripe||!card){err.style.display='block';err.textContent='Stripe nicht geladen.';return;}
+  
+  btn.disabled=true; btn.textContent='⏳ Wird verarbeitet...';
+  
+  const {paymentMethod, error} = await stripe.createPaymentMethod({
+    type:'card', card, billing_details:{name}
+  });
+  
+  if(error){
+    err.style.display='block'; err.textContent=error.message;
+    btn.disabled=false; btn.textContent='🔒 Jetzt bezahlen';
+    return;
+  }
+  
+  const completionCode = String(Math.floor(100000+Math.random()*900000));
+  const ref = 'HLF-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*90000)+10000);
+  
+  await sb.from('auftraege').update({
+    status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
+  }).eq('id', window._payAuftragId);
+  
+  localStorage.removeItem('hlf_pay_id');
+  localStorage.removeItem('hlf_pay_preis');
+  localStorage.removeItem('hlf_pay_titel');
+  
+  card.destroy();
+  document.getElementById('bookRef').textContent = ref;
+  document.getElementById('completionCode').textContent = completionCode;
+  document.getElementById('completionCodeBox').style.display = 'block';
+  showView('success');
+  showToast('Zahlung erfolgreich! 🎉','success');
+}
+
 // ── INIT ──
 async function init(){
   const{data:{session}}=await sb.auth.getSession();
@@ -2594,8 +2682,9 @@ async function init(){
     else{currentProfile=null;updateNav();}
   });
   const path=window.location.pathname.replace('/','').trim()||'home';
-  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
+  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb','pay'];
   const start=valid.includes(path)?path:'home';
+  if(path==='pay') setTimeout(initPayPage, 500);
   history.replaceState({view:start},'',window.location.pathname);
   showView(start,false);
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
