@@ -3139,6 +3139,12 @@ function startChatWithUser(idx){
   const users=window._chatUsers||[];
   const u=users[idx];
   if(!u) return;
+  // Immediately clear dot in UI before async operations
+  const items = document.querySelectorAll('.ci');
+  if(items[idx]){
+    const dot = items[idx].querySelector('div[style*="border-radius:50%"]');
+    if(dot) dot.remove();
+  }
   openChat(u.id,u.full_name||u.email||'Nutzer',u.avatar_url||'',u.role||'');
 }
 
@@ -3192,6 +3198,7 @@ async function openChat(userId,userName,avatarUrl,role){
   document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
   // Mark ALL messages from this user as read FIRST
   await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',userId);
+  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',userId).is('gelesen',null);
   await loadMessages();
   // Now reload chat list - dots should be gone
   await loadChatUsers();
