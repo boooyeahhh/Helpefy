@@ -1873,6 +1873,10 @@ async function aiSearch(query, freelancers){
 
 async function renderSearch(q){
   const query=(q||'').trim();
+  // Reset pills to "Alle" on every new search
+  document.querySelectorAll('.filter-row .fpill').forEach(p=>{
+    p.classList.toggle('active', p.textContent.trim().includes('Alle'));
+  });
   
   // Load real freelancers from Supabase
   const {data:realFL}=await sb.from('freelancers').select('*').limit(50);
