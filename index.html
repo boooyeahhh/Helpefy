@@ -26,7 +26,7 @@
   --shadow:0 1px 4px rgba(0,0,0,0.08);--shadow2:0 4px 20px rgba(0,0,0,0.1);
 }
 body{font-family:'Inter',sans-serif;background:var(--light);color:var(--text);overflow-x:hidden;}
-.view{display:none;}.view.active{display:block;}
+.view{display:none;}.view.active{display:block;min-height:100vh;}
 
 /* NAV */
 nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:0.85rem 2.5rem;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border);}
@@ -1687,11 +1687,13 @@ function updateNav(){
 
 // ── VIEWS ──
 function showView(n, push=true){
-  window.scrollTo({top:0,left:0,behavior:'instant'});
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const el=document.getElementById('view-'+n);
   if(!el) return;
   el.classList.add('active');
+  document.body.scrollTop=0;
+  document.documentElement.scrollTop=0;
+  window.scrollTo(0,0);
   if(n==='home') renderHome();
   if(n==='dashboard'){
     if(!currentUser){
