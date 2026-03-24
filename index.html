@@ -787,10 +787,10 @@ nav{padding:0.75rem 1rem;}
           </div>
         </div>
         <div class="p-stats">
-          <div class="pstat"><div class="pstat-n" id="pJobs">48</div><div class="pstat-l">Aufträge</div></div>
-          <div class="pstat"><div class="pstat-n" id="pRatBig">4.9</div><div class="pstat-l">Bewertung</div></div>
-          <div class="pstat"><div class="pstat-n">2 Jahre</div><div class="pstat-l">Dabei</div></div>
-          <div class="pstat"><div class="pstat-n">98%</div><div class="pstat-l">Erfolg</div></div>
+          <div class="pstat"><div class="pstat-n" id="pJobs">0</div><div class="pstat-l">Aufträge</div></div>
+          <div class="pstat"><div class="pstat-n" id="pRatBig">–</div><div class="pstat-l">Bewertung</div></div>
+          <div class="pstat"><div class="pstat-n" id="pDabei">–</div><div class="pstat-l">Dabei</div></div>
+          <div class="pstat"><div class="pstat-n" id="pErfolg">–</div><div class="pstat-l">Erfolg</div></div>
         </div>
       </div>
       <div class="p-section"><div class="ps-title">Über mich</div><p id="pBio" style="font-size:0.875rem;color:var(--muted);line-height:1.8"></p></div>
@@ -915,7 +915,18 @@ nav{padding:0.75rem 1rem;}
             </div>
             <div class="fg"><label>Stundenlohn (€)</label><input type="number" id="settingsPreis" placeholder="25"></div>
             <div class="fg"><label>Über mich</label>
-              <textarea id="settingsBio" placeholder="Beschreibe deine Erfahrung..." style="min-height:80px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
+              <textarea id="settingsBio" placeholder="Erzähl etwas über dich, deine Erfahrung und was du anbietest..." style="min-height:100px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
+            </div>
+            <div class="fg"><label>Dienstleistungen (kommagetrennt)</label>
+              <input type="text" id="settingsServices" placeholder="z.B. Wasserhahn reparieren, Fliesen legen, Malerarbeiten">
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem">Werden als Tags auf deinem Profil angezeigt</div>
+            </div>
+            <div class="fg"><label>🎓 Nachweise & Qualifikationen</label>
+              <input type="text" id="settingsNachweise" placeholder="z.B. Meisterbrief Elektriker, Bachelor Informatik, 5 Jahre Erfahrung">
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem">Gibt Kunden Vertrauen in deine Qualifikation</div>
+            </div>
+            <div class="fg"><label>Mitglied seit</label>
+              <input type="text" id="settingsMember" readonly style="opacity:0.6" placeholder="Automatisch gesetzt">
             </div>
           </div>
           <button class="btn-red" onclick="saveSettings()" style="margin-top:0.5rem;width:100%">Speichern</button>
@@ -1924,8 +1935,45 @@ function openProfileByData(i){
   document.getElementById('pLoc').textContent=f.loc;
   document.getElementById('pRatBig').textContent=f.rating;
   document.getElementById('pJobs').textContent=f.reviews;
-  document.getElementById('pBio').textContent=f.bio;
+  document.getElementById('pBio').textContent = f.bio && !f.bio.includes('Experte auf Helpefy') ? f.bio : 'Noch keine Beschreibung hinterlegt.';
   document.getElementById('bPrice').textContent=f.price;
+  // Set dynamic stats
+  const pDabei = document.getElementById('pDabei');
+  const pErfolg = document.getElementById('pErfolg');
+  if(pDabei && f.real){
+    // Calculate years since joined - load from freelancers
+    sb.from('freelancers').select('created_at,dienstleistungen,nachweise,auftraege_count').eq('user_id',f.id).single().then(({data:fl})=>{
+      if(fl){
+        if(fl.created_at){
+          const years = ((Date.now()-new Date(fl.created_at))/31536000000);
+          pDabei.textContent = years < 1 ? Math.max(1,Math.round(years*12))+'M' : Math.round(years)+'J';
+        }
+        if(pErfolg) pErfolg.textContent = fl.auftraege_count>0 ? Math.min(100,Math.round((fl.auftraege_count/(fl.auftraege_count+1))*100))+'%' : '–';
+        // Update services from real data
+        const servicesEl = document.getElementById('pServices');
+        if(servicesEl && fl.dienstleistungen){
+          const tags = fl.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean);
+          servicesEl.innerHTML = tags.map(t=>`<span class="sp">${t}</span>`).join('');
+        }
+        // Show Nachweise section
+        const nachweisEl = document.getElementById('pNachweise');
+        if(nachweisEl){
+          if(fl.nachweise){
+            const nw = fl.nachweise.split(',').map(s=>s.trim()).filter(Boolean);
+            nachweisEl.innerHTML = `<h2 style="font-size:1rem;margin-bottom:0.75rem">🎓 Nachweise & Qualifikationen</h2>
+              <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+                ${nw.map(n=>`<span style="background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:0.35rem 0.75rem;border-radius:100px;font-size:0.78rem">✓ ${n}</span>`).join('')}
+              </div>`;
+          } else {
+            nachweisEl.innerHTML = '';
+          }
+        }
+      }
+    });
+  } else {
+    if(pDabei) pDabei.textContent = '–';
+    if(pErfolg) pErfolg.textContent = '–';
+  }
   document.getElementById('bAvail').textContent=f.avail?'✅ Verfügbar heute':'⏳ Nächste Woche';
   document.getElementById('bDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('pServices').innerHTML=(f.services||[f.role]).map(s=>`<span class="sp">${s}</span>`).join('');
