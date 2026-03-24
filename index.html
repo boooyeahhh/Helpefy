@@ -1926,6 +1926,9 @@ async function renderSearch(q){
   document.getElementById('rQuery').textContent=(q||'Alle')+locInfo;
   document.getElementById('rCount').textContent=results.length;
 
+  // Save current results for pills
+  window._currentSearchResults = results.length ? results : all;
+
   if(!results.length){
     document.getElementById('searchGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem">🔍</div><div style="font-weight:600;margin:1rem 0">Keine Ergebnisse für "${q}"</div><div style="font-size:0.85rem;margin-bottom:1rem">Versuche einen anderen Begriff wie "Putzen", "Elektriker" oder "Mathe"</div><button class="btn-red" onclick="renderSearch('')">Alle anzeigen</button></div>`;
   } else {
@@ -2069,23 +2072,24 @@ function togglePill(el){
   el.classList.add('active');
   const txt=el.textContent.trim();
   const all=window.ALL_FL||FL;
-  let r=[...all];
+  
+  // Always use current search results as base, not ALL freelancers
+  const currentResults = window._currentSearchResults || all;
 
-  if(txt.includes('verfügbar')||txt.includes('Verfügbar')) r=r.filter(f=>f.avail);
-  else if(txt.includes('bewertet')||txt.includes('Bewertung')) r=[...all].sort((a,b)=>b.rating-a.rating);
-  else if(txt.includes('Günstig')) r=[...all].sort((a,b)=>a.price-b.price);
-  else {
-    // "Alle" → zeige aktuelle Suchergebnisse ODER alle wenn keine Suche
+  if(txt.includes('Alle')){
+    // Re-run current search
     const searchInput = document.getElementById('searchInput');
-    const currentQuery = searchInput?.value?.trim()||'';
-    if(currentQuery && currentQuery.toLowerCase()!=='alle'){
-      // Re-run search mit aktueller Query aber zeige alle Kategorie-Ergebnisse
-      const searchGrid=document.getElementById('searchGrid');
-      if(searchGrid) renderSearch(currentQuery);
-      return;
-    }
-    r=[...all];
+    const q = searchInput?.value?.trim()||'';
+    if(q) { renderSearch(q); return; }
+    const grid=document.getElementById('searchGrid')||document.getElementById('homeGrid');
+    if(grid) grid.innerHTML=currentResults.map((f,i)=>flCard(f,all.indexOf(f))).join('');
+    return;
   }
+
+  let r=[...currentResults];
+  if(txt.includes('verfügbar')||txt.includes('Verfügbar')) r=r.filter(f=>f.avail);
+  else if(txt.includes('bewertet')||txt.includes('Bewertung')) r=[...currentResults].sort((a,b)=>b.rating-a.rating);
+  else if(txt.includes('Günstig')) r=[...currentResults].sort((a,b)=>a.price-b.price);
 
   const searchGrid=document.getElementById('searchGrid');
   const homeGrid=document.getElementById('homeGrid');
