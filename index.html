@@ -3097,7 +3097,7 @@ async function loadChatUsers(){
     if(m.von_user_id!==currentUser.id) partnerIds.add(m.von_user_id);
     if(m.zu_user_id!==currentUser.id) partnerIds.add(m.zu_user_id);
     // Unread = message sent TO me, not yet read
-    if(m.zu_user_id===currentUser.id && !m.gelesen) unreadIds.add(m.von_user_id);
+    if(m.zu_user_id===currentUser.id && m.gelesen===false) unreadIds.add(m.von_user_id);
   });
   const{data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
   if(!allUsers||!allUsers.length){chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.</div>`;return;}
@@ -3212,31 +3212,26 @@ async function openChat(userId,userName,avatarUrl,role){
       }
     }).subscribe();
 
-  // Polling fallback every 3 seconds
-  let lastMsgCount = 0;
+  // Poll every 2 seconds as fallback
+  let _lastMsgId = null;
   window._chatPollInterval = setInterval(async()=>{
     if(!activeChatUserId || !currentUser) return;
-    const{data:msgs}=await sb.from('nachrichten').select('id,inhalt,von_user_id,created_at')
-      .or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`)
-      .order('created_at',{ascending:true});
-    if(!msgs) return;
-    const container = document.getElementById('chatMsgs');
-    if(!container) return;
-    // If more messages than shown, reload
-    const shownMsgs = container.querySelectorAll('.msg').length;
-    if(msgs.length > shownMsgs){
-      // Mark new ones as read and show them
-      const newMsgs = msgs.slice(shownMsgs);
-      newMsgs.forEach(m=>{
-        appendMsg(m.inhalt, m.von_user_id===currentUser.id);
-        if(m.von_user_id===activeChatUserId){
-          sb.from('nachrichten').update({gelesen:true}).eq('id',m.id);
-        }
-      });
-      loadChatUsers();
+    const{data:latest}=await sb.from('nachrichten')
+      .select('id,inhalt,von_user_id,gelesen')
+      .or(`and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`)
+      .order('created_at',{ascending:false})
+      .limit(1);
+    if(!latest||!latest.length) return;
+    const newest = latest[0];
+    if(newest.id !== _lastMsgId){
+      _lastMsgId = newest.id;
+      if(newest.von_user_id === activeChatUserId){
+        // New message from the other person - reload chat
+        await loadMessages();
+        loadChatUsers();
+      }
     }
-    lastMsgCount = msgs.length;
-  }, 3000);
+  }, 2000);
 }
 
 async function loadMessages(){
@@ -3247,8 +3242,11 @@ async function loadMessages(){
   setMobileChatDot(false);
   const container=document.getElementById('chatMsgs');
   if(!container) return;
-  if(!msgs||!msgs.length){container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';return;}
   container.innerHTML='';
+  if(!msgs||!msgs.length){
+    container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';
+    return;
+  }
   msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id));
 }
 
