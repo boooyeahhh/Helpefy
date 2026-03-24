@@ -3201,52 +3201,75 @@ async function subscribeToPush(){
 
 function startGlobalListener(){
   if(!currentUser) return;
-  if(window._globalChannel) window._globalChannel.unsubscribe();
+  if(window._pollInterval) clearInterval(window._pollInterval);
   
-  window._globalChannel = sb.channel('global_notifications_'+currentUser.id)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'nachrichten',
-      filter: `zu_user_id=eq.${currentUser.id}`
-    }, async payload => {
-      // New message received
-      const msg = payload.new;
-      // Get sender name
-      const {data:sender} = await sb.from('profiles').select('full_name').eq('id', msg.von_user_id).single();
-      const senderName = sender?.full_name || 'Jemand';
-      const isImage = msg.inhalt?.startsWith('[IMG]');
-      const preview = isImage ? '📷 Foto gesendet' : msg.inhalt?.slice(0,60);
-      
-      sendPushNotification(
-        `💬 Neue Nachricht von ${senderName}`,
-        preview,
-        '/chat'
-      );
-      
-      // Update nav notification count
-      loadChatUsers();
-    })
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'auftraege',
-      filter: `kunde_id=eq.${currentUser.id}`
-    }, payload => {
-      const o = payload.new;
-      if(o.status === 'angenommen'){
-        sendPushNotification('✅ Anfrage angenommen!', 'Deine Buchungsanfrage wurde angenommen. Jetzt bezahlen!', '/dashboard');
+  let lastMsgId = null;
+  let lastOrderStatus = {};
+
+  // Poll every 20 seconds for new messages/orders
+  async function checkNotifications(){
+    if(!currentUser) return;
+    
+    // Check new messages
+    const {data:msgs} = await sb.from('nachrichten')
+      .select('id,von_user_id,inhalt,created_at,profiles!nachrichten_von_user_id_fkey(full_name)')
+      .eq('zu_user_id', currentUser.id)
+      .eq('gelesen', false)
+      .order('created_at', {ascending:false})
+      .limit(5);
+    
+    if(msgs && msgs.length > 0){
+      const newest = msgs[0];
+      if(lastMsgId && newest.id !== lastMsgId){
+        const name = newest.profiles?.full_name || 'Jemand';
+        const preview = newest.inhalt?.startsWith('[IMG]') ? '📷 Foto gesendet' : newest.inhalt?.slice(0,60);
+        sendPushNotification(`💬 Neue Nachricht von ${name}`, preview, '/chat');
+        loadChatUsers();
       }
-    })
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'auftraege',
-      filter: `freelancer_id=eq.${currentUser.id}`
-    }, payload => {
-      sendPushNotification('📨 Neue Buchungsanfrage!', 'Jemand möchte dich buchen. Jetzt ansehen!', '/dashboard');
-    })
-    .subscribe();
+      lastMsgId = newest.id;
+    } else if(lastMsgId === null && msgs) {
+      lastMsgId = msgs[0]?.id || 'none';
+    }
+
+    // Check order status changes (für Kunden)
+    const {data:orders} = await sb.from('auftraege')
+      .select('id,status')
+      .eq('kunde_id', currentUser.id)
+      .in('status', ['angenommen','abgelehnt']);
+    
+    if(orders){
+      orders.forEach(o => {
+        if(lastOrderStatus[o.id] && lastOrderStatus[o.id] !== o.status){
+          if(o.status === 'angenommen'){
+            sendPushNotification('✅ Anfrage angenommen!', 'Deine Buchungsanfrage wurde angenommen. Jetzt bezahlen!', '/dashboard');
+          }
+        }
+        lastOrderStatus[o.id] = o.status;
+      });
+    }
+
+    // Check new orders (für Freelancer)
+    const {data:flOrders} = await sb.from('auftraege')
+      .select('id,status,created_at')
+      .eq('freelancer_id', currentUser.id)
+      .eq('status', 'offen')
+      .order('created_at', {ascending:false})
+      .limit(1);
+    
+    if(flOrders?.length > 0){
+      const newest = flOrders[0];
+      if(lastOrderStatus['fl_'+newest.id] === undefined){
+        if(Object.keys(lastOrderStatus).length > 0){
+          sendPushNotification('📨 Neue Buchungsanfrage!', 'Jemand möchte dich buchen!', '/dashboard');
+        }
+        lastOrderStatus['fl_'+newest.id] = true;
+      }
+    }
+  }
+  
+  // Run immediately then every 20 seconds
+  setTimeout(checkNotifications, 2000);
+  window._pollInterval = setInterval(checkNotifications, 20000);
 }
 
 async function sendPushNotification(title, body, url='/dashboard'){
