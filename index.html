@@ -2435,6 +2435,14 @@ async function renderDashOrders(){
   if(!ordersEl) return;
 
   const isFreelancer = currentProfile?.role === 'freelancer';
+  
+  // Setup realtime for orders if not already
+  if(!window._ordersChannel){
+    window._ordersChannel = sb.channel('orders_live_'+currentUser.id)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'auftraege'},()=>renderDashOrders())
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'auftraege'},()=>renderDashOrders())
+      .subscribe();
+  }
 
   // Load ALL orders where user is involved (as kunde OR freelancer)
   const {data:asKunde}=await sb.from('auftraege')
@@ -3141,9 +3149,21 @@ function showChatList(){
   if(listPanel) listPanel.style.display='block';
 }
 
-function chatBookFreelancer(){
-  showView('home');
-  showToast('Suche den Freelancer und buche direkt aus seinem Profil','success');
+async function chatBookFreelancer(){
+  if(!activeChatUserId){ showView('home'); return; }
+  // Load freelancer data and open profile directly
+  const {data:fl} = await sb.from('freelancers').select('*').eq('user_id',activeChatUserId).single();
+  if(fl){
+    const CAT_TAGS={'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],'Handwerk':['Handwerk','Handwerker','Reparatur','Elektrik','Sanitär'],'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen'],'Haushalt':['Haushalt','Reinigung','Putzen'],'Umzug':['Umzug','Transport','Möbel'],'Lernen':['Nachhilfe','Mathe','Englisch','Tutor'],'Kreativ':['Design','Grafik','Logo'],'Beauty':['Beauty','Friseur','Massage'],'Tiere':['Tiere','Hund','Katze'],'Events':['Events','Party','Hochzeit']};
+    const kat = fl.kategorie||'Sonstiges';
+    const f = {name:fl.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:fl.avatar_url||null,role:kat,tags:CAT_TAGS[kat]||[kat],price:fl.stundenlohn||25,rating:fl.bewertung_schnitt||5.0,reviews:fl.auftraege_count||0,loc:fl.standort||'Deutschland',avail:fl.verfuegbar!==false,bio:fl.beschreibung||'',services:CAT_TAGS[kat]||[kat],revs:[],real:true,id:fl.user_id};
+    window._curFL = f;
+    if(!window.ALL_FL) window.ALL_FL = [f];
+    else window.ALL_FL.unshift(f);
+    openProfileByData(0);
+  } else {
+    showToast('Diese Person ist kein Freelancer','error');
+  }
 }
 
 async function openChat(userId,userName,avatarUrl,role){
@@ -3166,18 +3186,25 @@ async function openChat(userId,userName,avatarUrl,role){
   if(backBtn) backBtn.style.display=isMobile?'block':'none';
   document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
   await loadMessages();
+  // Clear dot for this user
+  loadChatUsers();
   if(chatSubscription) chatSubscription.unsubscribe();
-  chatSubscription=sb.channel('chat_'+currentUser.id+'_'+userId).on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{
-    if(payload.new.zu_user_id===currentUser.id){
-      if(payload.new.von_user_id===activeChatUserId){
-        appendMsg(payload.new.inhalt,false,userName);
-      } else {
-        // Notification from someone else
-        sendPushNotification('Neue Nachricht – Helpefy', 'Du hast eine neue Nachricht erhalten', '/chat');
-        loadChatUsers(); // refresh dot
+  chatSubscription=sb.channel('nachrichten_live_'+currentUser.id)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{
+      const msg = payload.new;
+      // Message in active chat - show immediately
+      if(msg.zu_user_id===currentUser.id && msg.von_user_id===activeChatUserId){
+        appendMsg(msg.inhalt,false,userName);
+        // Mark as read immediately
+        sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
+      } else if(msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId){
+        // My own message confirmed - already shown via appendMsg
+      } else if(msg.zu_user_id===currentUser.id){
+        // Message from someone else - show notification dot
+        sendPushNotification('💬 Neue Nachricht', 'Du hast eine neue Nachricht erhalten', '/chat');
+        loadChatUsers();
       }
-    }
-  }).subscribe();
+    }).subscribe();
 }
 
 async function loadMessages(){
