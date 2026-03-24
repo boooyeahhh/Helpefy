@@ -1750,7 +1750,19 @@ function switchMode(mode,el){
   document.getElementById('hero-jobs').style.display=mode==='jobs'?'block':'none';
   document.getElementById('section-freelancer').style.display=mode==='freelancer'?'block':'none';
   document.getElementById('section-jobs').style.display=mode==='jobs'?'block':'none';
-  if(mode==='jobs'){loadRealJobs();const h=document.getElementById('job-login-hint');if(h)h.style.display=currentUser?'none':'block';}
+  if(mode==='jobs'){
+    loadRealJobs();
+    const h=document.getElementById('job-login-hint');if(h)h.style.display=currentUser?'none':'block';
+    const hs=document.getElementById('heroSearch');
+    if(hs) hs.placeholder='Welche Art Job suchst du? z.B. Gartenarbeit, Nachhilfe...';
+    const sb2=document.querySelector('.search-btn');
+    if(sb2) sb2.textContent='Jobs suchen';
+  } else {
+    const hs=document.getElementById('heroSearch');
+    if(hs) hs.placeholder='Was suchst du? z.B. Klempner, Nachhilfe...';
+    const sb2=document.querySelector('.search-btn');
+    if(sb2) sb2.textContent='Suchen';
+  }
 }
 
 // ── RENDER ──
@@ -2055,7 +2067,6 @@ function openProfileByData(i){
 
 // ── SEARCH ──
 function doSearch(){
-  // If already on search page, use searchInput value; otherwise use heroSearch
   const searchInput = document.getElementById('searchInput');
   const heroSearch = document.getElementById('heroSearch');
   const onSearchPage = document.getElementById('view-search').classList.contains('active');
@@ -2063,6 +2074,18 @@ function doSearch(){
     ? (searchInput?.value || heroSearch?.value || '')
     : (heroSearch?.value || searchInput?.value || '');
   hideAllSugg();
+
+  // If jobs mode → search jobs not freelancers
+  if(curMode === 'jobs'){
+    showView('job-posten');
+    setTimeout(()=>{
+      const jobInput = document.getElementById('jobSearchInput');
+      if(jobInput){ jobInput.value=v; searchJobs(); }
+      else { loadRealJobs(); }
+    },50);
+    return;
+  }
+
   showView('search');
   setTimeout(()=>{
     if(searchInput) searchInput.value=v;
