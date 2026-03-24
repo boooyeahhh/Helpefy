@@ -2962,7 +2962,17 @@ async function openChat(userId,userName,avatarUrl,role){
   document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
   await loadMessages();
   if(chatSubscription) chatSubscription.unsubscribe();
-  chatSubscription=sb.channel('chat_'+currentUser.id+'_'+userId).on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{if(payload.new.von_user_id===activeChatUserId&&payload.new.zu_user_id===currentUser.id){appendMsg(payload.new.inhalt,false,userName);}}).subscribe();
+  chatSubscription=sb.channel('chat_'+currentUser.id+'_'+userId).on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{
+    if(payload.new.zu_user_id===currentUser.id){
+      if(payload.new.von_user_id===activeChatUserId){
+        appendMsg(payload.new.inhalt,false,userName);
+      } else {
+        // Notification from someone else
+        sendPushNotification('Neue Nachricht – Helpefy', 'Du hast eine neue Nachricht erhalten', '/chat');
+        loadChatUsers(); // refresh dot
+      }
+    }
+  }).subscribe();
 }
 
 async function loadMessages(){
@@ -3126,8 +3136,78 @@ async function init(){
   setTimeout(autoDetectLocation,800);
   if(window.Stripe) initStripe();
   else window.addEventListener('load',initStripe);
+
+  // Register Service Worker for Push Notifications
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      window._swReg = reg;
+      // Ask for notification permission after 3 seconds
+      setTimeout(askNotificationPermission, 3000);
+    }).catch(e => console.log('SW error:', e));
+  }
 }
 init();
+
+// ── PUSH NOTIFICATIONS ──
+async function askNotificationPermission(){
+  if(!currentUser) return; // only ask if logged in
+  if(Notification.permission === 'granted') {
+    subscribeToPush();
+    return;
+  }
+  if(Notification.permission === 'denied') return;
+  
+  // Show custom prompt first
+  const banner = document.createElement('div');
+  banner.id = 'notif-banner';
+  banner.style.cssText = 'position:fixed;bottom:5rem;left:1rem;right:1rem;background:var(--dark);color:white;border-radius:14px;padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+  banner.innerHTML = `
+    <div style="font-size:1.5rem">🔔</div>
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:0.9rem">Benachrichtigungen aktivieren</div>
+      <div style="font-size:0.78rem;color:#aaa;margin-top:0.2rem">Erhalte Alerts bei neuen Anfragen & Nachrichten</div>
+    </div>
+    <button onclick="enableNotifications()" style="background:var(--red);color:white;border:none;border-radius:8px;padding:0.5rem 1rem;font-size:0.82rem;cursor:pointer;white-space:nowrap">Aktivieren</button>
+    <button onclick="this.closest('#notif-banner').remove()" style="background:transparent;color:#aaa;border:none;cursor:pointer;font-size:1.2rem;padding:0.25rem">✕</button>`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner?.remove(), 15000);
+}
+
+async function enableNotifications(){
+  document.getElementById('notif-banner')?.remove();
+  const permission = await Notification.requestPermission();
+  if(permission === 'granted'){
+    subscribeToPush();
+    showToast('Benachrichtigungen aktiviert! 🔔','success');
+  }
+}
+
+async function subscribeToPush(){
+  if(!window._swReg) return;
+  try {
+    // Check existing subscription
+    const existing = await window._swReg.pushManager.getSubscription();
+    if(existing) return;
+    
+    // For demo - just save that user wants notifications
+    localStorage.setItem('hlf_push_enabled', '1');
+  } catch(e) { console.log('Push sub error:', e); }
+}
+
+async function sendPushNotification(title, body, url='/dashboard'){
+  // Show local notification (works without server)
+  if(Notification.permission === 'granted'){
+    if(window._swReg){
+      window._swReg.showNotification(title, {
+        body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        vibrate: [200, 100, 200],
+        data: { url }
+      });
+    }
+  }
+}
 
 </script>
 </body>
