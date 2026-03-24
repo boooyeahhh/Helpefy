@@ -2068,19 +2068,8 @@ function doSearch(){
     : (heroSearch?.value || searchInput?.value || '');
   hideAllSugg();
 
-  // If jobs mode → stay on home, scroll to job section and search
-  if(curMode === 'jobs'){
-    showView('home');
-    setTimeout(()=>{
-      switchMode('jobs', document.getElementById('tab-jobs'));
-      const jobInput = document.getElementById('jobSearchInput');
-      if(jobInput){ jobInput.value=v||''; }
-      if(v) searchJobs(); else loadRealJobs();
-      // Scroll to job grid
-      document.getElementById('section-jobs')?.scrollIntoView({behavior:'smooth'});
-    },100);
-    return;
-  }
+  // Always search freelancers - switch to freelancer mode
+  if(curMode === 'jobs') curMode = 'freelancer';
 
   window.scrollTo(0,0);
   showView('search');
