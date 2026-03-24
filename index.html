@@ -3191,23 +3191,23 @@ async function openChat(userId,userName,avatarUrl,role){
   // Now reload chat list - dots should be gone
   await loadChatUsers();
   if(chatSubscription) chatSubscription.unsubscribe();
-  chatSubscription=sb.channel('nachrichten_live_'+currentUser.id)
+  // Shared conversation channel - both users listen to same channel
+  const convId = [currentUser.id, userId].sort().join('_');
+  chatSubscription = sb.channel('conv_'+convId)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{
       const msg = payload.new;
-      // Message in active chat - show immediately
-      if(msg.zu_user_id===currentUser.id && msg.von_user_id===activeChatUserId){
+      // Check if this message belongs to our conversation
+      const isOurConv = (msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId) ||
+                        (msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id);
+      if(!isOurConv) return;
+      
+      // Message FROM the other person - show it
+      if(msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id){
         appendMsg(msg.inhalt,false,userName);
-        // Mark as read immediately
         sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
-        // Reload chat list to clear dot
-        loadChatUsers();
-      } else if(msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId){
-        // My own message confirmed - already shown via appendMsg
-      } else if(msg.zu_user_id===currentUser.id){
-        // Message from someone else - show notification dot
-        sendPushNotification('💬 Neue Nachricht', 'Du hast eine neue Nachricht erhalten', '/chat');
         loadChatUsers();
       }
+      // Message I sent - already shown, skip
     }).subscribe();
 }
 
