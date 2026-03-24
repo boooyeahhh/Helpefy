@@ -1124,6 +1124,56 @@ nav{padding:0.75rem 1rem;}
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- KONTAKT VIEW -->
+<div id="view-kontakt" class="view" style="display:none">
+  <div style="max-width:600px;margin:0 auto;padding:5rem 1.5rem 4rem">
+    <div style="text-align:center;margin-bottom:2.5rem">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem">💬</div>
+      <h1 style="font-size:1.8rem;font-weight:700;margin-bottom:0.5rem">Support & Kontakt</h1>
+      <p style="color:var(--muted);font-size:0.95rem;line-height:1.6">Hast du ein Problem oder eine Frage? Wir helfen dir gerne weiter.<br>Melde dich einfach – wir melden uns so schnell wie möglich.</p>
+    </div>
+
+    <div class="dcard" style="max-width:100%">
+      <div class="fg">
+        <label>Name</label>
+        <input type="text" id="supportName" placeholder="Dein Name">
+      </div>
+      <div class="fg">
+        <label>E-Mail Adresse</label>
+        <input type="email" id="supportEmail" placeholder="deine@email.de">
+      </div>
+      <div class="fg">
+        <label>Betreff</label>
+        <select id="supportBetreff" style="width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;background:var(--white);font-family:Inter,sans-serif;font-size:0.875rem;outline:none;color:var(--text)">
+          <option value="">Bitte wählen...</option>
+          <option>Problem mit einer Buchung</option>
+          <option>Problem mit Zahlung</option>
+          <option>Technisches Problem</option>
+          <option>Konto & Profil</option>
+          <option>Missbrauch melden</option>
+          <option>Allgemeine Frage</option>
+          <option>Sonstiges</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Nachricht</label>
+        <textarea id="supportNachricht" placeholder="Beschreibe dein Problem oder deine Frage so genau wie möglich..." style="min-height:140px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--white)"></textarea>
+      </div>
+      <div id="support-error" class="error-msg" style="display:none"></div>
+      <div id="support-success" style="display:none;background:#f0fdf4;border:1px solid #86efac;color:#166534;padding:0.75rem 1rem;border-radius:9px;font-size:0.875rem;margin-bottom:1rem">
+        ✅ Deine Nachricht wurde gesendet! Wir melden uns innerhalb von 24 Stunden.
+      </div>
+      <button class="btn-red" style="width:100%;padding:0.875rem" onclick="sendSupport()">Nachricht senden →</button>
+    </div>
+
+    <div style="margin-top:2rem;text-align:center;color:var(--muted);font-size:0.85rem">
+      <div style="margin-bottom:0.5rem">Oder direkt per E-Mail:</div>
+      <a href="mailto:christopher_russell@web.de" style="color:var(--red);font-weight:500;text-decoration:none">christopher_russell@web.de</a>
+      <div style="margin-top:1rem;font-size:0.78rem">Antwortzeit: in der Regel innerhalb von 24 Stunden</div>
+    </div>
+  </div>
+</div>
+
 <!-- ZAHLUNGSMODAL -->
 <div class="modal-overlay" id="modal-payment">
   <div class="modal">
@@ -2521,6 +2571,40 @@ async function requestAuszahlung(amount){
   // In real production: create Stripe Connect payout here
 }
 
+// ── SUPPORT ──
+async function sendSupport(){
+  const name = document.getElementById('supportName').value.trim();
+  const email = document.getElementById('supportEmail').value.trim();
+  const betreff = document.getElementById('supportBetreff').value;
+  const nachricht = document.getElementById('supportNachricht').value.trim();
+  const err = document.getElementById('support-error');
+  const suc = document.getElementById('support-success');
+
+  if(!name||!email||!betreff||!nachricht){
+    err.style.display='block';
+    err.textContent='Bitte alle Felder ausfüllen.';
+    return;
+  }
+  err.style.display='none';
+
+  // Save to Supabase
+  const {error} = await sb.from('support_anfragen').insert({
+    name, email, betreff, nachricht,
+    created_at: new Date().toISOString()
+  });
+
+  // Show success regardless (email link as fallback)
+  suc.style.display='block';
+  document.getElementById('supportName').value='';
+  document.getElementById('supportEmail').value='';
+  document.getElementById('supportBetreff').value='';
+  document.getElementById('supportNachricht').value='';
+
+  // Also open mailto as backup
+  const mailBody = encodeURIComponent(`Name: ${name}\nE-Mail: ${email}\nBetreff: ${betreff}\n\n${nachricht}`);
+  window.location.href = `mailto:christopher_russell@web.de?subject=Helpefy Support: ${encodeURIComponent(betreff)}&body=${mailBody}`;
+}
+
 // ── HELPERS ──
 function showError(el,msg){el.style.display='block';el.textContent=msg;}
 function showToast(msg,type=''){
@@ -2922,7 +3006,7 @@ async function init(){
   });
   
   const path=window.location.pathname.replace('/','').trim()||'home';
-  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb','pay'];
+  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
   const start=valid.includes(path)?path:'home';
   if(path==='pay'){ setTimeout(initPayPage, 800); }
   // Check if we have a saved view from before refresh
