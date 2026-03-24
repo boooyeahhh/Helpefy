@@ -3143,10 +3143,15 @@ function startChatWithUser(idx){
 }
 
 function showChatList(){
+  // Stop polling when leaving chat
+  if(window._chatPollInterval){ clearInterval(window._chatPollInterval); window._chatPollInterval=null; }
+  if(chatSubscription){ chatSubscription.unsubscribe(); chatSubscription=null; }
+  activeChatUserId=null;
   document.getElementById('chatActive').style.display='none';
   document.getElementById('chatEmpty').style.display='flex';
   const listPanel=document.getElementById('chatListPanel');
   if(listPanel) listPanel.style.display='block';
+  loadChatUsers();
 }
 
 async function chatBookFreelancer(){
@@ -3191,24 +3196,47 @@ async function openChat(userId,userName,avatarUrl,role){
   // Now reload chat list - dots should be gone
   await loadChatUsers();
   if(chatSubscription) chatSubscription.unsubscribe();
-  // Shared conversation channel - both users listen to same channel
+  if(window._chatPollInterval) clearInterval(window._chatPollInterval);
+  // Realtime subscription
   const convId = [currentUser.id, userId].sort().join('_');
   chatSubscription = sb.channel('conv_'+convId)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},async payload=>{
       const msg = payload.new;
-      // Check if this message belongs to our conversation
       const isOurConv = (msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId) ||
                         (msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id);
       if(!isOurConv) return;
-      
-      // Message FROM the other person - show it
       if(msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id){
         appendMsg(msg.inhalt,false,userName);
-        sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
+        await sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
         loadChatUsers();
       }
-      // Message I sent - already shown, skip
     }).subscribe();
+
+  // Polling fallback every 3 seconds
+  let lastMsgCount = 0;
+  window._chatPollInterval = setInterval(async()=>{
+    if(!activeChatUserId || !currentUser) return;
+    const{data:msgs}=await sb.from('nachrichten').select('id,inhalt,von_user_id,created_at')
+      .or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`)
+      .order('created_at',{ascending:true});
+    if(!msgs) return;
+    const container = document.getElementById('chatMsgs');
+    if(!container) return;
+    // If more messages than shown, reload
+    const shownMsgs = container.querySelectorAll('.msg').length;
+    if(msgs.length > shownMsgs){
+      // Mark new ones as read and show them
+      const newMsgs = msgs.slice(shownMsgs);
+      newMsgs.forEach(m=>{
+        appendMsg(m.inhalt, m.von_user_id===currentUser.id);
+        if(m.von_user_id===activeChatUserId){
+          sb.from('nachrichten').update({gelesen:true}).eq('id',m.id);
+        }
+      });
+      loadChatUsers();
+    }
+    lastMsgCount = msgs.length;
+  }, 3000);
 }
 
 async function loadMessages(){
