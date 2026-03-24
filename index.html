@@ -3186,31 +3186,6 @@ async function chatBookFreelancer(){
   }
 }
 
-function setChatHeight(){
-  if(window.innerWidth > 768) return;
-  const active = document.getElementById('chatActive');
-  if(!active || active.style.display==='none') return;
-  const nav = document.querySelector('nav');
-  const bottomNav = document.getElementById('mobileBottomNav');
-  const navH = nav ? nav.offsetHeight : 57;
-  const bottomH = bottomNav ? bottomNav.offsetHeight : 60;
-  const totalH = window.innerHeight - navH - bottomH;
-  active.style.height = totalH + 'px';
-  active.style.maxHeight = totalH + 'px';
-  const header = active.querySelector('.chat-header');
-  const inputArea = active.querySelector('.chat-input-area');
-  const msgs = document.getElementById('chatMsgs');
-  if(header && inputArea && msgs){
-    const msgsH = totalH - header.offsetHeight - inputArea.offsetHeight;
-    msgs.style.height = msgsH + 'px';
-    msgs.style.maxHeight = msgsH + 'px';
-    msgs.style.overflowY = 'auto';
-    msgs.style.flex = 'none';
-  }
-}
-window.addEventListener('resize', setChatHeight);
-window.addEventListener('orientationchange', ()=>setTimeout(setChatHeight, 300));
-
 async function openChat(userId,userName,avatarUrl,role){
   activeChatUserId=userId;
   // Track as opened - never show dot for opened chats
@@ -3228,7 +3203,6 @@ async function openChat(userId,userName,avatarUrl,role){
   const chatListPanel=document.getElementById('chatListPanel');
   if(chatEmpty) chatEmpty.style.display='none';
   if(chatActive) chatActive.style.display='flex';
-  setTimeout(setChatHeight, 50);
   const isMobile=window.innerWidth<=768;
   if(isMobile&&chatListPanel) chatListPanel.style.display='none';
   const backBtn=document.getElementById('chatBackBtn');
