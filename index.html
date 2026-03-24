@@ -2897,9 +2897,15 @@ async function loadChatUsers(){
   if(!currentUser) return;
   const chatList=document.getElementById('chatUserList');
   if(!chatList) return;
-  const{data:msgs}=await sb.from('nachrichten').select('von_user_id,zu_user_id').or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`).limit(100);
+  const{data:msgs}=await sb.from('nachrichten').select('von_user_id,zu_user_id,gelesen').or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`).limit(100);
   let partnerIds=new Set();
-  if(msgs) msgs.forEach(m=>{if(m.von_user_id!==currentUser.id)partnerIds.add(m.von_user_id);if(m.zu_user_id!==currentUser.id)partnerIds.add(m.zu_user_id);});
+  let unreadIds=new Set(); // partners who sent unread messages
+  if(msgs) msgs.forEach(m=>{
+    if(m.von_user_id!==currentUser.id) partnerIds.add(m.von_user_id);
+    if(m.zu_user_id!==currentUser.id) partnerIds.add(m.zu_user_id);
+    // Unread = message sent TO me, not yet read
+    if(m.zu_user_id===currentUser.id && !m.gelesen) unreadIds.add(m.von_user_id);
+  });
   const{data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
   if(!allUsers||!allUsers.length){chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.</div>`;return;}
   const sorted=[...allUsers].sort((a,b)=>(partnerIds.has(a.id)?0:1)-(partnerIds.has(b.id)?0:1));
@@ -2911,7 +2917,7 @@ async function loadChatUsers(){
     return `<div class="ci ${activeChatUserId===u.id?'active':''}" onclick="startChatWithUser(${idx})" style="cursor:pointer">
       <div class="ci-av" style="overflow:hidden">${avatarHtml}</div>
       <div class="ci-info"><div class="ci-name">${u.full_name||u.email}</div><div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}${hasMsg?' · Unterhaltung':''}</div></div>
-      ${hasMsg?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
+      ${unreadIds.has(u.id)?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
     </div>`;
   }).join('');
 }
@@ -2962,6 +2968,8 @@ async function openChat(userId,userName,avatarUrl,role){
 async function loadMessages(){
   if(!currentUser||!activeChatUserId) return;
   const{data:msgs}=await sb.from('nachrichten').select('*').or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`).order('created_at',{ascending:true});
+  // Mark received messages as read
+  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId).eq('gelesen',false);
   const container=document.getElementById('chatMsgs');
   if(!container) return;
   if(!msgs||!msgs.length){container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';return;}
