@@ -1691,9 +1691,11 @@ function showView(n, push=true){
   const el=document.getElementById('view-'+n);
   if(!el) return;
   el.classList.add('active');
+  // Force scroll to top of the active view
+  el.scrollIntoView({behavior:'instant', block:'start'});
   document.body.scrollTop=0;
   document.documentElement.scrollTop=0;
-  window.scrollTo(0,0);
+  setTimeout(()=>{ window.scrollTo(0,0); document.documentElement.scrollTop=0; }, 10);
   if(n==='home') renderHome();
   if(n==='dashboard'){
     if(!currentUser){
