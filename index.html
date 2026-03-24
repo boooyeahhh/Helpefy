@@ -2766,13 +2766,86 @@ async function searchJobs(){
   if(jobInput && heroInput?.value) jobInput.value = heroInput.value;
   hideAllSugg();
   if(!q){renderJobGrid(allJobsCache);return;}
-  const qLow=q.toLowerCase();
-  const words=qLow.split(/\s+/).filter(w=>w.length>2);
-  const jobSemantics={'garten':['Garten'],'gartenarbeit':['Garten'],'pflanzen':['Garten'],'putzen':['Reinigung','Haushalt'],'sauber':['Reinigung','Haushalt'],'reinigung':['Reinigung'],'haushalt':['Haushalt'],'handwerk':['Handwerk'],'reparatur':['Handwerk'],'montage':['Handwerk'],'it':['IT & Digital'],'computer':['IT & Digital'],'wlan':['IT & Digital'],'umzug':['Umzug'],'transport':['Umzug'],'tragen':['Umzug'],'lernen':['Lernen'],'nachhilfe':['Lernen'],'mathe':['Lernen']};
-  let catMatches=[];
-  Object.keys(jobSemantics).forEach(key=>{if(qLow.includes(key)||words.some(w=>key.includes(w)||w.includes(key))){catMatches=[...catMatches,...jobSemantics[key]];}});
-  const results=allJobsCache.filter(j=>{const txt=(j.title+' '+j.cat+' '+j.desc).toLowerCase();return words.some(w=>txt.includes(w))||catMatches.some(c=>j.cat.includes(c));});
-  renderJobGrid(results.length?results:allJobsCache.filter(j=>catMatches.some(c=>j.cat.includes(c))));
+
+  const qLow = q.toLowerCase();
+  const words = qLow.split(/\s+/).filter(w=>w.length>1);
+
+  // Semantic map für Jobs - Wort-Grenzen-basiert
+  const JOB_SEMANTICS = {
+    // Garten
+    'garten':['Garten'],'gartenarbeit':['Garten'],'rasen':['Garten'],
+    'hecke':['Garten'],'pflanzen':['Garten'],'mähen':['Garten'],
+    // Reinigung
+    'putzen':['Reinigung','Haushalt'],'reinigung':['Reinigung'],
+    'sauber':['Reinigung','Haushalt'],'putzkraft':['Reinigung'],
+    'wohnung':['Reinigung','Haushalt'],'haushalt':['Haushalt'],
+    'putzfrau':['Reinigung'],'fenster':['Reinigung'],
+    // Handwerk
+    'handwerk':['Handwerk'],'reparatur':['Handwerk'],
+    'elektriker':['Handwerk'],'sanitär':['Handwerk'],
+    'wasserhahn':['Handwerk'],'fliesen':['Handwerk'],
+    'maler':['Handwerk'],'montage':['Handwerk'],
+    'ikea':['Handwerk'],'möbel':['Handwerk','Umzug'],
+    // IT
+    'it':['IT & Digital'],'computer':['IT & Digital'],
+    'laptop':['IT & Digital'],'wlan':['IT & Digital'],
+    'software':['IT & Digital'],'internet':['IT & Digital'],
+    'handy':['IT & Digital'],'drucker':['IT & Digital'],
+    // Umzug
+    'umzug':['Umzug'],'umziehen':['Umzug'],
+    'transport':['Umzug'],'tragen':['Umzug'],
+    'einzug':['Umzug'],'auszug':['Umzug'],
+    // Lernen
+    'nachhilfe':['Lernen'],'lernen':['Lernen'],
+    'mathe':['Lernen'],'englisch':['Lernen'],
+    'deutsch':['Lernen'],'tutor':['Lernen'],
+    'hausaufgaben':['Lernen'],'abitur':['Lernen'],
+    // Beauty
+    'friseur':['Beauty'],'haare':['Beauty'],
+    'massage':['Beauty'],'kosmetik':['Beauty'],
+    // Tiere
+    'hund':['Tiere'],'katze':['Tiere'],
+    'gassi':['Tiere'],'tier':['Tiere'],
+    'tiersitter':['Tiere'],
+    // Events
+    'party':['Events'],'hochzeit':['Events'],
+    'event':['Events'],'catering':['Events'],
+  };
+
+  // Finde passende Kategorien per Wort-Grenzen-Match
+  let matchedCats = new Set();
+  words.forEach(w => {
+    Object.keys(JOB_SEMANTICS).forEach(key => {
+      // Exakter Match oder beginnt mit dem Suchwort
+      if(key === w || key.startsWith(w) || w.startsWith(key)){
+        JOB_SEMANTICS[key].forEach(c => matchedCats.add(c));
+      }
+    });
+  });
+
+  // Filtere Jobs
+  const results = allJobsCache.filter(j => {
+    const catWords = (j.cat||'').toLowerCase().split(/[\s&]+/);
+    const titleWords = (j.title||'').toLowerCase().split(/\s+/);
+    const descWords = (j.desc||'').toLowerCase().split(/\s+/);
+    const allWords = new Set([...catWords, ...titleWords, ...descWords]);
+
+    // Kategorie-Match (höchste Priorität)
+    if([...matchedCats].some(c => j.cat===c)) return true;
+
+    // Wort-Grenzen-Match in Titel/Beschreibung
+    return words.some(w =>
+      w.length > 2 && [...allWords].some(fw => fw === w || fw.startsWith(w))
+    );
+  });
+
+  if(results.length > 0){
+    renderJobGrid(results);
+  } else {
+    // Fallback: zeige alle Jobs der passenden Kategorie
+    const catResults = allJobsCache.filter(j => [...matchedCats].some(c => j.cat===c));
+    renderJobGrid(catResults.length ? catResults : []);
+  }
 }
 
 async function loadRealJobs(){
