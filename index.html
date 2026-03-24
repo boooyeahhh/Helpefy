@@ -289,6 +289,11 @@ nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between
 .msg-time{font-size:0.65rem;color:var(--muted);margin-top:0.25rem;}
 .msg.me .msg-time{text-align:right;}
 .chat-input-area{padding:1rem 1.5rem;background:var(--white);border-top:1.5px solid var(--border);display:flex;gap:0.75rem;align-items:flex-end;}
+@media(max-width:768px){
+  #view-chat .chat-active{display:flex;flex-direction:column;height:calc(100vh - 60px);}
+  #view-chat .messages{flex:1;overflow-y:auto;}
+  .chat-input-area{position:sticky;bottom:0;left:0;right:0;z-index:50;padding:0.6rem 0.75rem;}
+}
 .chat-input{flex:1;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:12px;font-size:0.875rem;resize:none;min-height:44px;max-height:120px;outline:none;font-family:'Inter',sans-serif;background:var(--light);}
 .chat-input:focus{border-color:var(--red);}
 .send-btn{padding:0.75rem 1.1rem;background:var(--red);color:white;border:none;border-radius:10px;font-size:1rem;cursor:pointer;}
@@ -3097,7 +3102,7 @@ async function loadChatUsers(){
     if(m.von_user_id!==currentUser.id) partnerIds.add(m.von_user_id);
     if(m.zu_user_id!==currentUser.id) partnerIds.add(m.zu_user_id);
     // Unread = message sent TO me, not yet read
-    if(m.zu_user_id===currentUser.id && m.gelesen===false) unreadIds.add(m.von_user_id);
+    if(m.zu_user_id===currentUser.id && !m.gelesen) unreadIds.add(m.von_user_id);
   });
   const{data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
   if(!allUsers||!allUsers.length){chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.</div>`;return;}
@@ -3197,8 +3202,10 @@ async function openChat(userId,userName,avatarUrl,role){
   if(backBtn) backBtn.style.display=isMobile?'block':'none';
   document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
   // Mark ALL messages from this user as read FIRST
-  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',userId);
-  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',userId).is('gelesen',null);
+  // Mark all as read (both false and null)
+  await sb.from('nachrichten').update({gelesen:true})
+    .eq('zu_user_id',currentUser.id)
+    .eq('von_user_id',userId);
   await loadMessages();
   // Now reload chat list - dots should be gone
   await loadChatUsers();
