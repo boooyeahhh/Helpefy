@@ -378,7 +378,16 @@ nav{padding:0.75rem 1rem;}
 .dash-content{padding:1rem;padding-bottom:6rem;}
 
 /* Global mobile bottom nav - always visible */
-#mobileBottomNav{display:flex;}.chat-layout{grid-template-columns:1fr;}.chat-list{display:block;width:100%;}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}}
+#mobileBottomNav{display:flex;}
+/* Hide sidebar on mobile */
+.sidebar{display:none !important;}
+.dash-layout{grid-template-columns:1fr !important;}
+#qa-mobile{display:none;}
+#qa-desktop{display:block;}
+@media(max-width:768px){
+  #qa-mobile{display:grid !important;}
+  #qa-desktop{display:none !important;}
+}.chat-layout{grid-template-columns:1fr;}.chat-list{display:block;width:100%;}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}}
 @media(max-width:480px){.fl-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}}
 </style>
 <nav>
@@ -883,10 +892,47 @@ nav{padding:0.75rem 1rem;}
           </div>
         </div>
         <div class="dcontent">
-          <div class="dcard" id="dashQuickAccess"><div class="dc-title">Schnellzugriff</div>
-            <div class="oi"><div class="oi-icon">📋</div><div class="oi-info"><div class="oi-title" id="qa-orders-title">Meine Aufträge</div><div class="oi-meta" id="qa-orders-meta">Übersicht aller Aufträge</div></div><button class="book-btn" onclick="switchDash('orders',document.querySelector('.sni:nth-child(2)'))">Öffnen</button></div>
-            <div class="oi"><div class="oi-icon">💬</div><div class="oi-info"><div class="oi-title">Nachrichten</div><div class="oi-meta">Chat mit Kunden/Freelancern</div></div><button class="book-btn" onclick="showView('chat')">Öffnen</button></div>
-            <div class="oi" id="qa-third"><div class="oi-icon">🔍</div><div class="oi-info"><div class="oi-title">Freelancer suchen</div><div class="oi-meta">Finde den passenden Experten</div></div><button class="book-btn" onclick="showView('home')">Los</button></div>
+          <div class="dcard" id="dashQuickAccess">
+            <div class="dc-title">Schnellzugriff</div>
+            
+            <!-- Desktop: 3 items -->
+            <div id="qa-desktop">
+              <div class="oi"><div class="oi-icon">📋</div><div class="oi-info"><div class="oi-title" id="qa-orders-title">Meine Aufträge</div><div class="oi-meta" id="qa-orders-meta">Übersicht aller Aufträge</div></div><button class="book-btn" onclick="switchDash('orders',document.querySelector('.sni:nth-child(2)'))">Öffnen</button></div>
+              <div class="oi"><div class="oi-icon">💬</div><div class="oi-info"><div class="oi-title">Nachrichten</div><div class="oi-meta">Chat mit Kunden/Freelancern</div></div><button class="book-btn" onclick="showView('chat')">Öffnen</button></div>
+              <div class="oi" id="qa-third"><div class="oi-icon">🔍</div><div class="oi-info"><div class="oi-title">Freelancer suchen</div><div class="oi-meta">Finde den passenden Experten</div></div><button class="book-btn" onclick="showView('home')">Los</button></div>
+            </div>
+
+            <!-- Mobile: full grid menu -->
+            <div id="qa-mobile" style="display:none;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.5rem">
+              <div onclick="switchDash('orders')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">📋</div>
+                <div style="font-size:0.82rem;font-weight:600">Aufträge</div>
+              </div>
+              <div onclick="showView('chat')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">💬</div>
+                <div style="font-size:0.82rem;font-weight:600">Nachrichten</div>
+              </div>
+              <div onclick="switchDash('saved')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">❤️</div>
+                <div style="font-size:0.82rem;font-weight:600">Gespeichert</div>
+              </div>
+              <div onclick="switchDash('payments')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">💳</div>
+                <div style="font-size:0.82rem;font-weight:600">Zahlungen</div>
+              </div>
+              <div onclick="switchDash('settings')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">⚙️</div>
+                <div style="font-size:0.82rem;font-weight:600">Einstellungen</div>
+              </div>
+              <div onclick="showView('home')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">🔍</div>
+                <div style="font-size:0.82rem;font-weight:600">Suchen</div>
+              </div>
+              <div onclick="doLogout()" style="background:#fff5f5;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid #fecaca;grid-column:1/-1">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">🚪</div>
+                <div style="font-size:0.82rem;font-weight:600;color:#991b1b">Abmelden</div>
+              </div>
+            </div>
           </div>
           <div class="dcard"><div class="dc-title">Konto Info</div>
             <div class="oi"><div class="oi-icon">📧</div><div class="oi-info"><div class="oi-title" id="dashEmail">–</div><div class="oi-meta">E-Mail Adresse</div></div></div>
