@@ -291,10 +291,10 @@ nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between
 .chat-input-area{padding:1rem 1.5rem;background:var(--white);border-top:1.5px solid var(--border);display:flex;gap:0.75rem;align-items:flex-end;}
 @media(max-width:768px){
   #view-chat @media(max-width:768px){
-  .chat-layout{grid-template-columns:1fr !important;}
-  #chatActive{height:calc(100vh - 117px) !important;}
-  #chatMsgs{flex:1;overflow-y:auto;padding-bottom:0.5rem;}
-  .chat-input-area{position:fixed !important;bottom:60px !important;left:0;right:0;z-index:200;background:var(--white);border-top:1.5px solid var(--border);padding:0.6rem 0.75rem !important;box-shadow:0 -2px 8px rgba(0,0,0,0.06);}
+  .chat-layout{grid-template-columns:1fr !important;height:calc(100vh - 60px);}
+  #chatActive{display:flex !important;flex-direction:column;height:calc(100vh - 60px);}
+  #chatMsgs{flex:1 !important;overflow-y:auto !important;padding-bottom:1rem;}
+  #chatInputArea{position:sticky !important;bottom:0;background:var(--white);border-top:1.5px solid var(--border);padding:0.6rem 0.75rem !important;z-index:10;}
 }
 }
 .chat-input{flex:1;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:12px;font-size:0.875rem;resize:none;min-height:44px;max-height:120px;outline:none;font-family:'Inter',sans-serif;background:var(--light);}
@@ -1028,7 +1028,7 @@ nav{padding:0.75rem 1rem;}
       </div>
       <!-- Aktiver Chat -->
       <div id="chatActive" style="display:none;flex-direction:column;flex:1;min-height:0;">
-        <div class="chat-header">
+        <div class="chat-header" style="position:sticky;top:0;z-index:10;background:var(--white);">
           <button id="chatBackBtn" onclick="showChatList()" style="display:none;background:none;border:none;cursor:pointer;font-size:1.2rem;margin-right:0.5rem;color:var(--muted)">←</button>
           <div id="chatAvatar" class="chat-av">?</div>
           <div>
@@ -1039,9 +1039,9 @@ nav{padding:0.75rem 1rem;}
             <button class="btn-red" style="font-size:0.8rem" id="chatBookBtn" onclick="chatBookFreelancer()">Buchen</button>
           </div>
         </div>
-        <div class="messages" id="chatMsgs" style="flex:1;min-height:0;overflow-y:auto"></div>
-        <div class="chat-input-area">
-          <label style="cursor:pointer;width:40px;height:40px;border-radius:10px;background:var(--light2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;align-self:flex-end;margin-bottom:2px;transition:background 0.2s" title="Bild senden" onmouseover="this.style.background='var(--red-light)'" onmouseout="this.style.background='var(--light2)'">
+        <div class="messages" id="chatMsgs" style="flex:1;min-height:0;overflow-y:auto;padding-bottom:0.5rem"></div>
+        <div class="chat-input-area" id="chatInputArea">
+          <label style="cursor:pointer;width:40px;height:40px;border-radius:10px;background:var(--light2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;align-self:flex-end;margin-bottom:2px;" title="Bild senden">
             📷<input type="file" accept="image/*" style="display:none" onchange="sendChatImage(this)">
           </label>
           <textarea class="chat-input" id="chatInput" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
@@ -1798,7 +1798,10 @@ function showView(n, push=true){
         if(!currentUser) openModal('auth');
         else { loadChatUsers(); }
       }, 800);
-    } else { loadChatUsers(); }
+    } else { 
+      window._openedChats = new Set(); // Reset when entering chat
+      loadChatUsers(); 
+    }
   }
   // Sync mobile bottom nav
   updateMobileNav(n);
@@ -3138,7 +3141,7 @@ async function loadChatUsers(){
     return `<div class="ci ${activeChatUserId===u.id?'active':''}" onclick="startChatWithUser(${idx})" style="cursor:pointer">
       <div class="ci-av" style="overflow:hidden">${avatarHtml}</div>
       <div class="ci-info"><div class="ci-name">${u.full_name||u.email}</div><div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}${hasMsg?' · Unterhaltung':''}</div></div>
-      ${unreadIds.has(u.id)&&u.id!==activeChatUserId?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
+      ${unreadIds.has(u.id)&&u.id!==activeChatUserId&&!(window._openedChats?.has(u.id))?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
     </div>`;
   }).join('');
 }
@@ -3191,6 +3194,9 @@ async function chatBookFreelancer(){
 
 async function openChat(userId,userName,avatarUrl,role){
   activeChatUserId=userId;
+  // Track as opened - never show dot for opened chats
+  if(!window._openedChats) window._openedChats = new Set();
+  window._openedChats.add(userId);
   avatarUrl=avatarUrl||''; role=role||'';
   const chatName=document.getElementById('chatName');
   const chatStatus=document.getElementById('chatStatus');
