@@ -1735,6 +1735,14 @@ window.addEventListener('pageshow', e=>{
 
 function switchMode(mode,el){
   curMode=mode;
+  const heroInput = document.getElementById('heroSearch');
+  if(heroInput){
+    if(mode === 'jobs'){
+      heroInput.placeholder = 'Welchen Job suchst du? z.B. Garten, Umzug, Reparatur...';
+    } else {
+      heroInput.placeholder = 'Was brauchst du? z.B. Elektriker, Reinigung...';
+    }
+  }
   document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
   if(el) el.classList.add('active');
   else document.getElementById('tab-'+mode)?.classList.add('active');
@@ -2071,8 +2079,15 @@ function doSearch(){
     : (heroSearch?.value || searchInput?.value || '');
   hideAllSugg();
 
-  // Always search freelancers - switch to freelancer mode
-  if(curMode === 'jobs') curMode = 'freelancer';
+  // Jobs mode → search jobs
+  if(curMode === 'jobs'){
+    const v2 = document.getElementById('heroSearch')?.value?.trim()||'';
+    const jobInput = document.getElementById('jobSearchInput');
+    if(jobInput) jobInput.value = v2;
+    if(v2) searchJobs(); else loadRealJobs();
+    document.getElementById('section-jobs')?.scrollIntoView({behavior:'smooth'});
+    return;
+  }
 
   window.scrollTo(0,0);
   showView('search');
