@@ -2070,10 +2070,23 @@ function togglePill(el){
   const txt=el.textContent.trim();
   const all=window.ALL_FL||FL;
   let r=[...all];
+
   if(txt.includes('verfügbar')||txt.includes('Verfügbar')) r=r.filter(f=>f.avail);
   else if(txt.includes('bewertet')||txt.includes('Bewertung')) r=[...all].sort((a,b)=>b.rating-a.rating);
   else if(txt.includes('Günstig')) r=[...all].sort((a,b)=>a.price-b.price);
-  // else "Alle" → use full list
+  else {
+    // "Alle" → zeige aktuelle Suchergebnisse ODER alle wenn keine Suche
+    const searchInput = document.getElementById('searchInput');
+    const currentQuery = searchInput?.value?.trim()||'';
+    if(currentQuery && currentQuery.toLowerCase()!=='alle'){
+      // Re-run search mit aktueller Query aber zeige alle Kategorie-Ergebnisse
+      const searchGrid=document.getElementById('searchGrid');
+      if(searchGrid) renderSearch(currentQuery);
+      return;
+    }
+    r=[...all];
+  }
+
   const searchGrid=document.getElementById('searchGrid');
   const homeGrid=document.getElementById('homeGrid');
   const grid=searchGrid&&searchGrid.offsetParent?searchGrid:homeGrid;
