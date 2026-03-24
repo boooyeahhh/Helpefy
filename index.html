@@ -1553,6 +1553,12 @@ async function loadProfile(){
     }
   }
 
+  // Update saved count
+  const savedEl = document.getElementById('dsc-saved-count');
+  if(savedEl){
+    const saved = JSON.parse(localStorage.getItem('hlf_saved')||'[]');
+    savedEl.textContent = saved.length;
+  }
   // Update Schnellzugriff for freelancers
   if(isFL){
     const t = document.getElementById('qa-orders-title');
@@ -1986,17 +1992,70 @@ async function renderSearch(q){
   }
 }
 
+function toggleSave(id, name, idx){
+  if(!currentUser){ openModal('auth'); return; }
+  if(!id) return;
+  let saved = JSON.parse(localStorage.getItem('hlf_saved')||'[]');
+  let savedData = JSON.parse(localStorage.getItem('hlf_saved_data')||'[]');
+  const isSaved = saved.includes(id);
+  
+  if(isSaved){
+    saved = saved.filter(s=>s!==id);
+    savedData = savedData.filter(s=>s.id!==id);
+    showToast('Aus Gespeicherten entfernt','success');
+  } else {
+    saved.push(id);
+    const all = window.ALL_FL||FL;
+    const f = all[idx];
+    if(f) savedData.push({...f});
+    showToast('❤️ Gespeichert!','success');
+  }
+  
+  localStorage.setItem('hlf_saved', JSON.stringify(saved));
+  localStorage.setItem('hlf_saved_data', JSON.stringify(savedData));
+  
+  // Update heart icon
+  const btn = document.getElementById('heart-'+idx);
+  if(btn) btn.textContent = isSaved ? '🤍' : '❤️';
+  
+  // Update saved count in dashboard
+  const savedCountEl = document.querySelector('.dsc-n:last-child');
+  if(savedCountEl) savedCountEl.textContent = saved.length;
+}
+
 function renderSaved(){
   const g=document.getElementById('savedGrid');
-  if(g) g.innerHTML=FL.slice(0,3).map((f,i)=>flCard(f,i)).join('');
+  if(!g) return;
+  const savedData = JSON.parse(localStorage.getItem('hlf_saved_data')||'[]');
+  const all = window.ALL_FL||FL;
+  
+  if(!savedData.length){
+    g.innerHTML=`<div style="text-align:center;padding:2rem;color:var(--muted)">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem">🤍</div>
+      <div style="font-weight:600;margin-bottom:0.5rem">Noch nichts gespeichert</div>
+      <div style="font-size:0.85rem">Klicke das ❤️ auf einem Freelancer-Profil um ihn zu speichern</div>
+    </div>`;
+    return;
+  }
+  
+  g.innerHTML = savedData.map((f,i)=>{
+    const globalIdx = all.findIndex(fl=>fl.id===f.id);
+    return flCard(f, globalIdx>=0 ? globalIdx : i);
+  }).join('');
 }
 
 function flCard(f,i){
   const imgContent = f.avatar
     ? `<img src="${f.avatar}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<span style=\'font-size:4rem\'>${f.emoji||'👤'}</span>'">`
     : `<span style="font-size:4rem">${f.emoji||'👤'}</span>`;
+  const savedIds = JSON.parse(localStorage.getItem('hlf_saved')||'[]');
+  const isSaved = f.id && savedIds.includes(f.id);
   return `<div class="fl-card" onclick="openProfileByData(${i})">
-    <div class="fl-img">${imgContent}${f.avail?'<div class="avail-badge"><div class="avail-dot"></div>Verfügbar</div>':''}</div>
+    <div class="fl-img">${imgContent}${f.avail?'<div class="avail-badge"><div class="avail-dot"></div>Verfügbar</div>':''}
+      <button onclick="event.stopPropagation();toggleSave('${f.id||''}','${(f.name||'').replace(/'/g,'')}',${i})" 
+        style="position:absolute;top:0.6rem;right:0.6rem;background:rgba(255,255,255,0.9);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:transform 0.15s"
+        id="heart-${i}">${isSaved?'❤️':'🤍'}</button>
+    </div>
     <div class="fl-body">
       <div class="fl-top"><div class="fl-name">${f.name}</div><div class="fl-price">${f.price} €<span>/Std</span></div></div>
       <div class="fl-role">${f.role}</div>
@@ -2951,6 +3010,11 @@ function switchDash(tab,el){
   ['overview','orders','saved','payments','settings'].forEach(t=>{const e=document.getElementById('dash-'+t);if(e)e.style.display=t===tab?'block':'none';});
   if(tab==='saved') renderSaved();
   if(tab==='orders') renderDashOrders();
+  // Update URL
+  const slugs={overview:'dashboard',orders:'auftraege',saved:'gespeichert',payments:'zahlungen',settings:'einstellungen'};
+  const slug = slugs[tab]||'dashboard';
+  history.pushState({view:'dashboard',tab},'','/'+slug);
+  document.title = 'Helpefy – '+slug.charAt(0).toUpperCase()+slug.slice(1);
 }
 
 // ── AUTH HELPERS ──
@@ -2983,7 +3047,27 @@ async function loadChatUsers(){
   });
   const{data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
   if(!allUsers||!allUsers.length){chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.</div>`;return;}
-  const sorted=[...allUsers].sort((a,b)=>(partnerIds.has(a.id)?0:1)-(partnerIds.has(b.id)?0:1));
+  // Sort: unread first, then by most recent message
+  const {data:recentMsgs} = await sb.from('nachrichten')
+    .select('von_user_id,zu_user_id,created_at')
+    .or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`)
+    .order('created_at',{ascending:false})
+    .limit(50);
+  
+  const lastMsgTime = {};
+  if(recentMsgs) recentMsgs.forEach(m=>{
+    const partner = m.von_user_id===currentUser.id ? m.zu_user_id : m.von_user_id;
+    if(!lastMsgTime[partner]) lastMsgTime[partner] = m.created_at;
+  });
+  
+  const sorted=[...allUsers].sort((a,b)=>{
+    const aTime = lastMsgTime[a.id]||'';
+    const bTime = lastMsgTime[b.id]||'';
+    if(aTime && bTime) return bTime.localeCompare(aTime);
+    if(aTime) return -1;
+    if(bTime) return 1;
+    return 0;
+  });
   window._chatUsers=sorted;
   chatList.innerHTML=sorted.map((u,idx)=>{
     const init=(u.full_name||u.email||'?').charAt(0).toUpperCase();
@@ -3054,7 +3138,11 @@ async function loadMessages(){
   if(!currentUser||!activeChatUserId) return;
   const{data:msgs}=await sb.from('nachrichten').select('*').or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`).order('created_at',{ascending:true});
   // Mark received messages as read
-  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId).eq('gelesen',false);
+  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId);
+  // Clear notification dot
+  setMobileChatDot(false);
+  // Refresh chat list to remove dot
+  setTimeout(()=>loadChatUsers(), 500);
   const container=document.getElementById('chatMsgs');
   if(!container) return;
   if(!msgs||!msgs.length){container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';return;}
@@ -3199,7 +3287,7 @@ async function init(){
   });
   
   const path=window.location.pathname.replace('/','').trim()||'home';
-  const valid=['home','search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
+  const valid=['home','search','profile','dashboard','auftraege','gespeichert','zahlungen','einstellungen','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
   const start=valid.includes(path)?path:'home';
   if(path==='pay'){ setTimeout(initPayPage, 800); }
   // Check if we have a saved view from before refresh
