@@ -3138,7 +3138,7 @@ async function loadChatUsers(){
     return `<div class="ci ${activeChatUserId===u.id?'active':''}" onclick="startChatWithUser(${idx})" style="cursor:pointer">
       <div class="ci-av" style="overflow:hidden">${avatarHtml}</div>
       <div class="ci-info"><div class="ci-name">${u.full_name||u.email}</div><div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}${hasMsg?' · Unterhaltung':''}</div></div>
-      ${unreadIds.has(u.id)?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
+      ${unreadIds.has(u.id)&&u.id!==activeChatUserId?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
     </div>`;
   }).join('');
 }
