@@ -1687,11 +1687,11 @@ function updateNav(){
 
 // ── VIEWS ──
 function showView(n, push=true){
+  window.scrollTo({top:0,left:0,behavior:'instant'});
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const el=document.getElementById('view-'+n);
   if(!el) return;
   el.classList.add('active');
-  window.scrollTo(0,0);
   if(n==='home') renderHome();
   if(n==='dashboard'){
     if(!currentUser){
