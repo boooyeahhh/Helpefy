@@ -468,18 +468,7 @@ nav{padding:0.75rem 1rem;}
     <div class="section">
       <div class="jobs-layout">
         <div>
-          <div class="eyebrow">Aktuelle Jobs</div>
-          <div class="section-title">Jobs in deiner Nähe</div>
-          <div style="position:relative;margin-bottom:1.25rem">
-            <div class="search-bar">
-              <span>🔍</span>
-              <input id="jobSearchInput" autocomplete="off" name="jobsearch" placeholder="Jobs suchen z.B. Reinigung, Handwerk..."
-                onkeydown="if(event.key==='Enter'){hideAllSugg();searchJobs();}"
-                oninput="showJobSuggestions(this)"
-                autocomplete="off">
-              <button class="search-btn" onclick="searchJobs()">Suchen</button>
-            </div>
-            <div id="jobSugg" class="search-sugg" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:100;margin-top:4px"></div>
+          <div id="jobSugg" class="search-sugg" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:100;margin-top:4px"></div>
           </div>
           <div class="filter-row">
             <button class="fpill active" onclick="filterJobs('alle',this)">Alle</button>
@@ -2075,14 +2064,17 @@ function doSearch(){
     : (heroSearch?.value || searchInput?.value || '');
   hideAllSugg();
 
-  // If jobs mode → search jobs not freelancers
+  // If jobs mode → stay on home, scroll to job section and search
   if(curMode === 'jobs'){
-    showView('job-posten');
+    showView('home');
     setTimeout(()=>{
+      switchMode('jobs', document.getElementById('tab-jobs'));
       const jobInput = document.getElementById('jobSearchInput');
-      if(jobInput){ jobInput.value=v; searchJobs(); }
-      else { loadRealJobs(); }
-    },50);
+      if(jobInput){ jobInput.value=v||''; }
+      if(v) searchJobs(); else loadRealJobs();
+      // Scroll to job grid
+      document.getElementById('section-jobs')?.scrollIntoView({behavior:'smooth'});
+    },100);
     return;
   }
 
@@ -2768,7 +2760,10 @@ function showJobSuggestions(input){
 }
 
 async function searchJobs(){
-  const q=document.getElementById('jobSearchInput')?.value?.trim()||'';
+  const jobInput = document.getElementById('jobSearchInput');
+  const heroInput = document.getElementById('heroSearch');
+  const q = (jobInput?.value || heroInput?.value || '').trim();
+  if(jobInput && heroInput?.value) jobInput.value = heroInput.value;
   hideAllSugg();
   if(!q){renderJobGrid(allJobsCache);return;}
   const qLow=q.toLowerCase();
