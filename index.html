@@ -289,13 +289,7 @@ nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between
 .msg-time{font-size:0.65rem;color:var(--muted);margin-top:0.25rem;}
 .msg.me .msg-time{text-align:right;}
 .chat-input-area{padding:1rem 1.5rem;background:var(--white);border-top:1.5px solid var(--border);display:flex;gap:0.75rem;align-items:flex-end;}
-@media(max-width:768px){
-  #view-chat @media(max-width:768px){
-  .chat-layout{grid-template-columns:1fr !important;height:calc(100vh - 60px);}
-  #chatActive{display:flex !important;flex-direction:column;height:calc(100vh - 60px);}
-  #chatMsgs{flex:1 !important;overflow-y:auto !important;padding-bottom:1rem;}
-  #chatInputArea{position:sticky !important;bottom:0;background:var(--white);border-top:1.5px solid var(--border);padding:0.6rem 0.75rem !important;z-index:10;}
-}
+
 }
 .chat-input{flex:1;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:12px;font-size:0.875rem;resize:none;min-height:44px;max-height:120px;outline:none;font-family:'Inter',sans-serif;background:var(--light);}
 .chat-input:focus{border-color:var(--red);}
