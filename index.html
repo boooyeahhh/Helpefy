@@ -3185,9 +3185,11 @@ async function openChat(userId,userName,avatarUrl,role){
   const backBtn=document.getElementById('chatBackBtn');
   if(backBtn) backBtn.style.display=isMobile?'block':'none';
   document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
+  // Mark ALL messages from this user as read FIRST
+  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',userId);
   await loadMessages();
-  // Clear dot for this user
-  loadChatUsers();
+  // Now reload chat list - dots should be gone
+  await loadChatUsers();
   if(chatSubscription) chatSubscription.unsubscribe();
   chatSubscription=sb.channel('nachrichten_live_'+currentUser.id)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'nachrichten'},payload=>{
@@ -3197,6 +3199,8 @@ async function openChat(userId,userName,avatarUrl,role){
         appendMsg(msg.inhalt,false,userName);
         // Mark as read immediately
         sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
+        // Reload chat list to clear dot
+        loadChatUsers();
       } else if(msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId){
         // My own message confirmed - already shown via appendMsg
       } else if(msg.zu_user_id===currentUser.id){
@@ -3212,10 +3216,7 @@ async function loadMessages(){
   const{data:msgs}=await sb.from('nachrichten').select('*').or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`).order('created_at',{ascending:true});
   // Mark received messages as read
   await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId);
-  // Clear notification dot
   setMobileChatDot(false);
-  // Refresh chat list to remove dot
-  setTimeout(()=>loadChatUsers(), 500);
   const container=document.getElementById('chatMsgs');
   if(!container) return;
   if(!msgs||!msgs.length){container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';return;}
