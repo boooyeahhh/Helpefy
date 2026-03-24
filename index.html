@@ -389,7 +389,24 @@ nav{padding:0.75rem 1rem;}
 @media(max-width:768px){
   #qa-mobile{display:grid !important;}
   #qa-desktop{display:none !important;}
-}.chat-layout{grid-template-columns:1fr;}.chat-list{display:block;width:100%;}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}}
+}.hero-stats{gap:1.5rem;}.footer-grid{grid-template-columns:1fr;}
+  .chat-layout{grid-template-columns:1fr;}
+  .chat-list{display:block;width:100%;}
+  #chatActive{
+    display:flex !important;
+    flex-direction:column;
+    height:calc(100vh - 130px);
+    overflow:hidden;
+  }
+  .chat-header{flex-shrink:0;}
+  #chatMsgs{
+    flex:1;
+    overflow-y:scroll;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .chat-input-area{flex-shrink:0;}
+}
 @media(max-width:480px){.fl-grid{grid-template-columns:1fr;}.steps-grid,.dstats,.p-stats{grid-template-columns:1fr;}.form-row{grid-template-columns:1fr;}}
 </style>
 <nav>
