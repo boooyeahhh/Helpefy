@@ -478,39 +478,15 @@ nav{padding:0.75rem 1rem;}
           <div id="jobCount" style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem"></div>
           <div class="job-grid" id="jobGrid"></div>
         </div>
-        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:1.5rem;position:sticky;top:80px;" id="jobPostForm">
-          <div style="font-size:1rem;font-weight:700;margin-bottom:0.25rem">📝 Job posten</div>
-          <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.25rem">Beschreibe was du brauchst</div>
-          <div id="job-posted-success" style="display:none;background:#dcfce7;color:#15803d;padding:0.75rem;border-radius:8px;margin-bottom:1rem;font-size:0.82rem">✅ Job wurde gepostet!</div>
-          <div id="job-login-hint" style="display:none;background:var(--red-light);border:1.5px solid var(--red);border-radius:10px;padding:1rem;text-align:center;margin-bottom:1rem">
-            <div style="font-size:0.9rem;font-weight:600;color:var(--red);margin-bottom:0.5rem">🔒 Anmelden um Job zu posten</div>
-            <button class="btn-red" style="padding:0.5rem 1.25rem" onclick="openModal('auth')">Jetzt anmelden →</button>
+        <div style="position:sticky;top:80px;" id="jobPostForm">
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:2rem;text-align:center">
+            <div style="font-size:2.5rem;margin-bottom:1rem">📝</div>
+            <div style="font-size:1.1rem;font-weight:700;margin-bottom:0.5rem">Eigenen Job posten</div>
+            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6">Beschreibe deinen Auftrag und passende Freelancer melden sich bei dir.</div>
+            <button class="btn-red" style="width:100%;padding:1rem;border-radius:12px;font-size:1rem;font-weight:600" onclick="showView('job-posten')">
+              + Job posten
+            </button>
           </div>
-          <div class="fg"><label>Titel</label><input type="text" id="jobTitel" placeholder="z.B. Wohnung reinigen, IKEA Möbel montieren..."></div>
-          <div class="fg"><label>Kategorie</label>
-            <select id="jobKat">
-              <option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option>
-              <option>Garten</option><option>Umzug</option><option>Lernen</option>
-              <option>Kreativ</option><option>Beauty</option><option>Tiere</option>
-              <option>Transport</option><option>Events</option><option>Sonstiges</option>
-            </select>
-          </div>
-          <div class="fg"><label>Beschreibung</label><textarea id="jobDesc" placeholder="Was genau soll gemacht werden? Je mehr Details desto besser." style="min-height:80px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
-            <div class="fg"><label>Budget min (€)</label><input type="number" id="jobBudgetMin" placeholder="50"></div>
-            <div class="fg"><label>Budget max (€)</label><input type="number" id="jobBudgetMax" placeholder="100"></div>
-          </div>
-          <div class="fg" style="position:relative">
-  <label>Standort</label>
-  <input type="text" id="jobStandort" placeholder="Stadt oder PLZ eingeben..." autocomplete="off" oninput="searchLocation(this.value,'jobLocSugg')">
-  <div id="jobLocSugg" class="loc-sugg" style="display:none"></div>
-</div>
-          <div class="fg"><label>Wann?</label><input type="date" id="jobDatum"></div>
-          <div class="fg" style="display:flex;align-items:center;gap:0.5rem;flex-direction:row">
-            <input type="checkbox" id="jobDringend" style="width:auto">
-            <label style="font-size:0.82rem;color:var(--text);margin:0">🔥 Dringend</label>
-          </div>
-          <button class="btn-red" style="width:100%;padding:0.85rem;margin-top:0.5rem;border-radius:10px" onclick="postJob()">Job posten →</button>
         </div>
       </div>
     </div>
