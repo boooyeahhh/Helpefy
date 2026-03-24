@@ -3119,7 +3119,7 @@ async function init(){
   
   sb.auth.onAuthStateChange(async(_,s)=>{
     currentUser=s?.user||null;
-    if(currentUser){await loadProfile();updateNav();if(document.getElementById('view-chat').classList.contains('active'))loadChatUsers();}
+    if(currentUser){await loadProfile();updateNav();if(document.getElementById('view-chat').classList.contains('active'))loadChatUsers();startGlobalListener();}
     else{currentProfile=null;updateNav();}
   });
   
@@ -3144,6 +3144,11 @@ async function init(){
       // Ask for notification permission after 3 seconds
       setTimeout(askNotificationPermission, 3000);
     }).catch(e => console.log('SW error:', e));
+  }
+  
+  // Global realtime listener for notifications
+  if(currentUser){
+    startGlobalListener();
   }
 }
 init();
@@ -3192,6 +3197,56 @@ async function subscribeToPush(){
     // For demo - just save that user wants notifications
     localStorage.setItem('hlf_push_enabled', '1');
   } catch(e) { console.log('Push sub error:', e); }
+}
+
+function startGlobalListener(){
+  if(!currentUser) return;
+  if(window._globalChannel) window._globalChannel.unsubscribe();
+  
+  window._globalChannel = sb.channel('global_notifications_'+currentUser.id)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'nachrichten',
+      filter: `zu_user_id=eq.${currentUser.id}`
+    }, async payload => {
+      // New message received
+      const msg = payload.new;
+      // Get sender name
+      const {data:sender} = await sb.from('profiles').select('full_name').eq('id', msg.von_user_id).single();
+      const senderName = sender?.full_name || 'Jemand';
+      const isImage = msg.inhalt?.startsWith('[IMG]');
+      const preview = isImage ? '📷 Foto gesendet' : msg.inhalt?.slice(0,60);
+      
+      sendPushNotification(
+        `💬 Neue Nachricht von ${senderName}`,
+        preview,
+        '/chat'
+      );
+      
+      // Update nav notification count
+      loadChatUsers();
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'auftraege',
+      filter: `kunde_id=eq.${currentUser.id}`
+    }, payload => {
+      const o = payload.new;
+      if(o.status === 'angenommen'){
+        sendPushNotification('✅ Anfrage angenommen!', 'Deine Buchungsanfrage wurde angenommen. Jetzt bezahlen!', '/dashboard');
+      }
+    })
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'auftraege',
+      filter: `freelancer_id=eq.${currentUser.id}`
+    }, payload => {
+      sendPushNotification('📨 Neue Buchungsanfrage!', 'Jemand möchte dich buchen. Jetzt ansehen!', '/dashboard');
+    })
+    .subscribe();
 }
 
 async function sendPushNotification(title, body, url='/dashboard'){
