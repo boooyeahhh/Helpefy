@@ -289,6 +289,7 @@ nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between
 .msg-time{font-size:0.65rem;color:var(--muted);margin-top:0.25rem;}
 .msg.me .msg-time{text-align:right;}
 .chat-input-area{padding:1rem 1.5rem;background:var(--white);border-top:1.5px solid var(--border);display:flex;gap:0.75rem;align-items:flex-end;}
+@media(max-width:768px){.chat-input-area{margin-bottom:60px;}}
 
 }
 .chat-input{flex:1;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:12px;font-size:0.875rem;resize:none;min-height:44px;max-height:120px;outline:none;font-family:'Inter',sans-serif;background:var(--light);}
@@ -1229,7 +1230,7 @@ nav{padding:0.75rem 1rem;}
 
     <div style="margin-top:2rem;text-align:center;color:var(--muted);font-size:0.85rem">
       <div style="margin-bottom:0.5rem">Oder direkt per E-Mail:</div>
-      <a href="mailto:christopher_russell@web.de" style="color:var(--red);font-weight:500;text-decoration:none">christopher_russell@web.de</a>
+      <a href="/cdn-cgi/l/email-protection#37545f455e444358475f52456845424444525b5b77405255195352" style="color:var(--red);font-weight:500;text-decoration:none"><span class="__cf_email__" data-cfemail="d1b2b9a3b8a2a5bea1b9b4a38ea3a4a2a2b4bdbd91a6b4b3ffb5b4">[email&#160;protected]</span></a>
       <div style="margin-top:1rem;font-size:0.78rem">Antwortzeit: in der Regel innerhalb von 24 Stunden</div>
     </div>
   </div>
@@ -1261,7 +1262,7 @@ nav{padding:0.75rem 1rem;}
 
 
 <!-- NAV -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 
 
 // ── CONFIG ──
@@ -3558,19 +3559,4 @@ function startGlobalListener(){
 
 async function sendPushNotification(title, body, url='/dashboard'){
   // Show local notification (works without server)
-  if(Notification.permission === 'granted'){
-    if(window._swReg){
-      window._swReg.showNotification(title, {
-        body,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        vibrate: [200, 100, 200],
-        data: { url }
-      });
-    }
-  }
-}
-
-</script>
-</body>
-</html>
+  if(Notification.permission === 'grant
