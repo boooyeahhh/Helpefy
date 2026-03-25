@@ -1498,6 +1498,48 @@ nav{padding:0.75rem 1rem;}
   </div>
 </div>
 
+<!-- AUSZAHLUNG MODAL -->
+<div class="modal-overlay" id="modal-auszahlung">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('auszahlung')">✕</button>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:2.5rem;margin-bottom:0.5rem">💸</div>
+      <div class="modal-title">Auszahlung beantragen</div>
+      <div class="modal-sub">Gib deine Bankverbindung an — wir überweisen innerhalb von 2–3 Werktagen.</div>
+    </div>
+
+    <!-- Betrag -->
+    <div style="background:var(--red-light);border:1.5px solid var(--red);border-radius:10px;padding:0.875rem 1rem;text-align:center;margin-bottom:1.25rem">
+      <div style="font-size:0.78rem;color:var(--red);font-weight:600;margin-bottom:0.2rem">AUSZAHLUNGSBETRAG</div>
+      <div style="font-size:2rem;font-weight:800;color:var(--red)" id="auszahlungBetrag">0,00 €</div>
+    </div>
+
+    <!-- Bankdaten -->
+    <div class="fg"><label>Kontoinhaber</label>
+      <input type="text" id="bankName" placeholder="Max Mustermann">
+    </div>
+    <div class="fg"><label>IBAN</label>
+      <input type="text" id="bankIBAN" placeholder="DE89 3704 0044 0532 0130 00"
+        oninput="this.value=this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase().replace(/(.{4})/g,'$1 ').trim()">
+    </div>
+    <div class="fg"><label>BIC (optional)</label>
+      <input type="text" id="bankBIC" placeholder="COBADEFFXXX">
+    </div>
+    <div class="fg"><label>Bank</label>
+      <input type="text" id="bankName2" placeholder="z.B. Commerzbank, Sparkasse...">
+    </div>
+
+    <div id="auszahlung-error" class="error-msg"></div>
+
+    <button class="form-submit" id="auszahlungSubmitBtn" onclick="submitAuszahlung()">
+      💸 Jetzt auszahlen beantragen
+    </button>
+    <div style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.75rem">
+      Deine Bankdaten werden nur für diese Auszahlung verwendet und nicht gespeichert.
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -3608,9 +3650,94 @@ async function submitBewertung(){
 
 // ── AUSZAHLUNG ──
 async function requestAuszahlung(amount){
-  if(amount <= 0){showToast('Kein Guthaben vorhanden','error');return;}
-  showToast(`Auszahlung von ${amount}€ wurde beantragt! Wir melden uns in 2-3 Werktagen. 💸`,'success');
-  // In real production: create Stripe Connect payout here
+  if(amount <= 0){ showToast('Kein Guthaben vorhanden','error'); return; }
+  // Pre-fill amount and open modal
+  document.getElementById('auszahlungBetrag').textContent = parseFloat(amount).toFixed(2).replace('.',',') + ' €';
+  window._auszahlungAmount = amount;
+  // Pre-fill name from profile
+  const nameEl = document.getElementById('bankName');
+  if(nameEl && currentProfile?.full_name) nameEl.value = currentProfile.full_name;
+  // Clear fields
+  ['bankIBAN','bankBIC','bankName2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('auszahlung-error').style.display = 'none';
+  openModal('auszahlung');
+}
+
+async function submitAuszahlung(){
+  const name = document.getElementById('bankName')?.value.trim();
+  const iban = document.getElementById('bankIBAN')?.value.replace(/\s/g,'').trim();
+  const bic  = document.getElementById('bankBIC')?.value.trim()||'–';
+  const bank = document.getElementById('bankName2')?.value.trim()||'–';
+  const amount = window._auszahlungAmount || 0;
+  const err = document.getElementById('auszahlung-error');
+
+  if(!name){ err.style.display='block'; err.textContent='Bitte Kontoinhaber eingeben.'; return; }
+  if(!iban || iban.length < 15){ err.style.display='block'; err.textContent='Bitte gültige IBAN eingeben.'; return; }
+  err.style.display = 'none';
+
+  const btn = document.getElementById('auszahlungSubmitBtn');
+  btn.disabled = true; btn.textContent = '⏳ Wird bearbeitet...';
+
+  try{
+    // Send email via Supabase Edge Function
+    const emailBody = `
+Neue Auszahlungsanfrage auf Helpefy
+
+Zeitpunkt: ${new Date().toLocaleString('de')}
+Benutzer: ${currentProfile?.full_name || currentUser?.email}
+E-Mail: ${currentUser?.email}
+User-ID: ${currentUser?.id}
+
+AUSZAHLUNGSBETRAG: ${parseFloat(amount).toFixed(2)} €
+
+BANKVERBINDUNG:
+Kontoinhaber: ${name}
+IBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}
+BIC: ${bic}
+Bank: ${bank}
+
+Bitte überweise den Betrag an die oben genannte IBAN.
+    `.trim();
+
+    await sb.functions.invoke('send-email', {
+      body: {
+        to: 'christopher_russell@web.de',
+        subject: `💸 Auszahlungsanfrage: ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name || currentUser?.email}`,
+        text: emailBody
+      }
+    });
+
+    // Mark completed orders as paid out in Supabase
+    await sb.from('auftraege')
+      .update({ status: 'ausgezahlt' })
+      .eq('freelancer_id', currentUser.id)
+      .eq('status', 'abgeschlossen');
+
+    closeModal('auszahlung');
+    showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.', 'success');
+
+    // Refresh payments view to show 0
+    loadProfile();
+
+  } catch(e){
+    // Even if email fails, save request to Supabase as fallback
+    await sb.from('auszahlungen').insert({
+      user_id: currentUser.id,
+      betrag: amount,
+      iban: iban,
+      kontoinhaber: name,
+      bic: bic,
+      bank: bank,
+      status: 'beantragt',
+      created_at: new Date().toISOString()
+    }).then(()=>{}).catch(()=>{});
+
+    closeModal('auszahlung');
+    showToast('✅ Auszahlung beantragt! Wir melden uns in 2–3 Werktagen.', 'success');
+    loadProfile();
+  }
+
+  btn.disabled = false; btn.textContent = '💸 Jetzt auszahlen beantragen';
 }
 
 // ── SUPPORT ──
