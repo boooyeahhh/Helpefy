@@ -481,7 +481,7 @@ nav{padding:0.75rem 1rem;}
         <span>Umkreis:</span>
         <input type="range" id="radiusSlider" min="5" max="500" value="25" step="5"
           style="width:150px;accent-color:var(--red)"
-          oninput="document.getElementById('radiusVal').textContent=this.value+' km'">
+          oninput="document.getElementById('radiusVal').textContent=this.value+' km';renderHome()">
         <span id="radiusVal" style="font-weight:600;color:var(--red);min-width:50px">25 km</span>
         <button onclick="toggleRadius()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem">✕</button>
       </div>
@@ -794,7 +794,18 @@ nav{padding:0.75rem 1rem;}
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
-      <div style="font-size:0.875rem;color:var(--muted)"><strong id="rCount" style="color:var(--dark)">6</strong> Ergebnisse für „<strong id="rQuery" style="color:var(--dark)">Alle</strong>"</div>
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+        <div style="font-size:0.875rem;color:var(--muted)"><strong id="rCount" style="color:var(--dark)">6</strong> Ergebnisse für „<strong id="rQuery" style="color:var(--dark)">Alle</strong>"</div>
+        <button onclick="toggleRadiusSearch()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.7rem;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;color:var(--muted)">📍 Umkreis</button>
+      </div>
+      <div id="radiusRowSearch" style="display:none;align-items:center;gap:0.75rem;font-size:0.82rem;color:var(--muted);width:100%">
+        <span>Umkreis:</span>
+        <input type="range" id="radiusSliderSearch" min="5" max="500" value="25" step="5"
+          style="width:150px;accent-color:var(--red)"
+          oninput="document.getElementById('radiusValSearch').textContent=this.value+' km';renderSearch(document.getElementById('searchInput').value)">
+        <span id="radiusValSearch" style="font-weight:600;color:var(--red);min-width:50px">25 km</span>
+        <button onclick="toggleRadiusSearch()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem">✕</button>
+      </div>
       <div class="filter-row" style="margin:0">
         <button class="fpill active" onclick="togglePill(this)">Alle</button>
         <button class="fpill" onclick="togglePill(this)">⭐ Top bewertet</button>
@@ -1890,10 +1901,58 @@ async function renderHome(){
     all=[...rc,...FL];
   }
   window.ALL_FL=all;
-  document.getElementById('homeGrid').innerHTML=all.map((f,i)=>flCard(f,i)).join('');
+  // Geocode for radius filter
+  await geocodeFreelancers(all);
+  // Apply radius filter if active
+  const filtered = applyRadiusFilter(all, 'radiusSlider', 'radiusRow');
+  document.getElementById('homeGrid').innerHTML=filtered.map((f,i)=>flCard(f,all.indexOf(f))).join('');
 }
 
-// ── SMART SEMANTIC SEARCH ──
+// ── GEOCODING CACHE ──
+const _geoCache = {};
+async function geocodeCity(city){
+  if(!city) return null;
+  const key = city.toLowerCase().trim();
+  if(_geoCache[key]) return _geoCache[key];
+  try{
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1&countrycodes=de,at,ch`);
+    const d = await r.json();
+    if(d&&d[0]){
+      const coords = {lat:parseFloat(d[0].lat), lon:parseFloat(d[0].lon)};
+      _geoCache[key] = coords;
+      return coords;
+    }
+  } catch(e){}
+  return null;
+}
+
+async function geocodeFreelancers(list){
+  // Geocode all real freelancers that have a standort but no lat/lon
+  const toGeocode = list.filter(f=>f.real && f.loc && f.loc!=='Deutschland' && !f.lat);
+  await Promise.all(toGeocode.map(async f=>{
+    const coords = await geocodeCity(f.loc);
+    if(coords){ f.lat=coords.lat; f.lon=coords.lon; }
+  }));
+  return list;
+}
+
+// ── RADIUS FILTER ──
+function applyRadiusFilter(results, radiusSliderId, radiusRowId){
+  const radiusRow = document.getElementById(radiusRowId) || document.getElementById('radiusRow');
+  const slider = document.getElementById(radiusSliderId) || document.getElementById('radiusSlider');
+  const isActive = radiusRow && (radiusRow.style.display==='flex' || radiusRow.style.display==='block');
+  if(!userLat || !userLon || !isActive) return results;
+  const r = parseInt(slider?.value || 25);
+  return results.filter(f=>{
+    // Demo freelancers have no real location → hide when radius is active
+    if(!f.real) return false;
+    // Online freelancers always show
+    if(f.loc && (f.loc.toLowerCase().includes('online'))) return true;
+    // Real freelancer with no coords → geocoding failed → hide
+    if(!f.lat || !f.lon) return false;
+    return getDistanceKm(userLat, userLon, f.lat, f.lon) <= r;
+  });
+}
 // Umfangreiches Semantik-Wörterbuch für natürliche Sprache
 const SEMANTIC_MAP = {
   // Garten
@@ -2019,6 +2078,9 @@ async function renderSearch(q){
   }
   window.ALL_FL=all;
 
+  // Geocode freelancer locations for radius filtering
+  await geocodeFreelancers(all);
+
   let results=all;
 
   if(query && query.toLowerCase()!=='alle'){
@@ -2034,12 +2096,8 @@ async function renderSearch(q){
     }
   }
 
-  // Radius filter if active
-  const radiusRow=document.getElementById('radiusRowSearch');
-  if(userLat&&userLon&&radiusRow&&radiusRow.style.display==='flex'){
-    const r=parseInt(document.getElementById('radiusSliderSearch')?.value||25);
-    results=results.filter(f=>!f.lat||!f.lon||getDistanceKm(userLat,userLon,f.lat,f.lon)<=r);
-  }
+  // Radius filter
+  results = applyRadiusFilter(results, 'radiusSliderSearch', 'radiusRowSearch');
 
   const locInfo=userCity?` · 📍 ${userCity}`:'';
   document.getElementById('rQuery').textContent=(q||'Alle')+locInfo;
