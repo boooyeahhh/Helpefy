@@ -587,13 +587,13 @@ nav{padding:0.75rem 1rem;}
           <div id="jobRadiusRow" style="display:none;flex-direction:column;gap:0.6rem;width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:0.875rem 1rem;margin-bottom:1rem">
             <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
               <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap">📍 Standort:</span>
-              <div style="position:relative;flex:1;min-width:160px;z-index:50">
+              <div style="position:relative;flex:1;min-width:160px;z-index:100;overflow:visible">
                 <input type="text" id="jobRadiusLocInput" placeholder="z.B. München, Berlin..."
                   autocomplete="off"
                   oninput="searchLocation(this.value,'jobRadiusLocSugg')"
                   onkeydown="if(event.key==='Enter'){document.getElementById('jobRadiusLocSugg').style.display='none';applyJobRadius();}"
                   style="width:100%;padding:0.4rem 0.75rem;border:1.5px solid var(--border);border-radius:7px;font-size:0.875rem;font-family:Inter,sans-serif;outline:none;background:var(--light)">
-                <div id="jobRadiusLocSugg" class="loc-sugg" style="display:none;position:absolute;z-index:999"></div>
+                <div id="jobRadiusLocSugg" class="loc-sugg" style="display:none"></div>
               </div>
               <button id="jobLocAutoBtn" onclick="getJobLocation(this)" style="padding:0.4rem 0.75rem;background:var(--red);color:white;border:none;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">🎯 Auto</button>
               <button onclick="toggleJobRadius()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;padding:0 0.25rem">✕</button>
@@ -886,17 +886,17 @@ nav{padding:0.75rem 1rem;}
         <div style="font-size:0.875rem;color:var(--muted)"><strong id="rCount" style="color:var(--dark)">6</strong> Ergebnisse für „<strong id="rQuery" style="color:var(--dark)">Alle</strong>"</div>
         <button onclick="toggleRadiusSearch()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.7rem;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;color:var(--muted)">📍 Umkreis</button>
       </div>
-      <div id="radiusRowSearch" style="display:none;flex-direction:column;gap:0.6rem;width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:0.875rem 1rem;margin-top:0.25rem">
+      <div id="radiusRowSearch" style="display:none;flex-direction:column;gap:0.6rem;width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:0.875rem 1rem;margin-top:0.25rem;overflow:visible">
         <!-- Location input -->
         <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
           <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap">📍 Standort:</span>
-          <div style="position:relative;flex:1;min-width:160px;z-index:50">
+          <div style="position:relative;flex:1;min-width:160px;z-index:100;overflow:visible">
             <input type="text" id="radiusLocInput" placeholder="z.B. München, Berlin..."
               autocomplete="off"
               oninput="searchLocation(this.value,'radiusLocSugg')"
               onkeydown="if(event.key==='Enter'){document.getElementById('radiusLocSugg').style.display='none';applyRadiusSearch();}"
               style="width:100%;padding:0.4rem 0.75rem;border:1.5px solid var(--border);border-radius:7px;font-size:0.875rem;font-family:Inter,sans-serif;outline:none;background:var(--light)">
-            <div id="radiusLocSugg" class="loc-sugg" style="display:none;z-index:999;position:absolute"></div>
+            <div id="radiusLocSugg" class="loc-sugg" style="display:none"></div>
           </div>
           <button id="locAutoBtn" onclick="getLocationForSearch(this)" style="padding:0.4rem 0.75rem;background:var(--red);color:white;border:none;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">🎯 Auto</button>
           <button onclick="toggleRadiusSearch()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;padding:0 0.25rem">✕</button>
@@ -942,16 +942,16 @@ nav{padding:0.75rem 1rem;}
         <div style="font-size:0.875rem;color:var(--muted)"><strong id="jrCount" style="color:var(--dark)">0</strong> Jobs für „<strong id="jrQuery" style="color:var(--dark)">Alle</strong>"</div>
         <button onclick="toggleJobRadiusPage()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.7rem;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;color:var(--muted)">📍 Umkreis</button>
       </div>
-      <div id="jobRadiusRowPage" style="display:none;flex-direction:column;gap:0.6rem;width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:0.875rem 1rem;margin-top:0.25rem">
+      <div id="jobRadiusRowPage" style="display:none;flex-direction:column;gap:0.6rem;width:100%;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:0.875rem 1rem;margin-top:0.25rem;overflow:visible">
         <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
           <span style="font-size:0.82rem;color:var(--muted);white-space:nowrap">📍 Standort:</span>
-          <div style="position:relative;flex:1;min-width:200px;z-index:50">
+          <div style="position:relative;flex:1;min-width:160px;z-index:100;overflow:visible">
             <input type="text" id="jobRadiusLocPage" placeholder="z.B. München, Berlin..."
               autocomplete="off"
               oninput="searchLocation(this.value,'jobRadiusLocPageSugg')"
               onkeydown="if(event.key==='Enter'){document.getElementById('jobRadiusLocPageSugg').style.display='none';applyJobRadiusPage();}"
               style="width:100%;padding:0.5rem 0.875rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.875rem;font-family:Inter,sans-serif;outline:none;background:var(--light)">
-            <div id="jobRadiusLocPageSugg" class="loc-sugg" style="display:none;position:absolute;z-index:999"></div>
+            <div id="jobRadiusLocPageSugg" class="loc-sugg" style="display:none"></div>
           </div>
           <button onclick="getJobLocationPage(this)" style="padding:0.5rem 0.875rem;background:var(--red);color:white;border:none;border-radius:9px;font-size:0.875rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">🎯 Auto</button>
           <button onclick="toggleJobRadiusPage()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.1rem;padding:0 0.25rem">✕</button>
@@ -2577,25 +2577,20 @@ async function aiSearch(query, freelancers){
 }
 
 async function renderSearch(q){
-  const query=(q||'').trim();
+  const query = (q||'').trim();
 
-  // Reset filter pills
+  // Reset pills
   document.querySelectorAll('.filter-row .fpill').forEach(p=>{
     p.classList.toggle('active', p.textContent.trim().includes('Alle'));
   });
 
   const grid = document.getElementById('searchGrid');
-  if(grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:2rem;margin-bottom:0.5rem">⏳</div>Suche läuft...</div>';
+  if(grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:2rem;margin-bottom:0.75rem">⏳</div>Suche läuft...</div>';
 
-  // Load real freelancers with timeout
-  let realFL = null;
-  try{
-    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000));
-    const fetch_ = sb.from('freelancers').select('*').limit(100);
-    const result = await Promise.race([fetch_, timeout]);
-    realFL = result.data;
-  }catch(e){ realFL = []; }
-  const CAT_TAGS={
+  // Load freelancers from Supabase
+  const {data:realFL} = await sb.from('freelancers').select('*').limit(100);
+
+  const CAT_TAGS = {
     'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
     'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe'],
     'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Digital'],
@@ -2629,7 +2624,7 @@ async function renderSearch(q){
   if(all.length < 3) all = [...all, ...FL];
   window.ALL_FL = all;
 
-  // STEP 1: Text filter
+  // STEP 1: Text search
   let results = all;
   if(query && query.toLowerCase() !== 'alle'){
     results = smartSearch(query, all);
@@ -2637,58 +2632,47 @@ async function renderSearch(q){
       const words = query.toLowerCase().split(/\s+/).filter(w=>w.length>1);
       results = all.filter(f=>{
         const text = [f.name, f.role, ...(f.tags||[]), ...(f.services||[])].join(' ').toLowerCase();
-        return words.some(w => text.includes(w));
+        return words.some(w=>text.includes(w));
       });
     }
   }
 
-  // STEP 2: Radius filter — only when radius panel is open AND we have user location
+  // STEP 2: Radius filter
   const radiusRow = document.getElementById('radiusRowSearch');
   const radiusActive = radiusRow && radiusRow.style.display === 'flex';
-  if(radiusActive){
-    if(!userLat || !userLon){
-      showToast('Bitte erst Standort eingeben','');
-    } else {
-      const km = parseInt(document.getElementById('radiusSliderSearch')?.value || 25);
-
-      // Geocode all freelancers that have a real city but no coords yet
-      const vague = ['deutschland','germany','bundesweit'];
-      const needGeo = results.filter(f =>
-        f.real && !f.lat && f.loc &&
-        !f.loc.toLowerCase().includes('online') &&
-        !vague.includes(f.loc.toLowerCase().trim())
-      );
-      if(needGeo.length) await geocodeFreelancers(needGeo);
-
-      results = results.filter(f => {
-        if(!f.real) return false;
-        if(f.loc?.toLowerCase().includes('online')) return true;
-        // Hide vague "Deutschland" entries when radius active
-        if(vague.includes((f.loc||'').toLowerCase().trim())) return false;
-        if(!f.lat || !f.lon) return false;
-        return getDistanceKm(userLat, userLon, f.lat, f.lon) <= km;
-      });
-
-      if(results.length === 0){
-        document.getElementById('rCount').textContent = '0';
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">📍</div><div style="font-weight:600;margin-bottom:0.5rem">Niemanden in ' + km + ' km gefunden</div><div style="font-size:0.85rem;margin-bottom:1.25rem">Versuch den Radius zu vergrößern</div><button class="btn-red" onclick="document.getElementById(\'radiusSliderSearch\').value=100;document.getElementById(\'radiusValSearch\').textContent=\'100 km\';applyRadiusSearch()">Radius auf 100 km erhöhen</button></div>';
-        return;
-      }
+  if(radiusActive && userLat && userLon){
+    const km = parseInt(document.getElementById('radiusSliderSearch')?.value||25);
+    const vague = ['deutschland','germany','bundesweit',''];
+    const needGeo = results.filter(f=>f.real && !f.lat && f.loc && !vague.includes(f.loc.toLowerCase().trim()) && !f.loc.toLowerCase().includes('online'));
+    if(needGeo.length) await geocodeFreelancers(needGeo);
+    const inRadius = results.filter(f=>{
+      if(!f.real) return false;
+      if(f.loc?.toLowerCase().includes('online')) return true;
+      if(vague.includes((f.loc||'').toLowerCase().trim())) return false;
+      if(!f.lat||!f.lon) return false;
+      return getDistanceKm(userLat,userLon,f.lat,f.lon)<=km;
+    });
+    if(inRadius.length>0) results = inRadius;
+    else{
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">📍</div><div style="font-weight:600;margin-bottom:0.5rem">Niemanden in '+km+' km gefunden</div><button class="btn-red" style="margin-top:1rem" onclick="document.getElementById('radiusSliderSearch').value=100;document.getElementById('radiusValSearch').textContent='100 km';applyRadiusSearch()">Radius auf 100 km</button></div>';
+      document.getElementById('rCount').textContent='0';
+      document.getElementById('rQuery').textContent=query||'Alle';
+      return;
     }
   }
 
   window._currentSearchResults = results;
-
-  const locInfo = userCity ? ' · 📍 ' + userCity : '';
-  document.getElementById('rQuery').textContent = (query||'Alle') + locInfo;
+  const locInfo = userCity ? ' · 📍 '+userCity : '';
+  document.getElementById('rQuery').textContent = (query||'Alle')+locInfo;
   document.getElementById('rCount').textContent = results.length;
 
   if(!results.length){
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">🔍</div><div style="font-weight:600;margin-bottom:0.5rem">Keine Ergebnisse für \"'+query+'\"</div><div style="font-size:0.85rem;margin-bottom:1.25rem">Versuche z.B. \"Elektriker\", \"Reinigung\" oder \"Mathe\"</div><button class="btn-red" onclick="renderSearch(\'\')">Alle anzeigen</button></div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">🔍</div><div style="font-weight:600;margin-bottom:0.5rem">Keine Ergebnisse für "'+query+'"</div><div style="font-size:0.85rem;margin-bottom:1.25rem">Versuche z.B. "Elektriker", "Reinigung" oder "Mathe"</div><button class="btn-red" onclick="renderSearch(\'\')">Alle anzeigen</button></div>';
   } else {
-    grid.innerHTML = results.map((f,i) => flCard(f, all.indexOf(f))).join('');
+    grid.innerHTML = results.map((f,i)=>flCard(f,all.indexOf(f))).join('');
   }
 }
+
 
 function toggleSave(id, name, idx){
   if(!currentUser){ openModal('auth'); return; }
@@ -3069,10 +3053,10 @@ async function getLocationForSearch(btn){
       userLat = pos.coords.latitude;
       userLon = pos.coords.longitude;
       try{
-        const res = await fetch('https://nominatim.openstreetmap.org/reverse?lat='+userLat+'&lon='+userLon+'&format=json',{headers:{'Accept-Language':'de'}});
+        const res = await fetch('https://nominatim.openstreetmap.org/reverse?lat='+userLat+'&lon='+userLon+'&format=json&zoom=10',{headers:{'Accept-Language':'de'}});
         const d = await res.json();
-        userCity = d.address?.city || d.address?.town || d.address?.village || d.address?.municipality || 'Dein Standort';
-      }catch(e){ userCity = 'Dein Standort'; }
+        userCity = d.address?.city || d.address?.town || d.address?.village || d.address?.municipality || d.address?.county || d.address?.state || 'Mein Standort';
+      }catch(e){ userCity = 'Mein Standort'; }
 
       // Update all location inputs
       ['radiusLocInput','jobRadiusLocInput','jobRadiusLocPage'].forEach(id=>{
@@ -3100,36 +3084,33 @@ async function getLocationForSearch(btn){
 async function applyRadiusSearch(){
   const locInput = document.getElementById('radiusLocInput');
   const typedCity = locInput?.value?.trim();
+  const btn = document.querySelector('#radiusRowSearch button[onclick="applyRadiusSearch()"]');
 
-  if(!typedCity){ showToast('Bitte Stadt eingeben',''); return; }
+  // If we already have coords from GPS and input matches, just search
+  if(userLat && userLon && (typedCity === userCity || !typedCity || typedCity === 'Dein Standort')){
+    renderSearch(document.getElementById('searchInput')?.value||'');
+    return;
+  }
 
-  // Always geocode what's typed — even without clicking a suggestion
-  if(typedCity !== userCity || !userLat || !userLon){
-    try{
-      // Show loading state on button
-      const btn = document.querySelector('#radiusRowSearch button[onclick="applyRadiusSearch()"]');
-      if(btn){ btn.textContent='⏳'; btn.disabled=true; }
+  if(!typedCity){ showToast('Bitte Stadt eingeben oder GPS nutzen',''); return; }
 
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(typedCity)}&format=json&limit=1&countrycodes=de&addressdetails=1`);
-      const d = await r.json();
-
-      if(btn){ btn.textContent='Suchen'; btn.disabled=false; }
-
-      if(!d?.length){
-        showToast('Stadt nicht gefunden — bitte genauer eingeben','error');
-        return;
-      }
-      userLat = parseFloat(d[0].lat);
-      userLon = parseFloat(d[0].lon);
-      const a = d[0].address||{};
-      userCity = a.city || a.town || a.village || typedCity;
-      locInput.value = userCity;
-      const cl = document.getElementById('cityLabel');
-      if(cl) cl.textContent = '📍 ' + userCity;
-    } catch(e){
-      showToast('Geocoding fehlgeschlagen — bitte nochmal versuchen','error');
-      return;
-    }
+  // Geocode the typed city
+  if(btn){ btn.textContent='⏳'; btn.disabled=true; }
+  try{
+    const r = await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(typedCity)+'&format=json&limit=1&countrycodes=de&addressdetails=1', {headers:{'Accept-Language':'de'}});
+    const d = await r.json();
+    if(btn){ btn.textContent='Suchen'; btn.disabled=false; }
+    if(!d?.length){ showToast('Stadt nicht gefunden','error'); return; }
+    userLat = parseFloat(d[0].lat);
+    userLon = parseFloat(d[0].lon);
+    const a = d[0].address||{};
+    userCity = a.city||a.town||a.village||typedCity;
+    locInput.value = userCity;
+    const cl = document.getElementById('cityLabel');
+    if(cl) cl.textContent = '📍 '+userCity;
+  } catch(e){
+    if(btn){ btn.textContent='Suchen'; btn.disabled=false; }
+    showToast('Geocoding fehlgeschlagen','error'); return;
   }
 
   renderSearch(document.getElementById('searchInput')?.value||'');
@@ -3896,14 +3877,14 @@ async function getMyLocation(){
 }
 
 // ── LOCATION AUTOCOMPLETE ──
-let _locTimer = null;
+const _locTimers = {};
 
 async function searchLocation(q, id){
-  clearTimeout(_locTimer);
+  clearTimeout(_locTimers[id]);
   const sugg = document.getElementById(id);
   if(!sugg) return;
   if(!q || q.length < 2){ sugg.style.display='none'; return; }
-  _locTimer = setTimeout(async()=>{
+  _locTimers[id] = setTimeout(async()=>{
     try{
       const res = await fetch(
         'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) +
@@ -3916,19 +3897,18 @@ async function searchLocation(q, id){
         const a = item.address || {};
         const city = a.city || a.town || a.village || a.municipality || '';
         const state = a.state || '';
-        const label = city ? (city + (state ? ', ' + state : '')) : item.display_name.split(',')[0];
-        const fill = city || item.display_name.split(',')[0].trim();
-        const safeFill = fill.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        return '<div class="loc-item" onclick="selectLocation(\'' + safeFill + '\',\'' + id + '\',event,' + item.lat + ',' + item.lon + ')">' +
-          '<strong>' + (city||item.display_name.split(',')[0]) + '</strong>' +
-          (state ? ' <span style="color:var(--muted);font-size:0.78rem">' + state + '</span>' : '') +
-          '</div>';
+        const label = city ? city + (state ? ', '+state : '') : item.display_name.split(',')[0];
+        const fill = (city || item.display_name.split(',')[0]).trim();
+        const safe = fill.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div class="loc-item" onclick="selectLocation(\''+safe+'\',\''+id+'\',event,'+item.lat+','+item.lon+')">'
+          + '<strong>'+label+'</strong>'
+          + '</div>';
       }).join('');
       sugg.style.display = 'block';
     } catch(err){
       sugg.style.display = 'none';
     }
-  }, 350);
+  }, 400);
 }
 
 function selectLocation(val, suggId, e, lat, lon){
