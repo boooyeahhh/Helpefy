@@ -1097,19 +1097,23 @@ nav{padding:0.75rem 1rem;}
           <div class="fg"><label>Standort</label><input type="text" id="settingsStandort" placeholder="z.B. München"></div>
           <div id="settings-fl-extra" style="display:none">
             <div class="fg"><label>Kategorie</label>
-              <select id="settingsKategorie">
+              <select id="settingsKategorie" onchange="updateServiceChips('settings')" style="width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.875rem;color:var(--text);font-family:'Inter',sans-serif;background:var(--light);outline:none">
                 <option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option>
                 <option>Garten</option><option>Umzug</option><option>Lernen</option>
                 <option>Kreativ</option><option>Beauty</option><option>Tiere</option>
+                <option>Transport</option><option>Events</option><option>Büro</option>
+                <option>Fahrzeuge</option><option>Betreuung</option><option>Gesundheit</option><option>Sonstiges</option>
               </select>
             </div>
             <div class="fg"><label>Stundenlohn (€)</label><input type="number" id="settingsPreis" placeholder="25"></div>
             <div class="fg"><label>Über mich</label>
               <textarea id="settingsBio" placeholder="Erzähl etwas über dich, deine Erfahrung und was du anbietest..." style="min-height:100px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
             </div>
-            <div class="fg"><label>Dienstleistungen (kommagetrennt)</label>
-              <input type="text" id="settingsServices" placeholder="z.B. Wasserhahn reparieren, Fliesen legen, Malerarbeiten">
-              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem">Werden als Tags auf deinem Profil angezeigt</div>
+            <div class="fg">
+              <label>Dienstleistungen <span style="color:var(--muted);font-weight:400">(wähle alle die zutreffen)</span></label>
+              <div id="settingsServiceChips" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.35rem"></div>
+              <input type="hidden" id="settingsServices">
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem">Angeklickte Dienste werden auf deinem Profil angezeigt</div>
             </div>
             <div class="fg"><label>🎓 Nachweise & Qualifikationen</label>
               <input type="text" id="settingsNachweise" placeholder="z.B. Meisterbrief Elektriker, Bachelor Informatik, 5 Jahre Erfahrung">
@@ -1236,7 +1240,22 @@ nav{padding:0.75rem 1rem;}
         <div id="regLocSugg" class="loc-sugg" style="display:none"></div>
       </div>
       <div id="reg-fl-extra" style="display:none">
-        <div class="fg"><label>Kategorie</label><select id="regKategorie"><option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option><option>Garten</option><option>Umzug</option><option>Lernen</option></select></div>
+        <div class="fg">
+          <label>Kategorie</label>
+          <select id="regKategorie" onchange="updateServiceChips('reg')" style="width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.875rem;color:var(--text);font-family:'Inter',sans-serif;background:var(--light);outline:none">
+            <option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option>
+            <option>Garten</option><option>Umzug</option><option>Lernen</option>
+            <option>Kreativ</option><option>Beauty</option><option>Tiere</option>
+            <option>Transport</option><option>Events</option><option>Büro</option>
+            <option>Fahrzeuge</option><option>Betreuung</option><option>Gesundheit</option><option>Sonstiges</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Dienstleistungen <span style="color:var(--muted);font-weight:400">(wähle alle die zutreffen)</span></label>
+          <div id="regServiceChips" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.35rem"></div>
+          <input type="hidden" id="regServicesVal">
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem">Ausgewählte werden auf deinem Profil angezeigt</div>
+        </div>
         <div class="fg"><label>Stundenlohn (€)</label><input type="number" id="regPreis" placeholder="25"></div>
         <div class="fg">
           <label>Profilbild</label>
@@ -1450,34 +1469,142 @@ const JOBS = [
 
 // ── SYNONYMS ──
 const SYNONYMS = {
-  'elektro':['Elektrik','Elektronik','Elektriker'],'elektriker':['Elektrik','Elektronik'],
-  'strom':['Elektrik'],'steckdose':['Elektrik'],'kabel':['Elektrik'],
-  'it':['IT-Expertin','IT & Digital','PC','WLAN','Software','it & digital','digital'],
-  'computer':['IT & Digital','PC'],'pc':['IT & Digital','PC-Hilfe'],
-  'laptop':['IT & Digital','PC-Hilfe'],'internet':['IT & Digital','WLAN'],
-  'wlan':['IT & Digital','WLAN'],'wifi':['WLAN'],'drucker':['IT & Digital'],
-  'putzen':['Profi-Reinigungskraft','Wohnungsreinigung','Reinigung'],
-  'sauber':['Reinigung'],'reinigung':['Profi-Reinigungskraft','Wohnungsreinigung'],
-  'fenster':['Fensterputzen'],'putzkraft':['Profi-Reinigungskraft'],
-  'haushalt':['Profi-Reinigungskraft','Haushalt'],
-  'handwerk':['Handwerker','Sanitär','Reparatur'],
-  'reparatur':['Handwerker & Sanitär'],'wasserhahn':['Handwerker & Sanitär','Sanitär'],
-  'klempner':['Handwerker & Sanitär','Sanitär'],'montage':['Möbelmontage'],
-  'ikea':['Möbelmontage'],'möbel':['Möbelmontage'],'bohren':['Handwerker'],
-  'maler':['Handwerk'],'streichen':['Handwerk'],'fliesen':['Handwerk'],
-  'umzug':['Umzugsprofi','Transport'],'transport':['Umzugsprofi'],
-  'tragen':['Umzugsprofi'],'transporter':['Umzugsprofi'],
-  'garten':['Profi-Gärtner','Rasen','Hecken'],'rasen':['Profi-Gärtner'],
-  'mähen':['Profi-Gärtner'],'hecke':['Profi-Gärtner'],
-  'pflanzen':['Profi-Gärtner'],'blumen':['Profi-Gärtner'],
-  'nachhilfe':['Nachhilfelehrerin','Mathe','Englisch'],
-  'mathe':['Nachhilfelehrerin'],'englisch':['Nachhilfelehrerin'],
-  'schule':['Nachhilfelehrerin'],'abitur':['Nachhilfelehrerin'],
-  'hausaufgaben':['Nachhilfelehrerin'],'lehrer':['Nachhilfelehrerin'],
-  'hund':['Tiere','Hundesitter'],'katze':['Tiere'],'gassi':['Tiere'],
-  'friseur':['Beauty'],'haare':['Beauty'],'massage':['Beauty'],
-  'party':['Events'],'hochzeit':['Events'],'foto':['Events','Kreativ'],
-  'design':['Kreativ'],'logo':['Kreativ'],'website':['IT & Digital','Kreativ'],
+  // Handwerk
+  'elektriker':['Elektriker','Handwerk','Elektrik'],'elektro':['Elektriker','Elektrik'],
+  'strom':['Elektriker','Elektrik'],'steckdose':['Elektriker'],'kabel':['Elektriker'],
+  'sanitär':['Sanitär/Klempner','Handwerk'],'klempner':['Sanitär/Klempner','Handwerk'],
+  'wasserhahn':['Sanitär/Klempner','Handwerk'],'rohr':['Sanitär/Klempner'],
+  'heizung':['Heizungsbauer','Handwerk'],'heizungsbauer':['Heizungsbauer','Handwerk'],
+  'handwerker':['Handwerker-Allrounder','Handwerk'],'handwerk':['Handwerker-Allrounder','Handwerk'],
+  'reparatur':['Handwerker-Allrounder','Handwerk'],
+  'möbel':['Möbelmonteur/IKEA','Handwerk'],'ikea':['Möbelmonteur/IKEA','Handwerk'],
+  'montage':['Möbelmonteur/IKEA','Handwerk'],'aufbauen':['Möbelmonteur/IKEA'],
+  'schreiner':['Schreiner','Handwerk'],'tischler':['Schreiner','Handwerk'],
+  'maler':['Maler','Handwerk'],'streichen':['Maler','Handwerk'],'tapete':['Maler'],
+  'boden':['Bodenleger','Handwerk'],'parkett':['Bodenleger'],'laminat':['Bodenleger'],
+  'fliesen':['Fliesenleger','Handwerk'],'fliesenleger':['Fliesenleger','Handwerk'],
+  'trockenbau':['Trockenbauer','Handwerk'],'rigips':['Trockenbauer'],
+  'fenster':['Fenster & Türen','Handwerk','Fensterputzen'],'tür':['Fenster & Türen','Handwerk'],
+  'schlüssel':['Schlüsseldienst','Handwerk'],'schlüsseldienst':['Schlüsseldienst','Handwerk'],
+  'rolladen':['Rolläden/Markisen','Handwerk'],'markise':['Rolläden/Markisen'],
+  'dachdecker':['Dachdecker','Handwerk'],'dach':['Dachdecker','Handwerk'],
+  'solar':['Solaranlagen','Handwerk'],'photovoltaik':['Solaranlagen'],
+  // Haushalt
+  'putzen':['Reinigungskraft','Wohnungsreinigung','Haushalt'],
+  'reinigung':['Reinigungskraft','Wohnungsreinigung','Haushalt'],
+  'reinigungskraft':['Reinigungskraft','Haushalt'],
+  'haushaltshilfe':['Haushaltshilfe','Haushalt'],'haushalt':['Haushaltshilfe','Haushalt'],
+  'wohnungsreinigung':['Wohnungsreinigung','Haushalt'],
+  'büroreinigung':['Büroreinigung','Haushalt'],
+  'fensterreinigung':['Fensterreinigung','Haushalt'],
+  'frühjahrsputz':['Frühjahrsputz','Haushalt'],
+  'bügeln':['Wäsche & Bügeln','Haushalt'],'wäsche':['Wäsche & Bügeln','Haushalt'],
+  'kochen':['Kochen/Haushalt','Haushalt'],
+  // Garten
+  'garten':['Gartenreinigung','Bepflanzung','Garten'],'gartenarbeit':['Garten'],
+  'rasenmähen':['Rasenmähen','Garten'],'rasen':['Rasenmähen','Garten'],
+  'mähen':['Rasenmähen','Garten'],
+  'hecke':['Heckenschnitt','Garten'],'heckenschnitt':['Heckenschnitt','Garten'],
+  'bepflanzung':['Bepflanzung','Garten'],'pflanzen':['Bepflanzung','Garten'],
+  'baumschnitt':['Baumschnitt','Garten'],'baum':['Baumschnitt','Garten'],
+  'unkraut':['Unkraut entfernen','Garten'],
+  'winterdienst':['Winterdienst','Garten'],'schnee':['Winterdienst','Garten'],
+  'pflaster':['Pflasterarbeiten','Garten'],
+  // IT
+  'it':['PC/Laptop Hilfe','IT & Digital'],'computer':['PC/Laptop Hilfe','IT & Digital'],
+  'pc':['PC/Laptop Hilfe','IT & Digital'],'laptop':['PC/Laptop Hilfe','IT & Digital'],
+  'wlan':['WLAN & Netzwerk','IT & Digital'],'wifi':['WLAN & Netzwerk','IT & Digital'],
+  'netzwerk':['WLAN & Netzwerk','IT & Digital'],'internet':['WLAN & Netzwerk','IT & Digital'],
+  'smartphone':['Smartphone/Tablet','IT & Digital'],'handy':['Smartphone/Tablet','IT & Digital'],
+  'tablet':['Smartphone/Tablet','IT & Digital'],'iphone':['Smartphone/Tablet','IT & Digital'],
+  'drucker':['Drucker & Scanner','IT & Digital'],'scanner':['Drucker & Scanner','IT & Digital'],
+  'virus':['Viren entfernen','IT & Digital'],'malware':['Viren entfernen','IT & Digital'],
+  'website':['Website erstellen','IT & Digital','Kreativ'],'homepage':['Website erstellen','IT & Digital'],
+  'social media':['Social Media','IT & Digital'],'instagram':['Social Media','IT & Digital'],
+  'app':['App Entwicklung','IT & Digital'],
+  'datenrettung':['Datenrettung','IT & Digital'],
+  'smart home':['Smart Home','IT & Digital'],'alexa':['Smart Home','IT & Digital'],
+  // Umzug
+  'umzug':['Umzugshilfe','Umzug'],'umziehen':['Umzugshilfe','Umzug'],
+  'transport':['Möbel tragen','Transport'],'tragen':['Möbel tragen','Umzug'],
+  'transporter':['Möbel tragen','Umzug'],'lieferwagen':['Möbel tragen','Umzug'],
+  'verpacken':['Verpacken','Umzug'],'kartons':['Verpacken','Umzug'],
+  'entrümpelung':['Entrümpelung','Umzug'],'entrümpeln':['Entrümpelung','Umzug'],
+  'klavier':['Klaviertransport','Umzug'],
+  // Lernen
+  'nachhilfe':['Mathe','Deutsch','Englisch','Lernen'],'unterricht':['Lernen'],
+  'mathe':['Mathe','Lernen'],'mathematik':['Mathe','Lernen'],
+  'deutsch':['Deutsch','Lernen'],'rechtschreibung':['Deutsch','Lernen'],
+  'englisch':['Englisch','Lernen'],'english':['Englisch','Lernen'],
+  'physik':['Physik','Lernen'],'chemie':['Chemie','Lernen'],
+  'biologie':['Biologie','Lernen'],'bio':['Biologie','Lernen'],
+  'abitur':['Abitur-Vorbereitung','Lernen'],'prüfung':['Abitur-Vorbereitung','Lernen'],
+  'hausaufgaben':['Grundschule','Lernen'],'grundschule':['Grundschule','Lernen'],
+  'sprachkurs':['Sprachkurs','Lernen'],'sprache':['Sprachkurs','Lernen'],
+  // Kreativ
+  'design':['Grafikdesign','Kreativ'],'grafik':['Grafikdesign','Kreativ'],
+  'logo':['Logo erstellen','Kreativ'],
+  'foto':['Foto & Video','Kreativ','Events'],'video':['Foto & Video','Kreativ'],
+  'webdesign':['Webdesign','Kreativ','IT & Digital'],
+  'text':['Content Writing','Kreativ'],'schreiben':['Content Writing','Kreativ'],
+  'übersetzung':['Übersetzung','Kreativ'],'übersetzer':['Übersetzung','Kreativ'],
+  'musik':['Musikproduktion','Kreativ','Events'],
+  'drohne':['Drohnenaufnahmen','Kreativ'],
+  '3d':['3D-Druck','Kreativ'],
+  // Beauty
+  'friseur':['Friseur','Beauty'],'haare':['Friseur','Beauty'],
+  'haarfarbe':['Haare färben','Beauty'],'färben':['Haare färben','Beauty'],
+  'nägel':['Nägel','Beauty'],'maniküre':['Nägel','Beauty'],'nagel':['Nägel','Beauty'],
+  'makeup':['Make-up','Beauty'],'make-up':['Make-up','Beauty'],
+  'massage':['Massage','Beauty'],'wellness':['Massage','Beauty'],
+  'kosmetik':['Kosmetik','Beauty'],'gesicht':['Kosmetik','Beauty'],
+  'wimpern':['Wimpern','Beauty'],'augenbrauen':['Augenbrauen','Beauty'],
+  'tattoo':['Tattoo','Beauty'],
+  // Tiere
+  'hund':['Hundesitting','Gassi gehen','Tiere'],'hunde':['Hundesitting','Tiere'],
+  'gassi':['Gassi gehen','Tiere'],'spazieren':['Gassi gehen','Tiere'],
+  'katze':['Katzensitting','Tiere'],'katzen':['Katzensitting','Tiere'],
+  'tiersitting':['Hundesitting','Katzensitting','Tiere'],
+  'hundetraining':['Hundetraining','Tiere'],'training':['Hundetraining','Tiere'],
+  'aquarium':['Aquarium Pflege','Tiere'],
+  'tier':['Hundesitting','Tiere'],'haustier':['Hundesitting','Tiere'],
+  // Events
+  'hochzeit':['Hochzeit','Events'],'heirat':['Hochzeit','Events'],
+  'party':['Party','Events'],'geburtstag':['Geburtstag','Events'],
+  'catering':['Catering','Events'],'essen':['Catering','Events'],
+  'dj':['DJ/Musik','Events'],
+  'fotograf':['Fotografie','Events','Kreativ'],
+  'dekoration':['Dekoration','Events'],'deko':['Dekoration','Events'],
+  'barkeeper':['Barkeeper','Events'],'bar':['Barkeeper','Events'],
+  // Transport
+  'fahrdienst':['Fahrdienst','Transport'],'fahrer':['Fahrdienst','Transport'],
+  'flughafen':['Flughafen Transfer','Transport'],
+  'kurier':['Kurierdienst','Transport'],'lieferung':['Kurierdienst','Transport'],
+  // Büro
+  'buchhaltung':['Buchhaltung','Büro'],'buchhalter':['Buchhaltung','Büro'],
+  'steuer':['Steuererklärung','Büro'],'steuererklärung':['Steuererklärung','Büro'],
+  'sekretariat':['Sekretariat','Büro'],'büroarbeit':['Sekretariat','Büro'],
+  'excel':['Excel/Word Hilfe','Büro'],'word':['Excel/Word Hilfe','Büro'],
+  'präsentation':['Präsentationen','Büro'],'powerpoint':['Präsentationen','Büro'],
+  // Fahrzeuge
+  'autowäsche':['Autowäsche','Fahrzeuge'],'auto':['Autowäsche','Fahrzeuge'],
+  'autopflege':['Autopflege','Fahrzeuge'],'polieren':['Autopflege','Fahrzeuge'],
+  'reifen':['Reifenwechsel','Fahrzeuge'],'reifenwechsel':['Reifenwechsel','Fahrzeuge'],
+  'fahrrad':['Fahrrad reparieren','Fahrzeuge'],
+  'motorrad':['Motorrad','Fahrzeuge'],
+  // Betreuung
+  'babysitting':['Babysitting','Betreuung'],'baby':['Babysitting','Betreuung'],
+  'kinder':['Kinderbetreuung','Betreuung'],'kinderbetreuung':['Kinderbetreuung','Betreuung'],
+  'senioren':['Seniorenbegleitung','Betreuung'],'oma':['Seniorenbegleitung','Betreuung'],
+  'pflege':['Pflegeassistenz','Betreuung'],
+  // Gesundheit
+  'personal trainer':['Personal Trainer','Gesundheit'],'trainer':['Personal Trainer','Gesundheit'],
+  'yoga':['Yoga','Gesundheit'],'meditation':['Yoga','Gesundheit'],
+  'ernährung':['Ernährungsberatung','Gesundheit'],'diät':['Ernährungsberatung','Gesundheit'],
+  'physiotherapie':['Physiotherapie','Gesundheit'],
+  'pilates':['Pilates','Gesundheit'],
+  'laufen':['Lauftraining','Gesundheit'],'joggen':['Lauftraining','Gesundheit'],
+  'schwimmen':['Schwimmkurs','Gesundheit'],
 };
 
 function expandQuery(q){
@@ -1589,10 +1716,10 @@ async function doRegister(){
     if(isFL){
       const kat=document.getElementById('regKategorie').value;
       const preis=parseFloat(document.getElementById('regPreis').value)||25;
-      // Get avatar if uploaded (stored as base64 in profiles)
+      const services=document.getElementById('regServicesVal')?.value||'';
       const avatarEl=document.getElementById('regAvatarPreview')?.querySelector('img');
       const avatar=avatarEl?.src||null;
-      const {error:flErr}=await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,avatar_url:window._regAvatarData||null,created_at:new Date().toISOString()});
+      const {error:flErr}=await sb.from('freelancers').insert({user_id:data.user.id,kategorie:kat,stundenlohn:preis,standort:loc,verfuegbar:true,beschreibung:`${name} – ${kat} Experte auf Helpefy.`,dienstleistungen:services,avatar_url:window._regAvatarData||null,created_at:new Date().toISOString()});
       if(flErr) console.error('Freelancer insert error:',flErr.message);
       if(window._regAvatarData) await sb.from('profiles').update({avatar_url:window._regAvatarData}).eq('id',data.user.id);
     }
@@ -1644,6 +1771,16 @@ async function loadProfile(){
     // Show freelancer extra fields if freelancer
     const flExtra=document.getElementById('settings-fl-extra');
     if(flExtra) flExtra.style.display=data.role==='freelancer'?'block':'none';
+    if(data.role==='freelancer'){
+      // Load freelancer services for chip display
+      sb.from('freelancers').select('dienstleistungen,kategorie').eq('user_id',currentUser.id).single().then(({data:fl})=>{
+        if(fl){
+          const katEl = document.getElementById('settingsKategorie');
+          if(katEl && fl.kategorie) katEl.value = fl.kategorie;
+          loadSettingsServiceChips(fl.dienstleistungen||'');
+        }
+      });
+    }
   }
   // Load all orders (as kunde AND as freelancer receiving offers)
   const {data:orders}=await sb.from('auftraege').select('*').eq('kunde_id',currentUser.id).order('created_at',{ascending:false});
@@ -3506,7 +3643,65 @@ function switchDash(tab,el){
   document.title = 'Helpefy – '+slug.charAt(0).toUpperCase()+slug.slice(1);
 }
 
-// ── PROVISION BERECHNUNG ──
+// ── SERVICE CHIPS ──
+// Map Kategorie name to SUBCATS key
+const KAT_TO_SUBKEY = {
+  'Handwerk':'HANDWERK','Haushalt':'HAUSHALT','IT & Digital':'IT','Garten':'GARTEN',
+  'Umzug':'UMZUG','Lernen':'LERNEN','Kreativ':'KREATIV','Beauty':'BEAUTY',
+  'Tiere':'TIERE','Events':'EVENTS','Transport':'TRANSPORT','Büro':'BUERO',
+  'Fahrzeuge':'FAHRZEUGE','Betreuung':'BETREUUNG','Gesundheit':'GESUNDHEIT','Sonstiges':'SONSTIGES'
+};
+
+function updateServiceChips(context){
+  const katEl = document.getElementById(context==='reg' ? 'regKategorie' : 'settingsKategorie');
+  const chipsEl = document.getElementById(context==='reg' ? 'regServiceChips' : 'settingsServiceChips');
+  const hiddenEl = document.getElementById(context==='reg' ? 'regServicesVal' : 'settingsServices');
+  if(!katEl || !chipsEl) return;
+
+  const kat = katEl.value;
+  const subKey = KAT_TO_SUBKEY[kat] || 'SONSTIGES';
+  const subs = SUBCATS[subKey]?.subs || [];
+  const selected = new Set((hiddenEl?.value||'').split(',').map(s=>s.trim()).filter(Boolean));
+
+  chipsEl.innerHTML = subs.map(s=>{
+    const isSelected = selected.has(s);
+    return `<span onclick="toggleServiceChip(this,'${s}','${context}')"
+      style="padding:0.4rem 0.9rem;border-radius:2rem;font-size:0.8rem;cursor:pointer;transition:all 0.15s;border:1.5px solid ${isSelected?'var(--red)':'var(--border)'};background:${isSelected?'var(--red-light)':'var(--white)'};color:${isSelected?'var(--red)':'var(--muted)'};user-select:none"
+      data-selected="${isSelected?'1':'0'}"
+    >${s}</span>`;
+  }).join('');
+}
+
+function toggleServiceChip(el, value, context){
+  const hiddenEl = document.getElementById(context==='reg' ? 'regServicesVal' : 'settingsServices');
+  const isSelected = el.dataset.selected === '1';
+  if(isSelected){
+    el.dataset.selected = '0';
+    el.style.border = '1.5px solid var(--border)';
+    el.style.background = 'var(--white)';
+    el.style.color = 'var(--muted)';
+  } else {
+    el.dataset.selected = '1';
+    el.style.border = '1.5px solid var(--red)';
+    el.style.background = 'var(--red-light)';
+    el.style.color = 'var(--red)';
+  }
+  // Update hidden field
+  const chipsEl = el.parentElement;
+  const selected = [...chipsEl.querySelectorAll('[data-selected="1"]')].map(c=>c.textContent.trim());
+  if(hiddenEl) hiddenEl.value = selected.join(', ');
+}
+
+function loadSettingsServiceChips(currentServices){
+  // Pre-select chips based on existing services
+  const hiddenEl = document.getElementById('settingsServices');
+  if(hiddenEl && currentServices) hiddenEl.value = currentServices;
+  updateServiceChips('settings');
+}
+
+function loadRegServiceChips(){
+  updateServiceChips('reg');
+}
 // Standard: Freelancer 85%, Helpefy 15%
 // Mit Referral (12 Monate): Freelancer 85%, Referrer 5%, Helpefy 10%
 async function getProvisionSplit(freelancerUserId, preis){
@@ -3660,6 +3855,7 @@ function switchRegType(type,el){
   el.closest('.modal-tabs').querySelectorAll('.mtab2').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('reg-fl-extra').style.display=type==='freelancer'?'block':'none';
+  if(type==='freelancer') setTimeout(()=>updateServiceChips('reg'), 50);
 }
 
 // ── CHAT ──
