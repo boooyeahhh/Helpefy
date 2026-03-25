@@ -13,26 +13,6 @@
 <meta name="description" content="Finde lokale Freelancer für jeden Job – schnell, einfach, sicher.">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="apple-touch-startup-image" href="/splash.png">
-<!-- MOBILE BOTTOM NAV -->
-<div id="mobileBottomNav">
-  <div class="mbn-item active" id="mbn-home" onclick="mbnClick('home')">
-    <div class="mbn-icon">🏠</div>
-    <div class="mbn-label">Home</div>
-  </div>
-  <div class="mbn-item" id="mbn-search" onclick="mbnClick('search')">
-    <div class="mbn-icon">🔍</div>
-    <div class="mbn-label">Suchen</div>
-  </div>
-  <div class="mbn-item" id="mbn-chat" onclick="mbnClick('chat')">
-    <div class="mbn-icon mbn-dot" id="mbn-chat-icon">💬</div>
-    <div class="mbn-label">Nachrichten</div>
-  </div>
-  <div class="mbn-item" id="mbn-dashboard" onclick="mbnClick('dashboard');switchDash('overview',null)">
-    <div class="mbn-icon">👤</div>
-    <div class="mbn-label">Profil</div>
-  </div>
-</div>
-
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
 </head>
@@ -289,6 +269,7 @@ nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between
 .msg-time{font-size:0.65rem;color:var(--muted);margin-top:0.25rem;}
 .msg.me .msg-time{text-align:right;}
 .chat-input-area{padding:1rem 1.5rem;background:var(--white);border-top:1.5px solid var(--border);display:flex;gap:0.75rem;align-items:flex-end;}
+@media(max-width:768px){.chat-input-area{margin-bottom:60px;}}
 @media(max-width:768px){.chat-input-area{margin-bottom:60px;}}
 
 }
@@ -1180,6 +1161,26 @@ nav{padding:0.75rem 1rem;}
       <textarea id="bewertungText" placeholder="Schreib etwas über deine Erfahrung..." style="min-height:80px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
     </div>
     <button class="form-submit" onclick="submitBewertung()">Bewertung abgeben ⭐</button>
+  </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<div id="mobileBottomNav">
+  <div class="mbn-item active" id="mbn-home" onclick="mbnClick('home')">
+    <div class="mbn-icon">🏠</div>
+    <div class="mbn-label">Home</div>
+  </div>
+  <div class="mbn-item" id="mbn-search" onclick="mbnClick('search')">
+    <div class="mbn-icon">🔍</div>
+    <div class="mbn-label">Suchen</div>
+  </div>
+  <div class="mbn-item" id="mbn-chat" onclick="mbnClick('chat')">
+    <div class="mbn-icon mbn-dot" id="mbn-chat-icon">💬</div>
+    <div class="mbn-label">Nachrichten</div>
+  </div>
+  <div class="mbn-item" id="mbn-dashboard" onclick="mbnClick('dashboard');switchDash('overview',null)">
+    <div class="mbn-icon">👤</div>
+    <div class="mbn-label">Profil</div>
   </div>
 </div>
 
