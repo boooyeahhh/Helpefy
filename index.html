@@ -882,6 +882,7 @@ nav{padding:0.75rem 1rem;}
           <div style="font-size:0.7rem;color:var(--muted);margin-top:0.35rem">✓ Zahlung erst nach Annahme durch den Freelancer</div>
         </div>
         <button class="book-now" onclick="doBook()">📨 Anfrage senden →</button>
+        <button class="chat-now" onclick="openChatWithFreelancer()">💬 Nachricht schreiben</button>
       </div>
     </div>
   </div>
@@ -2417,6 +2418,19 @@ function openModal(n){
 
 function closeModal(n){
   document.getElementById('modal-'+n)?.classList.remove('open');
+}
+
+async function openChatWithFreelancer(){
+  if(!currentUser){ openModal('auth'); return; }
+  const f = window._curFL;
+  if(!f || !f.id){ showToast('Freelancer nicht gefunden','error'); return; }
+  // Load freelancer profile data
+  const {data:prof} = await sb.from('profiles').select('*').eq('id', f.id).single();
+  if(!prof){ showToast('Profil nicht gefunden','error'); return; }
+  showView('chat');
+  setTimeout(()=>{
+    openChat(prof.id, prof.full_name||f.name, prof.avatar_url||f.avatar||'', prof.role||'freelancer');
+  }, 200);
 }
 
 async function doBook(){
