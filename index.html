@@ -3678,32 +3678,32 @@ async function submitAuszahlung(){
   const btn = document.getElementById('auszahlungSubmitBtn');
   btn.disabled = true; btn.textContent = '⏳ Wird bearbeitet...';
 
-  const emailBody = `Neue Auszahlungsanfrage auf Helpefy\n\nZeitpunkt: ${new Date().toLocaleString('de')}\nBenutzer: ${currentProfile?.full_name||currentUser?.email}\nE-Mail: ${currentUser?.email}\n\nBETRAG: ${parseFloat(amount).toFixed(2)} €\n\nBANKVERBINDUNG:\nKontoinhaber: ${name}\nIBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}\nBIC: ${bic}\nBank: ${bank}`;
+  // Fire and forget — never await anything that could hang
+  const emailBody = `Auszahlung ${new Date().toLocaleString('de')}\n${currentProfile?.full_name||currentUser?.email} | ${currentUser?.email}\nBETRAG: ${parseFloat(amount).toFixed(2)} €\nIBAN: ${iban}\nBIC: ${bic}\nBank: ${bank}`;
 
-  // Fire all requests in parallel, ignore all errors individually
-  await Promise.allSettled([
-    sb.from('auszahlungen').insert({
-      user_id:currentUser.id, betrag:amount, iban, kontoinhaber:name,
-      bic, bank, email:currentUser.email, name:currentProfile?.full_name||currentUser.email,
-      status:'beantragt', created_at:new Date().toISOString()
-    }),
-    sb.functions.invoke('send-email', {
-      body:{
-        to:'christopher_russell@web.de',
-        subject:`💸 Auszahlung: ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
-        text:emailBody
-      }
-    }),
-    sb.from('auftraege').update({status:'ausgezahlt'})
-      .eq('freelancer_id',currentUser.id).eq('status','abgeschlossen')
-  ]);
+  // No await — fire in background
+  sb.from('auszahlungen').insert({
+    user_id:currentUser.id, betrag:amount, iban, kontoinhaber:name,
+    bic, bank, email:currentUser.email,
+    name:currentProfile?.full_name||currentUser.email,
+    status:'beantragt', created_at:new Date().toISOString()
+  }).catch(()=>{});
 
-  // Always finish — regardless of what failed
+  sb.functions.invoke('send-email',{body:{
+    to:'christopher_russell@web.de',
+    subject:`💸 Auszahlung ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
+    text:emailBody
+  }}).catch(()=>{});
+
+  sb.from('auftraege').update({status:'ausgezahlt'})
+    .eq('freelancer_id',currentUser.id).eq('status','abgeschlossen').catch(()=>{});
+
+  // Close immediately — don't wait
   btn.disabled = false;
   btn.textContent = '💸 Jetzt auszahlen beantragen';
   closeModal('auszahlung');
   showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.','success');
-  loadProfile();
+  setTimeout(()=>loadProfile(), 1000);
 }
 
 // ── SUPPORT ──
