@@ -513,19 +513,33 @@ nav{padding:0.75rem 1rem;}
       <div class="eyebrow">Kategorien</div>
       <div class="section-title">Was brauchst du?</div>
       <p class="section-sub">Wähle eine Kategorie oder beschreibe dein Problem.</p>
-      <div class="cat-grid">
-        <div class="cat-card" onclick="catClick('Handwerk',this)"><div class="cat-emoji">🔨</div><div class="cat-name">Handwerk</div><div class="cat-count">980 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Haushalt',this)"><div class="cat-emoji">🏠</div><div class="cat-name">Haushalt</div><div class="cat-count">1.240 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Garten',this)"><div class="cat-emoji">🌿</div><div class="cat-name">Garten</div><div class="cat-count">420 Profis</div></div>
-        <div class="cat-card" onclick="catClick('IT',this)"><div class="cat-emoji">💻</div><div class="cat-name">IT & Digital</div><div class="cat-count">780 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Umzug',this)"><div class="cat-emoji">📦</div><div class="cat-name">Umzug</div><div class="cat-count">650 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Lernen',this)"><div class="cat-emoji">🎓</div><div class="cat-name">Lernen</div><div class="cat-count">560 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Kreativ',this)"><div class="cat-emoji">🎨</div><div class="cat-name">Kreativ</div><div class="cat-count">310 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Beauty',this)"><div class="cat-emoji">💄</div><div class="cat-name">Beauty</div><div class="cat-count">290 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Tiere',this)"><div class="cat-emoji">🐾</div><div class="cat-name">Tiere</div><div class="cat-count">380 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Events',this)"><div class="cat-emoji">🎉</div><div class="cat-name">Events</div><div class="cat-count">220 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Transport',this)"><div class="cat-emoji">🚐</div><div class="cat-name">Transport</div><div class="cat-count">340 Profis</div></div>
-        <div class="cat-card" onclick="catClick('Büro',this)"><div class="cat-emoji">💼</div><div class="cat-name">Büro</div><div class="cat-count">180 Profis</div></div>
+
+      <div class="cat-grid" id="catGrid">
+        <div class="cat-card" onclick="catClick('Handwerk',this,'HANDWERK')"><div class="cat-emoji">🔨</div><div class="cat-name">Handwerk</div></div>
+        <div class="cat-card" onclick="catClick('Haushalt',this,'HAUSHALT')"><div class="cat-emoji">🏠</div><div class="cat-name">Haushalt</div></div>
+        <div class="cat-card" onclick="catClick('Garten',this,'GARTEN')"><div class="cat-emoji">🌿</div><div class="cat-name">Garten</div></div>
+        <div class="cat-card" onclick="catClick('IT',this,'IT')"><div class="cat-emoji">💻</div><div class="cat-name">IT & Digital</div></div>
+        <div class="cat-card" onclick="catClick('Umzug',this,'UMZUG')"><div class="cat-emoji">📦</div><div class="cat-name">Umzug</div></div>
+        <div class="cat-card" onclick="catClick('Lernen',this,'LERNEN')"><div class="cat-emoji">🎓</div><div class="cat-name">Lernen</div></div>
+        <div class="cat-card" onclick="catClick('Kreativ',this,'KREATIV')"><div class="cat-emoji">🎨</div><div class="cat-name">Kreativ</div></div>
+        <div class="cat-card" onclick="catClick('Beauty',this,'BEAUTY')"><div class="cat-emoji">💄</div><div class="cat-name">Beauty</div></div>
+        <div class="cat-card" onclick="catClick('Tiere',this,'TIERE')"><div class="cat-emoji">🐾</div><div class="cat-name">Tiere</div></div>
+        <div class="cat-card" onclick="catClick('Events',this,'EVENTS')"><div class="cat-emoji">🎉</div><div class="cat-name">Events</div></div>
+        <div class="cat-card" onclick="catClick('Transport',this,'TRANSPORT')"><div class="cat-emoji">🚐</div><div class="cat-name">Transport</div></div>
+        <div class="cat-card" onclick="catClick('Büro',this,'BUERO')"><div class="cat-emoji">💼</div><div class="cat-name">Büro</div></div>
+        <div class="cat-card" onclick="catClick('Fahrzeuge',this,'FAHRZEUGE')"><div class="cat-emoji">🚗</div><div class="cat-name">Fahrzeuge</div></div>
+        <div class="cat-card" onclick="catClick('Betreuung',this,'BETREUUNG')"><div class="cat-emoji">👶</div><div class="cat-name">Betreuung</div></div>
+        <div class="cat-card" onclick="catClick('Gesundheit',this,'GESUNDHEIT')"><div class="cat-emoji">💪</div><div class="cat-name">Gesundheit</div></div>
+        <div class="cat-card" onclick="catClick('Sonstiges',this,'SONSTIGES')"><div class="cat-emoji">✨</div><div class="cat-name">Spezial</div></div>
+      </div>
+
+      <!-- Unterkategorien Panel -->
+      <div id="subCatPanel" style="display:none;margin-top:1rem;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+          <div id="subCatTitle" style="font-size:0.75rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)"></div>
+          <button onclick="closeSubCat()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.1rem;padding:0.1rem 0.3rem">✕</button>
+        </div>
+        <div id="subCatList" style="display:flex;flex-wrap:wrap;gap:0.5rem"></div>
       </div>
     </div>
     <div class="section" style="padding-top:1rem">
@@ -2452,7 +2466,117 @@ function doSearch(){
   },50);
 }
 function setSearch(q){const h=document.getElementById('heroSearch');if(h)h.value=q;doSearch();}
-function catClick(cat,el){document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('active'));el.classList.add('active');setSearch(cat);}
+// ── KATEGORIE UNTERKATEGORIEN ──
+const SUBCATS = {
+  HANDWERK: {
+    label: 'HANDWERK',
+    subs: ['Elektriker','Sanitär/Klempner','Heizungsbauer','Handwerker-Allrounder','Möbelmonteur/IKEA','Schreiner','Maler','Bodenleger','Fliesenleger','Trockenbauer','Fenster & Türen','Schlüsseldienst','Rolläden/Markisen','Dachdecker','Solaranlagen']
+  },
+  HAUSHALT: {
+    label: 'HAUSHALT',
+    subs: ['Reinigungskraft','Haushaltshilfe','Wohnungsreinigung','Büroreinigung','Fensterreinigung','Frühjahrsputz','Einzugsreinigung','Auszugsreinigung','Wäsche & Bügeln','Kochen/Haushalt']
+  },
+  GARTEN: {
+    label: 'GARTEN',
+    subs: ['Rasenmähen','Heckenschnitt','Bepflanzung','Baumschnitt','Gartengestaltung','Bewässerung','Unkraut entfernen','Gartenreinigung','Pflasterarbeiten','Winterdienst']
+  },
+  IT: {
+    label: 'IT & DIGITAL',
+    subs: ['PC/Laptop Hilfe','WLAN & Netzwerk','Smartphone/Tablet','Drucker & Scanner','Viren entfernen','Website erstellen','Social Media','App Entwicklung','Datenrettung','Smart Home']
+  },
+  UMZUG: {
+    label: 'UMZUG',
+    subs: ['Umzugshilfe','Möbel tragen','Verpacken','Transporter fahren','Einlagerung','Montage/Demontage','Entrümpelung','Klaviertransport']
+  },
+  LERNEN: {
+    label: 'LERNEN',
+    subs: ['Mathe','Deutsch','Englisch','Physik','Chemie','Biologie','Geschichte','Musik','Sport','Abitur-Vorbereitung','Grundschule','Berufsschule','Hochschule','Sprachkurs']
+  },
+  KREATIV: {
+    label: 'KREATIV',
+    subs: ['Grafikdesign','Logo erstellen','Foto & Video','Webdesign','Content Writing','Übersetzung','Musikproduktion','Illustration','3D-Druck','Drohnenaufnahmen']
+  },
+  BEAUTY: {
+    label: 'BEAUTY',
+    subs: ['Friseur','Haare färben','Nägel','Make-up','Massage','Kosmetik','Wimpern','Augenbrauen','Permanent Make-up','Tattoo']
+  },
+  TIERE: {
+    label: 'TIERE',
+    subs: ['Hundesitting','Gassi gehen','Katzensitting','Tierarzt-Begleitung','Tierpflege','Hundetraining','Aquarium Pflege','Vogel/Kleintiere']
+  },
+  EVENTS: {
+    label: 'EVENTS',
+    subs: ['Hochzeit','Party','Geburtstag','Firmenevent','Catering','DJ/Musik','Fotografie','Dekoration','Moderation','Barkeeper']
+  },
+  TRANSPORT: {
+    label: 'TRANSPORT',
+    subs: ['Fahrdienst','Flughafen Transfer','Einkaufslieferung','Paket abholen','Kurierdienst','Möbeltransport','Tierbegleitung']
+  },
+  BUERO: {
+    label: 'BÜRO & BUSINESS',
+    subs: ['Buchhaltung','Steuererklärung','Sekretariat','Dateneingabe','Excel/Word Hilfe','Präsentationen','Telefonservice','Recherchearbeiten']
+  },
+  FAHRZEUGE: {
+    label: 'FAHRZEUGE',
+    subs: ['Autowäsche','Autopflege','Reifenwechsel','Fahrzeugüberführung','TÜV Begleitung','Motorrad','Fahrrad reparieren']
+  },
+  BETREUUNG: {
+    label: 'BETREUUNG',
+    subs: ['Babysitting','Kinderbetreuung','Seniorenbegleitung','Hausaufgabenbetreuung','Nachmittagsbetreuung','Pflegeassistenz']
+  },
+  GESUNDHEIT: {
+    label: 'GESUNDHEIT & SPORT',
+    subs: ['Personal Trainer','Yoga','Ernährungsberatung','Physiotherapie','Pilates','Kampfsport','Lauftraining','Schwimmkurs']
+  },
+  SONSTIGES: {
+    label: 'SPEZIAL',
+    subs: ['Schlangestehen','Behördengänge','Einkaufen','Geschenke einpacken','IKEA Begleitung','Montage aller Art','Sonstiges']
+  }
+};
+
+function catClick(cat, el, subKey){
+  // Toggle active state
+  const wasActive = el.classList.contains('active');
+  document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('active'));
+  const panel = document.getElementById('subCatPanel');
+
+  if(wasActive){
+    // Second click: close panel and search directly
+    panel.style.display = 'none';
+    setSearch(cat);
+    return;
+  }
+
+  el.classList.add('active');
+
+  // Show subcategories if available
+  const subData = SUBCATS[subKey];
+  if(subData){
+    document.getElementById('subCatTitle').textContent = subData.label;
+    document.getElementById('subCatList').innerHTML = subData.subs.map(s=>
+      `<span onclick="selectSubCat('${s}')" style="padding:0.4rem 1rem;background:var(--light2);border:1.5px solid var(--border);border-radius:2rem;font-size:0.82rem;cursor:pointer;transition:all 0.15s;display:inline-block"
+        onmouseover="this.style.background='var(--red-light)';this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+        onmouseout="this.style.background='var(--light2)';this.style.borderColor='var(--border)';this.style.color=''"
+      >${s}</span>`
+    ).join('');
+    panel.style.display = 'block';
+    // Scroll panel into view smoothly
+    setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'nearest'}), 50);
+  } else {
+    panel.style.display = 'none';
+    setSearch(cat);
+  }
+}
+
+function selectSubCat(sub){
+  closeSubCat();
+  setSearch(sub);
+}
+
+function closeSubCat(){
+  document.getElementById('subCatPanel').style.display = 'none';
+  document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('active'));
+}
 function togglePill(el){
   el.closest('.filter-row').querySelectorAll('.fpill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
