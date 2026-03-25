@@ -1761,6 +1761,8 @@ async function saveSettings(){
 
   window._newAvatar = null;
   btn.textContent='Speichern'; btn.disabled=false;
+  // Invalidate geocode cache so new standort gets geocoded on next search
+  if(standort) window._coordCache = {};
   showToast('Einstellungen gespeichert! ✅','success');
   await loadProfile();
 }
@@ -1928,10 +1930,23 @@ async function geocodeCity(city){
 
 async function geocodeFreelancers(list){
   // Geocode all real freelancers that have a standort but no lat/lon
-  const toGeocode = list.filter(f=>f.real && f.loc && f.loc!=='Deutschland' && !f.lat);
+  // Also check the persistent window._coordCache
+  if(!window._coordCache) window._coordCache = {};
+  const toGeocode = list.filter(f=>f.real && f.loc && f.loc!=='Deutschland' && !f.lat && !f.loc.toLowerCase().includes('online'));
   await Promise.all(toGeocode.map(async f=>{
+    const key = f.loc.toLowerCase().trim();
+    // Check persistent cache first
+    if(window._coordCache[key]){
+      f.lat = window._coordCache[key].lat;
+      f.lon = window._coordCache[key].lon;
+      return;
+    }
     const coords = await geocodeCity(f.loc);
-    if(coords){ f.lat=coords.lat; f.lon=coords.lon; }
+    if(coords){
+      f.lat = coords.lat;
+      f.lon = coords.lon;
+      window._coordCache[key] = coords;
+    }
   }));
   return list;
 }
@@ -2096,15 +2111,15 @@ async function renderSearch(q){
     }
   }
 
-  // Radius filter
+  // Radius filter - apply BEFORE saving to _currentSearchResults
   results = applyRadiusFilter(results, 'radiusSliderSearch', 'radiusRowSearch');
 
   const locInfo=userCity?` · 📍 ${userCity}`:'';
   document.getElementById('rQuery').textContent=(q||'Alle')+locInfo;
   document.getElementById('rCount').textContent=results.length;
 
-  // Save current results for pills
-  window._currentSearchResults = results.length ? results : all;
+  // Save current results for pills (already radius-filtered)
+  window._currentSearchResults = results.length ? results : applyRadiusFilter(all, 'radiusSliderSearch', 'radiusRowSearch');
 
   if(!results.length){
     document.getElementById('searchGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem">🔍</div><div style="font-weight:600;margin:1rem 0">Keine Ergebnisse für "${q}"</div><div style="font-size:0.85rem;margin-bottom:1rem">Versuche einen anderen Begriff wie "Putzen", "Elektriker" oder "Mathe"</div><button class="btn-red" onclick="renderSearch('')">Alle anzeigen</button></div>`;
