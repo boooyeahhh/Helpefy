@@ -3359,7 +3359,6 @@ async function openChat(userId,userName,avatarUrl,role){
       if(msg.gelesen && msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId){
         const el = document.querySelector(`[data-msg-id="${msg.id}"] .msg-checks`);
         if(el){ el.dataset.read='1'; el.innerHTML='<span style="color:#3b82f6">✓✓</span>'; }
-        else markMsgsAsRead();
       }
     })
     .subscribe();
@@ -3396,8 +3395,8 @@ async function loadMessages(){
     
     if(error) throw error;
     
-    // Mark received messages as read
-    await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId);
+    // Mark received messages as read (fire and forget - don't await)
+    sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId);
     setMobileChatDot(false);
     
     container.innerHTML='';
@@ -3405,14 +3404,37 @@ async function loadMessages(){
       container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';
       return;
     }
-    msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id,null,m.created_at,m.id,m.gelesen));
-    // Mark all outgoing msgs as read if the other person has read them
-    markMsgsAsRead();
+
+    // Build all HTML at once - much faster than appending one by one
+    const myInit = (currentProfile?.full_name||'I').charAt(0).toUpperCase();
+    const otherName = document.getElementById('chatName')?.textContent||'?';
+    const otherInit = otherName.charAt(0).toUpperCase();
     
-    // Scroll to bottom after all messages are rendered
-    requestAnimationFrame(()=>{
-      container.scrollTop = container.scrollHeight;
-    });
+    const html = msgs.map(m => {
+      const isMe = m.von_user_id === currentUser.id;
+      const init = isMe ? myInit : otherInit;
+      const timeStr = new Date(m.created_at).toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'});
+      const checks = isMe
+        ? `<span class="msg-checks" data-read="${m.gelesen?'1':'0'}">${m.gelesen?'<span style="color:#3b82f6">✓✓</span>':'<span style="color:#aaa">✓✓</span>'}</span>`
+        : '';
+      let bubbleContent;
+      if(m.inhalt&&m.inhalt.startsWith('[IMG]')){
+        const src=m.inhalt.slice(5);
+        bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="window.open('${src}','_blank')">`;
+      } else {
+        bubbleContent=`<div class="bubble">${m.inhalt}</div>`;
+      }
+      return `<div class="msg${isMe?' me':''}" data-msg-id="${m.id}">
+        <div class="msg-av">${init}</div>
+        <div>${bubbleContent}<div class="msg-time">${timeStr} ${checks}</div></div>
+      </div>`;
+    }).join('');
+    
+    container.innerHTML = html;
+    
+    // Scroll to bottom instantly - no animation, no delay
+    container.scrollTop = container.scrollHeight;
+    
   } catch(e){
     console.error('loadMessages error:',e);
     container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Fehler beim Laden. Bitte neu versuchen.</div>';
@@ -3435,9 +3457,9 @@ function appendMsg(text,isMe,senderName,timestamp,msgId,isRead){
   const timeStr = timestamp
     ? new Date(timestamp).toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})
     : new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'});
-  // Checkmarks: ✓ sent, ✓✓ delivered, ✓✓ blue = read
+  // Checkmarks only on own messages: grey = sent, blue = read by other
   const checks = isMe
-    ? `<span class="msg-checks" data-read="${isRead?'1':'0'}">${isRead?'<span style="color:#3b82f6">✓✓</span>':'✓✓'}</span>`
+    ? `<span class="msg-checks" data-read="${isRead?'1':'0'}">${isRead?'<span style="color:#3b82f6">✓✓</span>':'<span style="color:#aaa">✓✓</span>'}</span>`
     : '';
   d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${timeStr} ${checks}</div></div>`;
   msgs.appendChild(d);
