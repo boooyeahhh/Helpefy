@@ -13,26 +13,6 @@
 <meta name="description" content="Finde lokale Freelancer für jeden Job – schnell, einfach, sicher.">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="apple-touch-startup-image" href="/splash.png">
-<!-- MOBILE BOTTOM NAV -->
-<div id="mobileBottomNav">
-  <div class="mbn-item active" id="mbn-home" onclick="mbnClick('home')">
-    <div class="mbn-icon">🏠</div>
-    <div class="mbn-label">Home</div>
-  </div>
-  <div class="mbn-item" id="mbn-search" onclick="mbnClick('search')">
-    <div class="mbn-icon">🔍</div>
-    <div class="mbn-label">Suchen</div>
-  </div>
-  <div class="mbn-item" id="mbn-chat" onclick="mbnClick('chat')">
-    <div class="mbn-icon mbn-dot" id="mbn-chat-icon">💬</div>
-    <div class="mbn-label">Nachrichten</div>
-  </div>
-  <div class="mbn-item" id="mbn-dashboard" onclick="mbnClick('dashboard');switchDash('overview',null)">
-    <div class="mbn-icon">👤</div>
-    <div class="mbn-label">Profil</div>
-  </div>
-</div>
-
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
 </head>
@@ -1187,6 +1167,26 @@ nav{padding:0.75rem 1rem;}
   </div>
 </div>
 
+
+<!-- MOBILE BOTTOM NAV -->
+<div id="mobileBottomNav">
+  <div class="mbn-item active" id="mbn-home" onclick="mbnClick('home')">
+    <div class="mbn-icon">🏠</div>
+    <div class="mbn-label">Home</div>
+  </div>
+  <div class="mbn-item" id="mbn-search" onclick="mbnClick('search')">
+    <div class="mbn-icon">🔍</div>
+    <div class="mbn-label">Suchen</div>
+  </div>
+  <div class="mbn-item" id="mbn-chat" onclick="mbnClick('chat')">
+    <div class="mbn-icon mbn-dot" id="mbn-chat-icon">💬</div>
+    <div class="mbn-label">Nachrichten</div>
+  </div>
+  <div class="mbn-item" id="mbn-dashboard" onclick="mbnClick('dashboard');switchDash('overview',null)">
+    <div class="mbn-icon">👤</div>
+    <div class="mbn-label">Profil</div>
+  </div>
+</div>
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
