@@ -45,7 +45,7 @@
   --light:#f9f9f9;--light2:#f3f4f6;--border:#e5e7eb;--white:#ffffff;
   --shadow:0 1px 4px rgba(0,0,0,0.08);--shadow2:0 4px 20px rgba(0,0,0,0.1);
 }
-body{font-family:'Inter',sans-serif;background:var(--light);color:var(--text);overflow-x:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--light);color:var(--text);overflow-x:hidden;padding-top:57px;}
 .view{display:none;}.view.active{display:block;min-height:100vh;}
 #view-chat.active{display:flex !important;flex-direction:column;min-height:0;height:calc(100vh - 57px);}
 @media(max-width:768px){
@@ -83,7 +83,7 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:var(--text);ov
 }
 
 /* NAV */
-nav{position:sticky;top:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:0.85rem 2.5rem;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border);}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content:space-between;align-items:center;padding:0.85rem 2.5rem;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border);}
 .logo-wrap{display:flex;align-items:center;gap:0.5rem;cursor:pointer;}
 .logo-icon{width:34px;height:34px;border-radius:9px;background:var(--red);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1rem;}
 .logo-text{font-size:1.1rem;font-weight:700;color:var(--dark);}
