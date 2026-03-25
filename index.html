@@ -2427,75 +2427,92 @@ async function aiSearch(query, freelancers){
 
 async function renderSearch(q){
   const query=(q||'').trim();
-  // Reset pills to "Alle" on every new search
-  document.querySelectorAll('.filter-row .fpill').forEach(p=>p.classList.remove('active'));
-  const allePill=document.querySelector('.filter-row .fpill');
-  if(allePill) allePill.classList.add('active');
-  // Reset pills to "Alle" on every new search
+
+  // Reset filter pills
   document.querySelectorAll('.filter-row .fpill').forEach(p=>{
     p.classList.toggle('active', p.textContent.trim().includes('Alle'));
   });
-  
-  // Load real freelancers from Supabase
-  const {data:realFL}=await sb.from('freelancers').select('*').limit(50);
-  let all=[...FL];
-  if(realFL&&realFL.length){
-    const CAT_TAGS={
-      'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
-      'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe','Putzkraft'],
-      'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],
-      'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen','Gartenarbeit','Rasenmähen'],
-      'Umzug':['Umzug','Transport','Umzugshelfer','Möbel','Einzug','Auszug'],
-      'Lernen':['Nachhilfe','Lernen','Mathe','Englisch','Tutor','Unterricht','Abitur'],
-      'Kreativ':['Design','Kreativ','Grafik','Logo','Website','Foto','Video'],
-      'Beauty':['Beauty','Friseur','Haare','Massage','Wellness','Kosmetik'],
-      'Tiere':['Tiere','Hund','Katze','Gassi','Haustier','Tiersitter'],
-      'Transport':['Transport','Lieferung','Fahrdienst','Van'],
-      'Events':['Events','Party','Hochzeit','Dekoration','Catering'],
+
+  const grid = document.getElementById('searchGrid');
+  if(grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:2rem;margin-bottom:0.5rem">⏳</div>Suche läuft...</div>';
+
+  // Load real freelancers
+  const {data:realFL} = await sb.from('freelancers').select('*').limit(100);
+  const CAT_TAGS={
+    'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
+    'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe'],
+    'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Digital'],
+    'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen','Rasenmähen'],
+    'Umzug':['Umzug','Transport','Möbel'],
+    'Lernen':['Nachhilfe','Mathe','Englisch','Tutor','Unterricht'],
+    'Kreativ':['Design','Grafik','Logo','Website','Foto','Video'],
+    'Beauty':['Beauty','Friseur','Haare','Massage','Kosmetik'],
+    'Tiere':['Tiere','Hund','Katze','Gassi'],
+    'Transport':['Transport','Lieferung','Fahrdienst'],
+    'Events':['Events','Party','Hochzeit','Catering'],
+    'Büro':['Büro','Buchhaltung','Sekretariat','Excel'],
+    'Fahrzeuge':['Fahrzeuge','Auto','Reifen'],
+    'Betreuung':['Betreuung','Babysitting','Kinder','Senioren'],
+    'Gesundheit':['Gesundheit','Trainer','Yoga','Ernährung'],
+  };
+
+  let all = (realFL||[]).map(f=>{
+    const kat = f.kategorie||'Sonstiges';
+    const realTags = f.dienstleistungen ? f.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean) : null;
+    const tags = realTags?.length ? realTags : (CAT_TAGS[kat]||[kat]);
+    return {
+      name: f.beschreibung?.split('–')[0]?.trim()||f.beschreibung?.split('-')[0]?.trim()||'Freelancer',
+      emoji:'👤', avatar:f.avatar_url||null, role:kat, tags,
+      price:f.stundenlohn||25, rating:f.bewertung_schnitt||5.0,
+      reviews:f.auftraege_count||0, loc:f.standort||'Deutschland',
+      avail:f.verfuegbar!==false, bio:f.beschreibung||'', services:tags,
+      revs:[], real:true, id:f.user_id, fl_id:f.id
     };
-    const rc=realFL.map(f=>{
-      const kat=f.kategorie||'Sonstiges';
-      // Use real dienstleistungen if set, otherwise fallback to CAT_TAGS
-      const realTags = f.dienstleistungen ? f.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean) : null;
-      const extraTags = realTags?.length ? realTags : (CAT_TAGS[kat]||[kat]);
-      return {name:f.beschreibung?.split('–')[0]?.trim()||f.beschreibung?.split('-')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
-    });
-    all=[...rc,...FL];
-  }
-  window.ALL_FL=all;
+  });
+  if(all.length < 3) all = [...all, ...FL];
+  window.ALL_FL = all;
 
-  // Geocode freelancer locations for radius filtering
-  await geocodeFreelancers(all);
-
-  let results=all;
-
-  if(query && query.toLowerCase()!=='alle'){
-    const aiResults = await aiSearch(query, all);
-    results = aiResults && aiResults.length > 0 ? aiResults : [];
-    // If still empty, try broader single-word search
-    if(results.length === 0){
-      const words = query.toLowerCase().split(/\s+/).filter(w=>w.length>2);
+  // STEP 1: Text filter
+  let results = all;
+  if(query && query.toLowerCase() !== 'alle'){
+    results = smartSearch(query, all);
+    if(!results.length){
+      const words = query.toLowerCase().split(/\s+/).filter(w=>w.length>1);
       results = all.filter(f=>{
-        const fields=[f.name,f.role,...(f.tags||[]),...(f.services||[]),f.bio||''].join(' ').toLowerCase();
-        return words.some(w=>fields.includes(w));
+        const text = [f.name, f.role, ...(f.tags||[]), ...(f.services||[])].join(' ').toLowerCase();
+        return words.some(w => text.includes(w));
       });
     }
   }
 
-  // Radius filter - apply BEFORE saving to _currentSearchResults
-  results = applyRadiusFilter(results, 'radiusSliderSearch', 'radiusRowSearch');
+  // STEP 2: Radius filter — only when radius panel is open AND we have user location
+  const radiusRow = document.getElementById('radiusRowSearch');
+  const radiusActive = radiusRow && (radiusRow.style.display==='flex'||radiusRow.style.display==='block');
+  if(radiusActive){
+    if(!userLat || !userLon){
+      showToast('📍 Bitte erst Standort bestimmen','');
+    } else {
+      const km = parseInt(document.getElementById('radiusSliderSearch')?.value || document.getElementById('radiusSlider')?.value || 25);
+      await geocodeFreelancers(results.filter(f=>f.real && !f.lat));
+      const inRadius = results.filter(f=>
+        !f.real ||
+        f.loc?.toLowerCase().includes('online') ||
+        (f.lat && f.lon && getDistanceKm(userLat,userLon,f.lat,f.lon) <= km)
+      );
+      if(inRadius.length > 0) results = inRadius;
+    }
+  }
 
-  const locInfo=userCity?` · 📍 ${userCity}`:'';
-  document.getElementById('rQuery').textContent=(q||'Alle')+locInfo;
-  document.getElementById('rCount').textContent=results.length;
+  window._currentSearchResults = results;
 
-  // Save current results for pills (already radius-filtered)
-  window._currentSearchResults = results.length ? results : applyRadiusFilter(all, 'radiusSliderSearch', 'radiusRowSearch');
+  const locInfo = userCity ? ' · 📍 ' + userCity : '';
+  document.getElementById('rQuery').textContent = (query||'Alle') + locInfo;
+  document.getElementById('rCount').textContent = results.length;
 
   if(!results.length){
-    document.getElementById('searchGrid').innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem">🔍</div><div style="font-weight:600;margin:1rem 0">Keine Ergebnisse für "${q}"</div><div style="font-size:0.85rem;margin-bottom:1rem">Versuche einen anderen Begriff wie "Putzen", "Elektriker" oder "Mathe"</div><button class="btn-red" onclick="renderSearch('')">Alle anzeigen</button></div>`;
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">🔍</div><div style="font-weight:600;margin-bottom:0.5rem">Keine Ergebnisse für \"'+query+'\"</div><div style="font-size:0.85rem;margin-bottom:1.25rem">Versuche z.B. \"Elektriker\", \"Reinigung\" oder \"Mathe\"</div><button class="btn-red" onclick="renderSearch(\'\')">Alle anzeigen</button></div>';
   } else {
-    document.getElementById('searchGrid').innerHTML=results.map((f,i)=>flCard(f,all.indexOf(f))).join('');
+    grid.innerHTML = results.map((f,i) => flCard(f, all.indexOf(f))).join('');
   }
 }
 
