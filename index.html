@@ -3319,19 +3319,16 @@ async function openChat(userId,userName,avatarUrl,role){
   if(isMobile&&chatListPanel) chatListPanel.style.display='none';
   const backBtn=document.getElementById('chatBackBtn');
   if(backBtn) backBtn.style.display=isMobile?'block':'none';
-  document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
-  // Fallback: if loading hangs for 8s, show error
-  const loadTimeout = setTimeout(()=>{
-    const el = document.getElementById('chatMsgs');
-    if(el && el.innerHTML.includes('Wird geladen')) el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Fehler beim Laden. Bitte neu versuchen.</div>';
-  }, 8000);
+  // Hide container until loaded so user never sees it at top
+  const container = document.getElementById('chatMsgs');
+  if(!container) return;
+  container.style.visibility = 'hidden';
   // Mark ALL messages from this user as read FIRST
   // Mark all as read (both false and null)
   await sb.from('nachrichten').update({gelesen:true})
     .eq('zu_user_id',currentUser.id)
     .eq('von_user_id',userId);
   await loadMessages();
-  clearTimeout(loadTimeout);
   // Now reload chat list - dots should be gone
   await loadChatUsers();
   // Start typing indicator subscription
@@ -3432,11 +3429,18 @@ async function loadMessages(){
     
     container.innerHTML = html;
     
-    // Scroll to bottom instantly - no animation, no delay
+    // Instant scroll - hide overflow during render so user never sees top
+    container.style.overflow = 'hidden';
     container.scrollTop = container.scrollHeight;
+    container.style.visibility = 'visible';
+    setTimeout(()=>{
+      container.scrollTop = container.scrollHeight;
+      container.style.overflow = '';
+    }, 50);
     
   } catch(e){
     console.error('loadMessages error:',e);
+    container.style.visibility = 'visible';
     container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Fehler beim Laden. Bitte neu versuchen.</div>';
   }
 }
