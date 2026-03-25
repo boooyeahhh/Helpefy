@@ -1,0 +1,24 @@
+{
+  "name": "Helpefy – Finde den perfekten Experten",
+  "short_name": "Helpefy",
+  "description": "Finde lokale Freelancer für jeden Job.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#E8352A",
+  "theme_color": "#E8352A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
