@@ -1540,6 +1540,22 @@ nav{padding:0.75rem 1rem;}
   </div>
 </div>
 
+<!-- AUSZAHLUNG SUCCESS VIEW -->
+<div id="view-auszahlung-success" class="view" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--light)">
+  <div style="text-align:center;padding:2rem;max-width:420px">
+    <div style="width:90px;height:90px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 1.5rem">✅</div>
+    <h2 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;margin-bottom:0.75rem;color:var(--dark)">Zahlung unterwegs! 🎉</h2>
+    <p style="color:var(--muted);line-height:1.6;font-size:0.95rem;margin-bottom:0.5rem">
+      Glückwunsch — deine Auszahlung wurde beantragt!<br>
+      Das Geld ist in <strong>2–3 Werktagen</strong> auf deinem Konto.
+    </p>
+    <p style="color:var(--muted);font-size:0.82rem;margin-bottom:2rem">Du wirst gleich automatisch weitergeleitet...</p>
+    <div style="width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+      <div id="successProgressBar" style="height:100%;background:var(--red);width:0%;transition:width 3s linear;border-radius:2px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -2334,7 +2350,7 @@ window.addEventListener('popstate',e=>{
 window.addEventListener('pageshow', e=>{
   if(e.persisted) return; // back/forward cache
   const path=window.location.pathname.replace('/','').trim();
-  const valid=['home','search','job-search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
+  const valid=['home','search','job-search','auszahlung-success','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
   if(valid.includes(path)) showView(path,false);
 });
 
@@ -2571,8 +2587,14 @@ async function renderSearch(q){
   const grid = document.getElementById('searchGrid');
   if(grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:2rem;margin-bottom:0.5rem">⏳</div>Suche läuft...</div>';
 
-  // Load real freelancers
-  const {data:realFL} = await sb.from('freelancers').select('*').limit(100);
+  // Load real freelancers with timeout
+  let realFL = null;
+  try{
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000));
+    const fetch_ = sb.from('freelancers').select('*').limit(100);
+    const result = await Promise.race([fetch_, timeout]);
+    realFL = result.data;
+  }catch(e){ realFL = []; }
   const CAT_TAGS={
     'Handwerk':['Handwerk','Handwerker','Reparatur','Montage','Elektrik','Sanitär','Wasserhahn','Fliesen','Maler'],
     'Haushalt':['Haushalt','Reinigung','Putzen','Wohnungsreinigung','Haushaltshilfe'],
@@ -3688,17 +3710,29 @@ function submitAuszahlung(){
     // Step 2: Send email
     try{ await sb.functions.invoke('send-email',{body:{to:'christopher_russell@web.de',subject:'Auszahlung '+parseFloat(amount).toFixed(2)+'EUR - '+(currentProfile?.full_name||currentUser?.email),text:emailBody}}); }catch(e){ console.log('Email failed:',e.message); }
 
-    // Step 3: Mark auftraege as ausgezahlt (most critical)
+    // Step 3: Mark auftraege as ausgezahlt
     try{
       const {error} = await sb.from('auftraege').update({status:'ausgezahlt'}).eq('freelancer_id',currentUser.id).eq('status','abgeschlossen');
       if(error) console.log('Update error:', error.message);
       else console.log('Orders marked ausgezahlt OK');
     }catch(e){ console.log('Auftraege update failed:',e.message); }
 
-    // Step 4: Reload profile and switch to payments tab
-    await loadProfile();
-    const btn = document.querySelector('.sni[onclick*="payments"]');
-    switchDash('payments', btn);
+    // Step 4: Show 0 balance immediately
+    const paymentsEl = document.getElementById('dash-payments');
+    if(paymentsEl){
+      paymentsEl.innerHTML = '<div class="dash-title">Zahlungen & Auszahlung</div><div class="dcard" style="max-width:500px;margin-top:1rem"><div style="padding:0.5rem 0"><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border)"><div><div style="font-size:0.875rem;font-weight:500">✅ Auszahlung beantragt</div><div style="font-size:0.75rem;color:var(--muted)">' + new Date().toLocaleDateString('de') + ' – ' + parseFloat(amount).toFixed(2) + ' €</div></div><div style="color:#16a34a;font-weight:600">Beantragt</div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0"><div style="font-size:1rem;font-weight:700">Verfügbares Guthaben</div><div style="font-size:1.5rem;font-weight:700;color:var(--red)">0,00 €</div></div><div style="font-size:0.8rem;color:var(--muted);text-align:center;padding:0.5rem 0">💸 Überweisung erfolgt innerhalb von 2–3 Werktagen</div></div></div>';
+    }
+
+    // Show success page then redirect to dashboard
+    showView('auszahlung-success');
+    setTimeout(()=>{
+      const bar = document.getElementById('successProgressBar');
+      if(bar) bar.style.width = '100%';
+    }, 100);
+    setTimeout(()=>{
+      showView('dashboard');
+      switchDash('overview', document.querySelector('.sni[onclick*="overview"]'));
+    }, 3500);
 
   }, 200);
 }
@@ -5265,7 +5299,7 @@ async function init(){
   });
   
   const path=window.location.pathname.replace('/','').trim()||'home';
-  const valid=['home','search','job-search','profile','dashboard','auftraege','gespeichert','zahlungen','einstellungen','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
+  const valid=['home','search','job-search','auszahlung-success','profile','dashboard','auftraege','gespeichert','zahlungen','einstellungen','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
   const start=valid.includes(path)?path:'home';
   if(path==='pay'){ setTimeout(initPayPage, 800); }
   // Check if we have a saved view from before refresh
