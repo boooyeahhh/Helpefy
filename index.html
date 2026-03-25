@@ -1214,9 +1214,9 @@ nav{padding:0.75rem 1rem;}
 
 <!-- LIGHTBOX -->
 <div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;align-items:center;justify-content:center;flex-direction:column;" onclick="closeLightbox()">
-  <img id="lightboxImg" src="" style="max-width:95vw;max-height:80vh;object-fit:contain;border-radius:8px;">
-  <div style="display:flex;gap:1rem;margin-top:1rem;" onclick="event.stopPropagation()">
-    <a id="lightboxDownload" download="helpefy-bild.jpg" style="padding:0.65rem 1.5rem;background:white;color:#111;border-radius:10px;font-size:0.9rem;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:0.4rem;">⬇️ Speichern</a>
+  <img id="lightboxImg" src="" style="max-width:95vw;max-height:75vh;object-fit:contain;border-radius:8px;" onclick="event.stopPropagation()">
+  <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap;justify-content:center;" onclick="event.stopPropagation()">
+    <button onclick="saveLightboxImage()" style="padding:0.65rem 1.5rem;background:white;color:#111;border:none;border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;">⬇️ In Fotos speichern</button>
     <button onclick="closeLightbox()" style="padding:0.65rem 1.5rem;background:rgba(255,255,255,0.15);color:white;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">✕ Schließen</button>
   </div>
 </div>
@@ -2922,18 +2922,42 @@ function updateMobileNav(view){
 function openLightbox(src){
   const lb = document.getElementById('lightbox');
   const img = document.getElementById('lightboxImg');
-  const dl = document.getElementById('lightboxDownload');
   img.src = src;
-  dl.href = src;
+  window._lightboxSrc = src;
   lb.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
+
+async function saveLightboxImage(){
+  const src = window._lightboxSrc;
+  if(!src) return;
+  try{
+    const res = await fetch(src);
+    const blob = await res.blob();
+    const file = new File([blob], 'helpefy-bild.jpg', {type: blob.type||'image/jpeg'});
+    // Web Share API → saves directly to Photos on iOS & Android
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:'Helpefy Bild'});
+      return;
+    }
+    // Desktop fallback: download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'helpefy-bild.jpg';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  } catch(e){
+    showToast('Bild gedrückt halten zum Speichern','');
+  }
+}
+
 function closeLightbox(){
   document.getElementById('lightbox').style.display = 'none';
   document.getElementById('lightboxImg').src = '';
   document.body.style.overflow = '';
+  window._lightboxSrc = null;
 }
-// Close on Escape key
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
 
 function setMobileChatDot(show){
@@ -3359,8 +3383,9 @@ async function openChat(userId,userName,avatarUrl,role){
   await loadChatUsers();
   // Start typing indicator subscription
   startTypingIndicator(userId);
-  if(chatSubscription) chatSubscription.unsubscribe();
-  if(window._chatPollInterval) clearInterval(window._chatPollInterval);
+  if(chatSubscription) { try{ chatSubscription.unsubscribe(); }catch(e){} chatSubscription=null; }
+  if(window._chatPollInterval) { clearInterval(window._chatPollInterval); window._chatPollInterval=null; }
+
   // Realtime subscription
   const convId = [currentUser.id, userId].sort().join('_');
   chatSubscription = sb.channel('conv_'+convId)
@@ -3370,15 +3395,18 @@ async function openChat(userId,userName,avatarUrl,role){
                         (msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id);
       if(!isOurConv) return;
       if(msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id){
-        hideTypingIndicator();
-        appendMsg(msg.inhalt,false,userName,msg.created_at,msg.id,false);
-        await sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
+        // Only append if not already shown
+        if(!document.querySelector(`[data-msg-id="${msg.id}"]`)){
+          hideTypingIndicator();
+          appendMsg(msg.inhalt,false,userName,msg.created_at,msg.id,false);
+        }
+        sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
+        setLastSeen(activeChatUserId, msg.id, msg.created_at);
         loadChatUsers();
       }
     })
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'nachrichten'},payload=>{
       const msg = payload.new;
-      // If other person read our message → make checkmarks blue
       if(msg.gelesen && msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId){
         const el = document.querySelector(`[data-msg-id="${msg.id}"] .msg-checks`);
         if(el){ el.dataset.read='1'; el.innerHTML='<span style="color:#3b82f6">✓✓</span>'; }
@@ -3386,12 +3414,19 @@ async function openChat(userId,userName,avatarUrl,role){
     })
     .subscribe();
 
-  // Poll every 2 seconds as fallback
+  // Poll every 2s as fallback
   let _lastMsgId = null;
+  const {data:initMsg} = await sb.from('nachrichten')
+    .select('id')
+    .or(`and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`)
+    .order('created_at',{ascending:false})
+    .limit(1);
+  _lastMsgId = initMsg?.[0]?.id || null;
+
   window._chatPollInterval = setInterval(async()=>{
     if(!activeChatUserId || !currentUser) return;
     const{data:latest}=await sb.from('nachrichten')
-      .select('id,inhalt,von_user_id,gelesen')
+      .select('*')
       .or(`and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`)
       .order('created_at',{ascending:false})
       .limit(1);
@@ -3399,9 +3434,11 @@ async function openChat(userId,userName,avatarUrl,role){
     const newest = latest[0];
     if(newest.id !== _lastMsgId){
       _lastMsgId = newest.id;
-      if(newest.von_user_id === activeChatUserId){
-        // New message from the other person - reload chat
-        await loadMessages();
+      if(!document.querySelector(`[data-msg-id="${newest.id}"]`)){
+        hideTypingIndicator();
+        appendMsg(newest.inhalt, false, userName, newest.created_at, newest.id, false);
+        sb.from('nachrichten').update({gelesen:true}).eq('id',newest.id);
+        setLastSeen(activeChatUserId, newest.id, newest.created_at);
         loadChatUsers();
       }
     }
