@@ -3923,11 +3923,123 @@ async function renderJobSearchPage(q){
 
   let results = _jobPageCache;
   if(query){
-    const qLow = query.toLowerCase();
-    results = _jobPageCache.filter(j=>{
-      const text = [(j.cat||''),(j.title||''),(j.desc||'')].join(' ').toLowerCase();
-      return text.includes(qLow);
+    const qLow = query.toLowerCase().trim();
+
+    // ── JOB SYNONYM MAP ──
+    const JOB_SYNONYMS = {
+      // Handwerk
+      'handwerker':['Handwerk'],'handwerk':['Handwerk'],'elektriker':['Handwerk'],
+      'sanitär':['Handwerk'],'klempner':['Handwerk'],'heizung':['Handwerk'],
+      'maler':['Handwerk'],'streichen':['Handwerk'],'fliesen':['Handwerk'],
+      'schreiner':['Handwerk'],'tischler':['Handwerk'],'dachdecker':['Handwerk'],
+      'renovierung':['Handwerk'],'reparatur':['Handwerk'],'montage':['Handwerk'],
+      'ikea':['Handwerk'],'möbel':['Handwerk'],'aufbau':['Handwerk'],
+      'schlüsseldienst':['Handwerk'],'rohr':['Handwerk'],'wasserhahn':['Handwerk'],
+      'boden':['Handwerk'],'parkett':['Handwerk'],'laminat':['Handwerk'],
+      // Haushalt / Reinigung
+      'reinigung':['Reinigung','Haushalt'],'reinigungskraft':['Reinigung','Haushalt'],
+      'putzen':['Reinigung','Haushalt'],'putzkraft':['Reinigung','Haushalt'],
+      'putzfrau':['Reinigung','Haushalt'],'haushalt':['Haushalt','Reinigung'],
+      'haushaltshilfe':['Haushalt'],'sauber':['Reinigung','Haushalt'],
+      'wohnung':['Reinigung','Haushalt'],'büro':['Büro','Reinigung'],
+      // Garten
+      'garten':['Garten'],'gärtner':['Garten'],'gartenarbeit':['Garten'],
+      'rasen':['Garten'],'rasenmähen':['Garten'],'hecke':['Garten'],
+      'pflanzen':['Garten'],'baum':['Garten'],'schnitt':['Garten'],
+      'winterdienst':['Garten'],'schnee':['Garten'],
+      // IT
+      'it':['IT & Digital'],'computer':['IT & Digital'],'pc':['IT & Digital'],
+      'laptop':['IT & Digital'],'wlan':['IT & Digital'],'internet':['IT & Digital'],
+      'handy':['IT & Digital'],'smartphone':['IT & Digital'],'tablet':['IT & Digital'],
+      'drucker':['IT & Digital'],'software':['IT & Digital'],'website':['IT & Digital'],
+      'netzwerk':['IT & Digital'],'virus':['IT & Digital'],'daten':['IT & Digital'],
+      'technik':['IT & Digital'],'digital':['IT & Digital'],
+      // Umzug
+      'umzug':['Umzug'],'umziehen':['Umzug'],'umzugshelfer':['Umzug'],
+      'transport':['Umzug','Transport'],'tragen':['Umzug'],'transporter':['Umzug'],
+      'einzug':['Umzug'],'auszug':['Umzug'],'entrümpelung':['Umzug'],
+      // Lernen
+      'nachhilfe':['Lernen'],'unterricht':['Lernen'],'lehrer':['Lernen'],
+      'tutor':['Lernen'],'mathe':['Lernen'],'mathematik':['Lernen'],
+      'englisch':['Lernen'],'deutsch':['Lernen'],'physik':['Lernen'],
+      'chemie':['Lernen'],'abitur':['Lernen'],'hausaufgaben':['Lernen'],
+      'schule':['Lernen'],'studium':['Lernen'],
+      // Beauty
+      'beauty':['Beauty'],'schönheit':['Beauty'],'kosmetik':['Beauty'],
+      'friseur':['Beauty'],'haare':['Beauty'],'haarschnitt':['Beauty'],
+      'nägel':['Beauty'],'maniküre':['Beauty'],'massage':['Beauty'],
+      'makeup':['Beauty'],'make-up':['Beauty'],'wimpern':['Beauty'],
+      'augenbrauen':['Beauty'],'tattoo':['Beauty'],'wellness':['Beauty'],
+      'styling':['Beauty'],'frisör':['Beauty'],
+      // Tiere
+      'hund':['Tiere'],'hunde':['Tiere'],'gassi':['Tiere'],
+      'katze':['Tiere'],'tier':['Tiere'],'haustier':['Tiere'],
+      'tiersitter':['Tiere'],'hundepflege':['Tiere'],'hundetraining':['Tiere'],
+      // Events
+      'party':['Events'],'event':['Events'],'hochzeit':['Events'],
+      'geburtstag':['Events'],'feier':['Events'],'catering':['Events'],
+      'dj':['Events'],'fotograf':['Events'],'dekoration':['Events'],
+      'veranstaltung':['Events'],
+      // Kreativ
+      'design':['Kreativ'],'grafik':['Kreativ'],'logo':['Kreativ'],
+      'foto':['Kreativ','Events'],'video':['Kreativ'],'film':['Kreativ'],
+      'webdesign':['Kreativ'],'illustration':['Kreativ'],'kreativ':['Kreativ'],
+      'text':['Kreativ'],'übersetzer':['Kreativ'],'übersetzung':['Kreativ'],
+      // Transport
+      'fahrdienst':['Transport'],'fahrer':['Transport'],'lieferung':['Transport'],
+      'kurier':['Transport'],'flughafen':['Transport'],
+      // Betreuung
+      'babysitter':['Betreuung'],'babysitting':['Betreuung'],'baby':['Betreuung'],
+      'kinder':['Betreuung'],'kinderbetreuung':['Betreuung'],'senioren':['Betreuung'],
+      'pflege':['Betreuung'],'betreuung':['Betreuung'],
+      // Gesundheit
+      'trainer':['Gesundheit'],'personal trainer':['Gesundheit'],
+      'yoga':['Gesundheit'],'sport':['Gesundheit'],'fitness':['Gesundheit'],
+      'ernährung':['Gesundheit'],'physiotherapie':['Gesundheit'],
+      'laufen':['Gesundheit'],'schwimmen':['Gesundheit'],
+      // Büro
+      'buchhaltung':['Büro'],'steuer':['Büro'],'sekretariat':['Büro'],
+      'excel':['Büro'],'word':['Büro'],'präsentation':['Büro'],
+      'verwaltung':['Büro'],'büroarbeit':['Büro'],
+      // Fahrzeuge
+      'auto':['Fahrzeuge'],'autowäsche':['Fahrzeuge'],'reifen':['Fahrzeuge'],
+      'fahrzeug':['Fahrzeuge'],'motorrad':['Fahrzeuge'],'fahrrad':['Fahrzeuge'],
+    };
+
+    // Find matching categories
+    const matchedCats = new Set();
+    const words = qLow.split(/\s+/).filter(w=>w.length>1);
+
+    words.forEach(w=>{
+      // Exact match
+      if(JOB_SYNONYMS[w]) JOB_SYNONYMS[w].forEach(c=>matchedCats.add(c));
+      // Startswith match (e.g. "handwerk" matches "handwerker")
+      Object.keys(JOB_SYNONYMS).forEach(key=>{
+        if(key.startsWith(w) || w.startsWith(key)){
+          JOB_SYNONYMS[key].forEach(c=>matchedCats.add(c));
+        }
+      });
     });
+
+    if(matchedCats.size > 0){
+      // Filter by matched categories
+      results = _jobPageCache.filter(j=>[...matchedCats].some(c=>j.cat===c));
+      // Also include title/desc matches
+      const textMatches = _jobPageCache.filter(j=>{
+        const text = [(j.title||''),(j.desc||'')].join(' ').toLowerCase();
+        return words.some(w=>w.length>2 && text.includes(w));
+      });
+      // Merge, deduplicate
+      const seen = new Set(results.map(j=>j.title));
+      textMatches.forEach(j=>{ if(!seen.has(j.title)){ results.push(j); seen.add(j.title); } });
+    } else {
+      // Fallback: direct text search in title/desc/cat
+      results = _jobPageCache.filter(j=>{
+        const text = [(j.cat||''),(j.title||''),(j.desc||'')].join(' ').toLowerCase();
+        return words.some(w=>w.length>1 && text.includes(w));
+      });
+    }
+
     if(!results.length) results = _jobPageCache;
   }
 
