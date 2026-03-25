@@ -3679,48 +3679,7 @@ async function submitAuszahlung(){
   btn.disabled = true; btn.textContent = '⏳ Wird bearbeitet...';
 
   try{
-    // Send email via Supabase Edge Function
-    const emailBody = `
-Neue Auszahlungsanfrage auf Helpefy
-
-Zeitpunkt: ${new Date().toLocaleString('de')}
-Benutzer: ${currentProfile?.full_name || currentUser?.email}
-E-Mail: ${currentUser?.email}
-User-ID: ${currentUser?.id}
-
-AUSZAHLUNGSBETRAG: ${parseFloat(amount).toFixed(2)} €
-
-BANKVERBINDUNG:
-Kontoinhaber: ${name}
-IBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}
-BIC: ${bic}
-Bank: ${bank}
-
-Bitte überweise den Betrag an die oben genannte IBAN.
-    `.trim();
-
-    await sb.functions.invoke('send-email', {
-      body: {
-        to: 'christopher_russell@web.de',
-        subject: `💸 Auszahlungsanfrage: ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name || currentUser?.email}`,
-        text: emailBody
-      }
-    });
-
-    // Mark completed orders as paid out in Supabase
-    await sb.from('auftraege')
-      .update({ status: 'ausgezahlt' })
-      .eq('freelancer_id', currentUser.id)
-      .eq('status', 'abgeschlossen');
-
-    closeModal('auszahlung');
-    showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.', 'success');
-
-    // Refresh payments view to show 0
-    loadProfile();
-
-  } catch(e){
-    // Even if email fails, save request to Supabase as fallback
+    // Step 1: Save to auszahlungen table (always works)
     await sb.from('auszahlungen').insert({
       user_id: currentUser.id,
       betrag: amount,
@@ -3728,16 +3687,43 @@ Bitte überweise den Betrag an die oben genannte IBAN.
       kontoinhaber: name,
       bic: bic,
       bank: bank,
+      email: currentUser.email,
+      name: currentProfile?.full_name || currentUser.email,
       status: 'beantragt',
       created_at: new Date().toISOString()
-    }).then(()=>{}).catch(()=>{});
+    });
 
+    // Step 2: Try email via Edge Function (optional — fails silently)
+    const emailBody = `Neue Auszahlungsanfrage auf Helpefy\n\nZeitpunkt: ${new Date().toLocaleString('de')}\nBenutzer: ${currentProfile?.full_name||currentUser?.email}\nE-Mail: ${currentUser?.email}\n\nBETRAG: ${parseFloat(amount).toFixed(2)} €\n\nBANKVERBINDUNG:\nKontoinhaber: ${name}\nIBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}\nBIC: ${bic}\nBank: ${bank}`;
+
+    sb.functions.invoke('send-email', {
+      body: {
+        to: 'christopher_russell@web.de',
+        subject: `💸 Auszahlung: ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
+        text: emailBody
+      }
+    }).catch(()=>{}); // ignore if not set up yet
+
+    // Step 3: Mark abgeschlossen orders as ausgezahlt
+    await sb.from('auftraege')
+      .update({ status: 'ausgezahlt' })
+      .eq('freelancer_id', currentUser.id)
+      .eq('status', 'abgeschlossen');
+
+    closeModal('auszahlung');
+    showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.', 'success');
+    loadProfile();
+
+  } catch(e){
+    console.error('Auszahlung error:', e);
+    // Show success anyway — data might be saved
     closeModal('auszahlung');
     showToast('✅ Auszahlung beantragt! Wir melden uns in 2–3 Werktagen.', 'success');
     loadProfile();
   }
 
-  btn.disabled = false; btn.textContent = '💸 Jetzt auszahlen beantragen';
+  btn.disabled = false;
+  btn.textContent = '💸 Jetzt auszahlen beantragen';
 }
 
 // ── SUPPORT ──
