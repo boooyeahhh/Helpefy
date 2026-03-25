@@ -901,6 +901,7 @@ nav{padding:0.75rem 1rem;}
         <div class="sni" onclick="switchDash('orders',this)">📋 Aufträge</div>
         <div class="sni" onclick="showView('chat')">💬 Nachrichten</div>
         <div class="sni" onclick="switchDash('saved',this)">❤️ Gespeichert</div>
+        <div class="sni" onclick="switchDash('referral',this)">🎁 Empfehlen & Verdienen</div>
         <div class="sni" onclick="switchDash('payments',this)">💳 Zahlungen</div>
         <div class="sni" onclick="switchDash('settings',this)">⚙️ Einstellungen</div>
         <div class="sni" style="color:#991b1b;margin-top:1rem" onclick="doLogout()">🚪 Abmelden</div>
@@ -951,7 +952,10 @@ nav{padding:0.75rem 1rem;}
                 <div style="font-size:1.8rem;margin-bottom:0.4rem">💳</div>
                 <div style="font-size:0.82rem;font-weight:600">Zahlungen</div>
               </div>
-              <div onclick="switchDash('settings')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
+              <div onclick="switchDash('referral')" style="background:linear-gradient(135deg,#fff7ed,#fef3c7);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid #fed7aa">
+                <div style="font-size:1.8rem;margin-bottom:0.4rem">🎁</div>
+                <div style="font-size:0.82rem;font-weight:600;color:#92400e">Empfehlen</div>
+              </div>
                 <div style="font-size:1.8rem;margin-bottom:0.4rem">⚙️</div>
                 <div style="font-size:0.82rem;font-weight:600">Einstellungen</div>
               </div>
@@ -972,7 +976,87 @@ nav{padding:0.75rem 1rem;}
           </div>
         </div>
       </div>
-      <div id="dash-orders" style="display:none"><div class="dash-title">Meine Aufträge</div><div class="dash-sub">Noch keine Aufträge vorhanden.</div></div>
+      <div id="dash-referral" style="display:none">
+        <div class="dash-title">🎁 Empfehlen & Verdienen</div>
+        <div class="dash-sub">Lade Freelancer ein und verdiene für jede erfolgreiche Vermittlung.</div>
+
+        <!-- Referral Link Card -->
+        <div class="dcard" style="margin-bottom:1rem;max-width:600px">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem">
+            <div style="width:44px;height:44px;border-radius:12px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">🔗</div>
+            <div>
+              <div style="font-weight:600;font-size:0.95rem">Dein persönlicher Einladungslink</div>
+              <div style="font-size:0.78rem;color:var(--muted)">Teile diesen Link mit Freunden & Kollegen</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <div id="referralLinkBox" style="flex:1;padding:0.7rem 1rem;background:var(--light2);border-radius:9px;font-size:0.82rem;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Wird geladen...</div>
+            <button onclick="copyReferralLink()" class="btn-red" style="padding:0.7rem 1.1rem;white-space:nowrap;flex-shrink:0">📋 Kopieren</button>
+          </div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap">
+            <button onclick="shareReferral('whatsapp')" style="flex:1;min-width:120px;padding:0.6rem 0.75rem;background:#25D366;color:white;border:none;border-radius:9px;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:Inter,sans-serif">💬 WhatsApp</button>
+            <button onclick="shareReferral('native')" style="flex:1;min-width:120px;padding:0.6rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:9px;font-size:0.82rem;font-weight:500;cursor:pointer;font-family:Inter,sans-serif">📤 Teilen</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;max-width:600px">
+          <div class="dsc" style="text-align:center">
+            <div class="dsc-icon">👥</div>
+            <div class="dsc-n" id="ref-count">0</div>
+            <div class="dsc-l">Eingeladen</div>
+          </div>
+          <div class="dsc" style="text-align:center">
+            <div class="dsc-icon">✅</div>
+            <div class="dsc-n" id="ref-active">0</div>
+            <div class="dsc-l">Registriert</div>
+          </div>
+          <div class="dsc" style="text-align:center">
+            <div class="dsc-icon">💶</div>
+            <div class="dsc-n" id="ref-earnings">0 €</div>
+            <div class="dsc-l">Prämien</div>
+          </div>
+        </div>
+
+        <!-- Prämien Erklärung -->
+        <div class="dcard" style="max-width:600px;margin-bottom:1rem">
+          <div style="font-weight:600;margin-bottom:1rem">💰 So funktionieren die Prämien</div>
+          <div style="display:flex;flex-direction:column;gap:0.75rem">
+            <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:var(--light);border-radius:10px">
+              <div style="font-size:1.5rem">1️⃣</div>
+              <div>
+                <div style="font-size:0.875rem;font-weight:500">Freelancer registriert sich</div>
+                <div style="font-size:0.75rem;color:var(--muted)">Dein Freund tritt Helpefy bei → <strong style="color:var(--red)">5 € Prämie</strong></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:var(--light);border-radius:10px">
+              <div style="font-size:1.5rem">2️⃣</div>
+              <div>
+                <div style="font-size:0.875rem;font-weight:500">Erster Auftrag abgeschlossen</div>
+                <div style="font-size:0.75rem;color:var(--muted)">Erster erfolgreicher Auftrag → <strong style="color:var(--red)">10 € Prämie</strong></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:var(--light);border-radius:10px">
+              <div style="font-size:1.5rem">3️⃣</div>
+              <div>
+                <div style="font-size:0.875rem;font-weight:500">Dauerhaft verdienen</div>
+                <div style="font-size:0.75rem;color:var(--muted)">1% auf alle Umsätze deiner Empfohlenen für 12 Monate</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Eingeladene Liste -->
+        <div class="dcard" style="max-width:600px">
+          <div class="dc-title">Deine Einladungen</div>
+          <div id="referralList">
+            <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.85rem">
+              <div style="font-size:2rem;margin-bottom:0.5rem">👥</div>
+              Noch niemanden eingeladen. Teile deinen Link!
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="dash-saved" style="display:none"><div class="dash-title">Gespeicherte Freelancer</div><div class="fl-grid" id="savedGrid" style="margin-top:1rem"></div></div>
       <div id="dash-payments" style="display:none"><div class="dash-title">Zahlungen</div><div class="dash-sub">Noch keine Zahlungen vorhanden.</div></div>
       <div id="dash-settings" style="display:none">
@@ -1485,7 +1569,7 @@ async function doRegister(){
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role:isFL?'freelancer':'kunde',location:loc}}});
   if(error){showError(err,error.message);btn.disabled=false;btn.textContent='Konto erstellen';return;}
   if(data.user){
-    await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,role:isFL?'freelancer':'kunde',created_at:new Date().toISOString()});
+    await sb.from('profiles').upsert({id:data.user.id,email,full_name:name,role:isFL?'freelancer':'kunde',created_at:new Date().toISOString(),referred_by:localStorage.getItem('hlf_ref')||null});
     if(isFL){
       const kat=document.getElementById('regKategorie').value;
       const preis=parseFloat(document.getElementById('regPreis').value)||25;
@@ -3223,21 +3307,128 @@ async function postJob2(){
 function switchDash(tab,el){
   document.querySelectorAll('.sni').forEach(i=>i.classList.remove('active'));
   if(el) el.classList.add('active');
-  ['overview','orders','saved','payments','settings'].forEach(t=>{const e=document.getElementById('dash-'+t);if(e)e.style.display=t===tab?'block':'none';});
+  ['overview','orders','saved','payments','settings','referral'].forEach(t=>{const e=document.getElementById('dash-'+t);if(e)e.style.display=t===tab?'block':'none';});
   if(tab==='saved') renderSaved();
   if(tab==='orders') renderDashOrders();
+  if(tab==='referral') loadReferral();
   // Scroll to top
   window.scrollTo({top:0,behavior:'instant'});
   document.documentElement.scrollTop=0;
   document.body.scrollTop=0;
   // Update URL
-  const slugs={overview:'dashboard',orders:'auftraege',saved:'gespeichert',payments:'zahlungen',settings:'einstellungen'};
+  const slugs={overview:'dashboard',orders:'auftraege',saved:'gespeichert',payments:'zahlungen',settings:'einstellungen',referral:'empfehlen'};
   const slug = slugs[tab]||'dashboard';
   history.pushState({view:'dashboard',tab},'','/'+slug);
   document.title = 'Helpefy – '+slug.charAt(0).toUpperCase()+slug.slice(1);
 }
 
-// ── AUTH HELPERS ──
+// ── REFERRAL SYSTEM ──
+function getReferralCode(){
+  if(!currentUser) return null;
+  // Unique code based on user ID - first 8 chars
+  return currentUser.id.replace(/-/g,'').slice(0,8).toUpperCase();
+}
+
+function getReferralLink(){
+  const code = getReferralCode();
+  return `https://helpefy.de?ref=${code}`;
+}
+
+function copyReferralLink(){
+  const link = getReferralLink();
+  navigator.clipboard.writeText(link).then(()=>{
+    showToast('Link kopiert! 🎉','success');
+  }).catch(()=>{
+    // Fallback
+    const el = document.createElement('textarea');
+    el.value = link;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('Link kopiert! 🎉','success');
+  });
+}
+
+function shareReferral(platform){
+  const link = getReferralLink();
+  const text = `Ich nutze Helpefy – die beste Plattform für Freelancer in Deutschland! Melde dich an und verdiene direkt dein erstes Geld: ${link}`;
+  if(platform==='whatsapp'){
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  } else if(platform==='native'){
+    if(navigator.share){
+      navigator.share({title:'Helpefy – Jetzt beitreten', text, url: link});
+    } else {
+      copyReferralLink();
+    }
+  }
+}
+
+async function loadReferral(){
+  if(!currentUser) return;
+  const code = getReferralCode();
+  const link = getReferralLink();
+
+  // Show link
+  const linkBox = document.getElementById('referralLinkBox');
+  if(linkBox) linkBox.textContent = link;
+
+  // Load referrals from Supabase
+  const {data:refs} = await sb.from('profiles')
+    .select('id,full_name,email,role,created_at')
+    .eq('referred_by', code)
+    .order('created_at',{ascending:false});
+
+  const count = refs?.length || 0;
+  document.getElementById('ref-count').textContent = count;
+
+  // Count those who completed an order
+  let activeCount = 0;
+  let earnings = 0;
+  if(refs?.length){
+    const refIds = refs.map(r=>r.id);
+    const {data:orders} = await sb.from('auftraege')
+      .select('freelancer_id,preis')
+      .in('freelancer_id', refIds)
+      .eq('status','abgeschlossen');
+    const activeFLs = new Set(orders?.map(o=>o.freelancer_id)||[]);
+    activeCount = activeFLs.size;
+    // 5€ per signup + 10€ per first completed order
+    earnings = (count * 5) + (activeCount * 10);
+  }
+
+  document.getElementById('ref-active').textContent = activeCount;
+  document.getElementById('ref-earnings').textContent = earnings + ' €';
+
+  // Render list
+  const listEl = document.getElementById('referralList');
+  if(!refs?.length){
+    listEl.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.85rem">
+      <div style="font-size:2rem;margin-bottom:0.5rem">👥</div>
+      Noch niemanden eingeladen. Teile deinen Link!
+    </div>`;
+    return;
+  }
+  listEl.innerHTML = refs.map(r=>`
+    <div class="oi">
+      <div class="oi-icon" style="width:36px;height:36px;border-radius:50%;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--red);font-size:0.9rem;flex-shrink:0">
+        ${(r.full_name||r.email||'?').charAt(0).toUpperCase()}
+      </div>
+      <div class="oi-info">
+        <div class="oi-title">${r.full_name||r.email}</div>
+        <div class="oi-meta">${r.role==='freelancer'?'👷 Freelancer':'👤 Kunde'} · Beigetreten ${new Date(r.created_at).toLocaleDateString('de')}</div>
+      </div>
+      <span class="badge badge-green">+5 €</span>
+    </div>`).join('');
+}
+
+// Check referral code on signup
+function checkReferralOnLoad(){
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if(ref) localStorage.setItem('hlf_ref', ref);
+}
+checkReferralOnLoad();
 function switchAuthTab(tab,el){
   document.querySelectorAll('.mtab2').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
