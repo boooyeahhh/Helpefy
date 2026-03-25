@@ -783,13 +783,20 @@ nav{padding:0.75rem 1rem;}
         <button class="btn-red" onclick="openModal('auth')">Jetzt anmelden →</button>
       </div>
       <div class="fg"><label>Titel des Auftrags</label><input type="text" id="jobTitel2" placeholder="z.B. Wohnung reinigen, IKEA Möbel aufbauen..."></div>
-      <div class="fg"><label>Kategorie</label>
-        <select id="jobKat2">
+      <div class="fg">
+        <label>Kategorie</label>
+        <select id="jobKat2" onchange="updateJobChips()" style="width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.875rem;color:var(--text);font-family:'Inter',sans-serif;background:var(--light);outline:none">
           <option>Handwerk</option><option>Haushalt</option><option>IT & Digital</option>
           <option>Garten</option><option>Umzug</option><option>Lernen</option>
           <option>Kreativ</option><option>Beauty</option><option>Tiere</option>
-          <option>Transport</option><option>Events</option><option>Sonstiges</option>
+          <option>Transport</option><option>Events</option><option>Büro</option>
+          <option>Fahrzeuge</option><option>Betreuung</option><option>Gesundheit</option><option>Sonstiges</option>
         </select>
+      </div>
+      <div class="fg">
+        <label>Tätigkeit <span style="color:var(--muted);font-weight:400">(optional – wähle eine Unterkategorie)</span></label>
+        <div id="jobSubChips" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.35rem"></div>
+        <input type="hidden" id="jobSubKat2">
       </div>
       <div class="fg">
         <label>Fotos hinzufügen (optional)</label>
@@ -2122,6 +2129,7 @@ function showView(n, push=true){
   document.documentElement.scrollTop=0;
   document.body.scrollTop=0;
   if(n==='home') renderHome();
+  if(n==='job-posten') setTimeout(()=>updateJobChips(), 50);
   if(n==='dashboard'){
     if(!currentUser){
       // Wait briefly for session to load before showing login
@@ -3676,7 +3684,7 @@ async function postJob2(){
   const titel=document.getElementById('jobTitel2').value.trim();
   const desc=document.getElementById('jobDesc2').value.trim();
   if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
-  const{error}=await sb.from('jobs').insert({kunde_id:currentUser.id,titel,beschreibung:desc,kategorie:document.getElementById('jobKat2').value,budget_min:parseFloat(document.getElementById('jobBudgetMin2').value)||0,budget_max:parseFloat(document.getElementById('jobBudgetMax2').value)||0,standort:document.getElementById('jobStandort2').value,datum:document.getElementById('jobDatum2').value||null,dringend:document.getElementById('jobDringend2').checked,status:'offen',created_at:new Date().toISOString()});
+  const{error}=await sb.from('jobs').insert({kunde_id:currentUser.id,titel,beschreibung:desc,kategorie:document.getElementById('jobKat2').value,unterkategorie:document.getElementById('jobSubKat2')?.value||null,budget_min:parseFloat(document.getElementById('jobBudgetMin2').value)||0,budget_max:parseFloat(document.getElementById('jobBudgetMax2').value)||0,standort:document.getElementById('jobStandort2').value,datum:document.getElementById('jobDatum2').value||null,dringend:document.getElementById('jobDringend2').checked,status:'offen',created_at:new Date().toISOString()});
   if(error){showToast('Fehler: '+error.message,'error');return;}
   ['jobTitel2','jobDesc2','jobBudgetMin2','jobBudgetMax2','jobStandort2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const suc=document.getElementById('job-posted-success2');
@@ -3711,6 +3719,40 @@ const KAT_TO_SUBKEY = {
   'Tiere':'TIERE','Events':'EVENTS','Transport':'TRANSPORT','Büro':'BUERO',
   'Fahrzeuge':'FAHRZEUGE','Betreuung':'BETREUUNG','Gesundheit':'GESUNDHEIT','Sonstiges':'SONSTIGES'
 };
+
+function updateJobChips(){
+  const kat = document.getElementById('jobKat2')?.value;
+  const chipsEl = document.getElementById('jobSubChips');
+  const hiddenEl = document.getElementById('jobSubKat2');
+  if(!chipsEl) return;
+  const subKey = KAT_TO_SUBKEY[kat] || 'SONSTIGES';
+  const subs = SUBCATS[subKey]?.subs || [];
+  if(hiddenEl) hiddenEl.value = '';
+  chipsEl.innerHTML = subs.map(s=>
+    `<span onclick="selectJobChip(this,'${s}')"
+      style="padding:0.35rem 0.85rem;border-radius:2rem;font-size:0.8rem;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);user-select:none;display:inline-block;transition:all 0.15s"
+      data-selected="0">${s}</span>`
+  ).join('');
+}
+
+function selectJobChip(el, value){
+  el.parentElement.querySelectorAll('span').forEach(c=>{
+    c.dataset.selected='0';
+    c.style.border='1.5px solid var(--border)';
+    c.style.background='var(--white)';
+    c.style.color='var(--muted)';
+  });
+  if(el.dataset.selected==='1'){
+    el.dataset.selected='0';
+    document.getElementById('jobSubKat2').value='';
+  } else {
+    el.dataset.selected='1';
+    el.style.border='1.5px solid var(--red)';
+    el.style.background='var(--red-light)';
+    el.style.color='var(--red)';
+    document.getElementById('jobSubKat2').value=value;
+  }
+}
 
 function updateServiceChips(context){
   const katEl = document.getElementById(context==='reg' ? 'regKategorie' : 'settingsKategorie');
