@@ -2494,19 +2494,36 @@ async function renderSearch(q){
 
   // STEP 2: Radius filter — only when radius panel is open AND we have user location
   const radiusRow = document.getElementById('radiusRowSearch');
-  const radiusActive = radiusRow && (radiusRow.style.display==='flex'||radiusRow.style.display==='block');
+  const radiusActive = radiusRow && radiusRow.style.display === 'flex';
   if(radiusActive){
     if(!userLat || !userLon){
-      showToast('📍 Bitte erst Standort bestimmen','');
+      showToast('Bitte erst Standort eingeben','');
     } else {
-      const km = parseInt(document.getElementById('radiusSliderSearch')?.value || document.getElementById('radiusSlider')?.value || 25);
-      await geocodeFreelancers(results.filter(f=>f.real && !f.lat));
-      const inRadius = results.filter(f=>
-        !f.real ||
-        f.loc?.toLowerCase().includes('online') ||
-        (f.lat && f.lon && getDistanceKm(userLat,userLon,f.lat,f.lon) <= km)
+      const km = parseInt(document.getElementById('radiusSliderSearch')?.value || 25);
+
+      // Geocode all freelancers that have a real city but no coords yet
+      const vague = ['deutschland','germany','bundesweit'];
+      const needGeo = results.filter(f =>
+        f.real && !f.lat && f.loc &&
+        !f.loc.toLowerCase().includes('online') &&
+        !vague.includes(f.loc.toLowerCase().trim())
       );
-      if(inRadius.length > 0) results = inRadius;
+      if(needGeo.length) await geocodeFreelancers(needGeo);
+
+      results = results.filter(f => {
+        if(!f.real) return false;
+        if(f.loc?.toLowerCase().includes('online')) return true;
+        // Hide vague "Deutschland" entries when radius active
+        if(vague.includes((f.loc||'').toLowerCase().trim())) return false;
+        if(!f.lat || !f.lon) return false;
+        return getDistanceKm(userLat, userLon, f.lat, f.lon) <= km;
+      });
+
+      if(results.length === 0){
+        document.getElementById('rCount').textContent = '0';
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">📍</div><div style="font-weight:600;margin-bottom:0.5rem">Niemanden in ' + km + ' km gefunden</div><div style="font-size:0.85rem;margin-bottom:1.25rem">Versuch den Radius zu vergrößern</div><button class="btn-red" onclick="document.getElementById(\'radiusSliderSearch\').value=100;document.getElementById(\'radiusValSearch\').textContent=\'100 km\';applyRadiusSearch()">Radius auf 100 km erhöhen</button></div>';
+        return;
+      }
     }
   }
 
