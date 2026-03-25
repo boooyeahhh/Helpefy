@@ -2654,7 +2654,7 @@ async function renderSearch(q){
     });
     if(inRadius.length>0) results = inRadius;
     else{
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">📍</div><div style="font-weight:600;margin-bottom:0.5rem">Niemanden in '+km+' km gefunden</div><button class="btn-red" style="margin-top:1rem" onclick="document.getElementById('radiusSliderSearch').value=100;document.getElementById('radiusValSearch').textContent='100 km';applyRadiusSearch()">Radius auf 100 km</button></div>';
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)"><div style="font-size:3rem;margin-bottom:1rem">📍</div><div style="font-weight:600;margin-bottom:0.5rem">Niemanden in '+km+' km gefunden</div><button class="btn-red" style="margin-top:1rem" onclick="document.getElementById(&quot;radiusSliderSearch&quot;).value=100;document.getElementById(&quot;radiusValSearch&quot;).textContent=&quot;100 km&quot;;applyRadiusSearch()">Radius auf 100 km</button></div>';
       document.getElementById('rCount').textContent='0';
       document.getElementById('rQuery').textContent=query||'Alle';
       return;
