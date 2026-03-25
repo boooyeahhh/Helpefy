@@ -76,7 +76,6 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:var(--text);ov
 @media(max-width:768px){
   #mobileBottomNav{display:flex;}
   body{padding-bottom:60px;}
-  .chat-main{padding-bottom:60px;}
 }
 
 /* NAV */
@@ -1230,7 +1229,7 @@ nav{padding:0.75rem 1rem;}
 
     <div style="margin-top:2rem;text-align:center;color:var(--muted);font-size:0.85rem">
       <div style="margin-bottom:0.5rem">Oder direkt per E-Mail:</div>
-      <a href="/cdn-cgi/l/email-protection#37545f455e444358475f52456845424444525b5b77405255195352" style="color:var(--red);font-weight:500;text-decoration:none"><span class="__cf_email__" data-cfemail="d1b2b9a3b8a2a5bea1b9b4a38ea3a4a2a2b4bdbd91a6b4b3ffb5b4">[email&#160;protected]</span></a>
+      <a href="mailto:christopher_russell@web.de" style="color:var(--red);font-weight:500;text-decoration:none">christopher_russell@web.de</a>
       <div style="margin-top:1rem;font-size:0.78rem">Antwortzeit: in der Regel innerhalb von 24 Stunden</div>
     </div>
   </div>
@@ -1262,7 +1261,7 @@ nav{padding:0.75rem 1rem;}
 
 
 <!-- NAV -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 
 
 // ── CONFIG ──
@@ -3559,4 +3558,19 @@ function startGlobalListener(){
 
 async function sendPushNotification(title, body, url='/dashboard'){
   // Show local notification (works without server)
-  if(Notification.permission === 'grant
+  if(Notification.permission === 'granted'){
+    if(window._swReg){
+      window._swReg.showNotification(title, {
+        body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        vibrate: [200, 100, 200],
+        data: { url }
+      });
+    }
+  }
+}
+
+</script>
+</body>
+</html>
