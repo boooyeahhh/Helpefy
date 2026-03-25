@@ -1836,8 +1836,8 @@ async function loadProfile(){
   if(isFL){
     const {data:flOrders}=await sb.from('auftraege').select('id,preis,status,freelancer_anteil,referrer_anteil,referrer_code').eq('freelancer_id',currentUser.id);
     orderCount = flOrders?.length||0;
-    const completedOrders = (flOrders||[]).filter(o=>o.status==='bezahlt'||o.status==='abgeschlossen');
-    // Use freelancer_anteil if set, otherwise calculate 85%
+    // Nur abgeschlossen zählt — bezahlt bedeutet Zahlung eingegangen aber Code noch ausstehend
+    const completedOrders = (flOrders||[]).filter(o=>o.status==='abgeschlossen');
     const earned = completedOrders.reduce((s,o)=>s+(o.freelancer_anteil || (o.preis||0)*0.85),0);
     totalMoney = earned;
     // Update to Einnahmen
@@ -1885,7 +1885,7 @@ async function loadProfile(){
       </div>`;
   } else if(orders&&orders.length){
     orderCount = orders.length;
-    totalMoney = orders.filter(o=>o.status==='bezahlt'||o.status==='abgeschlossen').reduce((s,o)=>s+(o.preis||0),0);
+    totalMoney = orders.filter(o=>o.status==='abgeschlossen').reduce((s,o)=>s+(o.preis||0),0);
   }
 
   const auftraegeEl = document.querySelector('.dsc-auftraege');
