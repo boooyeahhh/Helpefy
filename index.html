@@ -1784,11 +1784,10 @@ function showView(n, push=true){
   const el=document.getElementById('view-'+n);
   if(!el) return;
   el.classList.add('active');
-  // Force scroll to top of the active view
-  el.scrollIntoView({behavior:'instant', block:'start'});
-  document.body.scrollTop=0;
+  // Always scroll to top
+  window.scrollTo({top:0,behavior:'instant'});
   document.documentElement.scrollTop=0;
-  setTimeout(()=>{ window.scrollTo(0,0); document.documentElement.scrollTop=0; }, 10);
+  document.body.scrollTop=0;
   if(n==='home') renderHome();
   if(n==='dashboard'){
     if(!currentUser){
@@ -3082,6 +3081,10 @@ function switchDash(tab,el){
   ['overview','orders','saved','payments','settings'].forEach(t=>{const e=document.getElementById('dash-'+t);if(e)e.style.display=t===tab?'block':'none';});
   if(tab==='saved') renderSaved();
   if(tab==='orders') renderDashOrders();
+  // Scroll to top
+  window.scrollTo({top:0,behavior:'instant'});
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
   // Update URL
   const slugs={overview:'dashboard',orders:'auftraege',saved:'gespeichert',payments:'zahlungen',settings:'einstellungen'};
   const slug = slugs[tab]||'dashboard';
