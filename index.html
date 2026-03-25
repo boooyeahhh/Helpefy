@@ -1818,6 +1818,8 @@ function showView(n, push=true){
     } else { loadProfile(); }
   }
   if(n==='chat'){
+    // Save timestamp when user visits chat - used to prevent dots reappearing on restart
+    localStorage.setItem('hlf_last_chat_visit', new Date().toISOString());
     if(!currentUser){
       setTimeout(()=>{
         if(!currentUser) openModal('auth');
@@ -3188,6 +3190,8 @@ function switchRegType(type,el){
 // ── CHAT ──
 async function loadChatUsers(){
   if(!currentUser) return;
+  // Update last_chat_visit so on next restart we know what was seen
+  localStorage.setItem('hlf_last_chat_visit', new Date().toISOString());
   const chatList=document.getElementById('chatUserList');
   if(!chatList) return;
   const{data:msgs}=await sb.from('nachrichten').select('von_user_id,zu_user_id,gelesen').or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`).limit(100);
@@ -3593,13 +3597,14 @@ async function init(){
     currentUser=session.user;
     await loadProfile();
     updateNav();
+    await markAllReceivedAsRead();
   } else {
     updateNav();
   }
   
   sb.auth.onAuthStateChange(async(_,s)=>{
     currentUser=s?.user||null;
-    if(currentUser){await loadProfile();updateNav();if(document.getElementById('view-chat').classList.contains('active'))loadChatUsers();startGlobalListener();}
+    if(currentUser){await loadProfile();updateNav();await markAllReceivedAsRead();if(document.getElementById('view-chat').classList.contains('active'))loadChatUsers();startGlobalListener();}
     else{currentProfile=null;updateNav();}
   });
   
@@ -3758,7 +3763,20 @@ function startGlobalListener(){
   window._pollInterval = setInterval(checkNotifications, 20000);
 }
 
-async function sendPushNotification(title, body, url='/dashboard'){
+async function markAllReceivedAsRead(){
+  // On app start: mark as read all messages that arrived before last time user opened chat
+  // This prevents dots reappearing after app restart for already-seen messages
+  if(!currentUser) return;
+  const lastChatVisit = localStorage.getItem('hlf_last_chat_visit');
+  if(!lastChatVisit) return;
+  try{
+    await sb.from('nachrichten')
+      .update({gelesen:true})
+      .eq('zu_user_id', currentUser.id)
+      .eq('gelesen', false)
+      .lt('created_at', lastChatVisit);
+  } catch(e){ console.log('markAllRead error:',e); }
+}
   // Show local notification (works without server)
   if(Notification.permission === 'granted'){
     if(window._swReg){
