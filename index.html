@@ -1113,7 +1113,11 @@ nav{padding:0.75rem 1rem;}
 
           <div class="fg"><label>Name</label><input id="settingsName" type="text" placeholder="Max Mustermann"></div>
           <div class="fg"><label>E-Mail</label><input id="settingsEmail" type="email" readonly style="opacity:0.6"></div>
-          <div class="fg"><label>Standort</label><input type="text" id="settingsStandort" placeholder="z.B. München"></div>
+          <div class="fg" style="position:relative">
+            <label>Standort</label>
+            <input type="text" id="settingsStandort" placeholder="z.B. München" autocomplete="off" oninput="searchLocation(this.value,'settingsLocSugg')">
+            <div id="settingsLocSugg" class="loc-sugg" style="display:none"></div>
+          </div>
           <div id="settings-fl-extra" style="display:none">
             <div class="fg"><label>Kategorie</label>
               <select id="settingsKategorie" onchange="updateServiceChips('settings')" style="width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.875rem;color:var(--text);font-family:'Inter',sans-serif;background:var(--light);outline:none">
@@ -1792,8 +1796,16 @@ async function loadProfile(){
     if(flExtra) flExtra.style.display=data.role==='freelancer'?'block':'none';
     if(data.role==='freelancer'){
       // Load freelancer services for chip display
-      sb.from('freelancers').select('dienstleistungen,kategorie').eq('user_id',currentUser.id).single().then(({data:fl})=>{
+      sb.from('freelancers').select('dienstleistungen,kategorie,standort,stundenlohn,beschreibung').eq('user_id',currentUser.id).single().then(({data:fl})=>{
         if(fl){
+          // Populate standort from freelancer record
+          const standortEl = document.getElementById('settingsStandort');
+          if(standortEl && fl.standort) standortEl.value = fl.standort;
+          // Populate other fields
+          const preisEl = document.getElementById('settingsPreis');
+          if(preisEl && fl.stundenlohn) preisEl.value = fl.stundenlohn;
+          const bioEl = document.getElementById('settingsBio');
+          if(bioEl && fl.beschreibung && !fl.beschreibung.includes('Experte auf Helpefy')) bioEl.value = fl.beschreibung;
           const katEl = document.getElementById('settingsKategorie');
           if(katEl && fl.kategorie) katEl.value = fl.kategorie;
           loadSettingsServiceChips(fl.dienstleistungen||'');
