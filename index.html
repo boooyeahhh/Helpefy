@@ -1638,27 +1638,53 @@ async function loadProfile(){
   let orderCount = 0, totalMoney = 0;
 
   if(isFL){
-    const {data:flOrders}=await sb.from('auftraege').select('id,preis,status').eq('freelancer_id',currentUser.id);
+    const {data:flOrders}=await sb.from('auftraege').select('id,preis,status,freelancer_anteil,referrer_anteil,referrer_code').eq('freelancer_id',currentUser.id);
     orderCount = flOrders?.length||0;
-    const earned = (flOrders||[]).filter(o=>o.status==='bezahlt'||o.status==='abgeschlossen').reduce((s,o)=>s+(o.preis||0)*0.85,0);
+    const completedOrders = (flOrders||[]).filter(o=>o.status==='bezahlt'||o.status==='abgeschlossen');
+    // Use freelancer_anteil if set, otherwise calculate 85%
+    const earned = completedOrders.reduce((s,o)=>s+(o.freelancer_anteil || (o.preis||0)*0.85),0);
     totalMoney = earned;
     // Update to Einnahmen
     const label = document.querySelector('.dsc-ausgaben-label');
     const icon = document.getElementById('dsc-money-icon');
     if(label) label.textContent = 'Einnahmen';
     if(icon) icon.textContent = '💰';
+    // Load referral earnings for this freelancer
+    const {data:refEarnings} = await sb.from('referral_earnings')
+      .select('betrag,created_at')
+      .eq('referrer_id', currentUser.id);
+    const totalRefEarnings = (refEarnings||[]).reduce((s,e)=>s+(e.betrag||0),0);
+    const totalPayout = earned + totalRefEarnings;
+
     // Show auszahlung section in payments tab
     const paymentsEl = document.getElementById('dash-payments');
     if(paymentsEl) paymentsEl.innerHTML = `
       <div class="dash-title">Zahlungen & Auszahlung</div>
       <div class="dcard" style="max-width:500px;margin-top:1rem">
-        <div style="text-align:center;padding:1rem">
-          <div style="font-size:2.5rem;font-weight:700;color:var(--red)">${earned.toFixed(2)} €</div>
-          <div style="font-size:0.85rem;color:var(--muted);margin:0.5rem 0">Verfügbares Guthaben (nach 15% Provision)</div>
-          <button onclick="requestAuszahlung(${earned.toFixed(2)})" class="btn-red" style="margin-top:1rem;padding:0.75rem 2rem;font-size:0.95rem">
+        <div style="padding:0.5rem 0">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-size:0.875rem;font-weight:500">💼 Aufträge (85%)</div>
+              <div style="font-size:0.75rem;color:var(--muted)">${completedOrders.length} abgeschlossene Aufträge</div>
+            </div>
+            <div style="font-size:1.1rem;font-weight:700">${earned.toFixed(2)} €</div>
+          </div>
+          ${totalRefEarnings > 0 ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-size:0.875rem;font-weight:500">🎁 Referral-Einnahmen (5%)</div>
+              <div style="font-size:0.75rem;color:var(--muted)">${(refEarnings||[]).length} Provisionszahlungen</div>
+            </div>
+            <div style="font-size:1.1rem;font-weight:700;color:var(--green)">${totalRefEarnings.toFixed(2)} €</div>
+          </div>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0">
+            <div style="font-size:1rem;font-weight:700">Gesamt verfügbar</div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--red)">${totalPayout.toFixed(2)} €</div>
+          </div>
+          <button onclick="requestAuszahlung(${totalPayout.toFixed(2)})" class="btn-red" style="width:100%;margin-top:0.75rem;padding:0.85rem;font-size:0.95rem">
             💸 Auszahlung beantragen
           </button>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:0.75rem">Auszahlungen werden innerhalb von 2-3 Werktagen bearbeitet</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:0.75rem;text-align:center">Auszahlungen werden innerhalb von 2-3 Werktagen bearbeitet</div>
         </div>
       </div>`;
   } else if(orders&&orders.length){
@@ -2930,8 +2956,8 @@ async function submitBewertung(){
   if(currentRating===0){showToast('Bitte Sterne vergeben!','error');return;}
   const text = document.getElementById('bewertungText').value.trim();
   
-  // Get the auftrag to find freelancer_id
-  const {data:auftrag} = await sb.from('auftraege').select('freelancer_id').eq('id',currentVerifyAuftragId).single();
+  // Get the auftrag with preis to calculate commissions
+  const {data:auftrag} = await sb.from('auftraege').select('freelancer_id,preis').eq('id',currentVerifyAuftragId).single();
   
   const bewertungData = {
     auftrag_id: currentVerifyAuftragId,
@@ -2954,6 +2980,38 @@ async function submitBewertung(){
         bewertung_schnitt: Math.round(avg*10)/10,
         auftraege_count: allBewertungen.length
       }).eq('user_id', auftrag.freelancer_id);
+    }
+
+    // ── REFERRAL PROVISION ──
+    if(auftrag.preis > 0){
+      const split = await getProvisionSplit(auftrag.freelancer_id, auftrag.preis);
+      // Save provision split on the auftrag
+      await sb.from('auftraege').update({
+        freelancer_anteil: split.freelancer,
+        helpefy_anteil:    split.helpefy,
+        referrer_anteil:   split.referrer,
+        referrer_code:     split.referrerCode
+      }).eq('id', currentVerifyAuftragId);
+
+      // If referral active → save referral earning to profile
+      if(split.hasReferral && split.referrerCode){
+        // Find the referrer's profile by their referral code
+        const {data:allProfiles} = await sb.from('profiles').select('id').limit(500);
+        // Find referrer whose code matches
+        const referrerId = allProfiles?.find(p => {
+          const code = p.id.replace(/-/g,'').slice(0,8).toUpperCase();
+          return code === split.referrerCode;
+        })?.id;
+        if(referrerId){
+          await sb.from('referral_earnings').insert({
+            referrer_id:   referrerId,
+            auftrag_id:    currentVerifyAuftragId,
+            freelancer_id: auftrag.freelancer_id,
+            betrag:        split.referrer,
+            created_at:    new Date().toISOString()
+          });
+        }
+      }
     }
   }
   
@@ -3324,7 +3382,32 @@ function switchDash(tab,el){
   document.title = 'Helpefy – '+slug.charAt(0).toUpperCase()+slug.slice(1);
 }
 
-// ── REFERRAL SYSTEM ──
+// ── PROVISION BERECHNUNG ──
+// Standard: Freelancer 85%, Helpefy 15%
+// Mit Referral (12 Monate): Freelancer 85%, Referrer 5%, Helpefy 10%
+async function getProvisionSplit(freelancerUserId, preis){
+  // Check if this freelancer was referred and referral is still active (< 12 months)
+  const {data:prof} = await sb.from('profiles').select('referred_by,created_at').eq('id', freelancerUserId).single();
+  if(prof?.referred_by && prof?.created_at){
+    const monthsSince = (Date.now() - new Date(prof.created_at)) / (1000*60*60*24*30);
+    if(monthsSince <= 12){
+      return {
+        freelancer: +(preis * 0.85).toFixed(2),
+        referrer:   +(preis * 0.05).toFixed(2),
+        helpefy:    +(preis * 0.10).toFixed(2),
+        referrerCode: prof.referred_by,
+        hasReferral: true
+      };
+    }
+  }
+  return {
+    freelancer: +(preis * 0.85).toFixed(2),
+    referrer:   0,
+    helpefy:    +(preis * 0.15).toFixed(2),
+    referrerCode: null,
+    hasReferral: false
+  };
+}
 function getReferralCode(){
   if(!currentUser) return null;
   // Unique code based on user ID - first 8 chars
@@ -3375,7 +3458,7 @@ async function loadReferral(){
   const linkBox = document.getElementById('referralLinkBox');
   if(linkBox) linkBox.textContent = link;
 
-  // Load referrals from Supabase
+  // Load referred users
   const {data:refs} = await sb.from('profiles')
     .select('id,full_name,email,role,created_at')
     .eq('referred_by', code)
@@ -3384,25 +3467,18 @@ async function loadReferral(){
   const count = refs?.length || 0;
   document.getElementById('ref-count').textContent = count;
 
-  // Count those who completed an order
-  let activeCount = 0;
-  let earnings = 0;
-  if(refs?.length){
-    const refIds = refs.map(r=>r.id);
-    const {data:orders} = await sb.from('auftraege')
-      .select('freelancer_id,preis')
-      .in('freelancer_id', refIds)
-      .eq('status','abgeschlossen');
-    const activeFLs = new Set(orders?.map(o=>o.freelancer_id)||[]);
-    activeCount = activeFLs.size;
-    // 5€ per signup + 10€ per first completed order
-    earnings = (count * 5) + (activeCount * 10);
-  }
+  // Load real referral earnings
+  const {data:earnings} = await sb.from('referral_earnings')
+    .select('betrag,created_at,auftrag_id')
+    .eq('referrer_id', currentUser.id);
+
+  const totalEarned = (earnings||[]).reduce((s,e)=>s+(e.betrag||0),0);
+  const activeCount = new Set((earnings||[]).map(e=>e.auftrag_id)).size;
 
   document.getElementById('ref-active').textContent = activeCount;
-  document.getElementById('ref-earnings').textContent = earnings + ' €';
+  document.getElementById('ref-earnings').textContent = totalEarned.toFixed(2) + ' €';
 
-  // Render list
+  // Render invited list
   const listEl = document.getElementById('referralList');
   if(!refs?.length){
     listEl.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.85rem">
@@ -3411,17 +3487,35 @@ async function loadReferral(){
     </div>`;
     return;
   }
-  listEl.innerHTML = refs.map(r=>`
-    <div class="oi">
-      <div class="oi-icon" style="width:36px;height:36px;border-radius:50%;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--red);font-size:0.9rem;flex-shrink:0">
+
+  // Map earnings per freelancer
+  const earningsByFL = {};
+  (earnings||[]).forEach(e=>{
+    // match by auftrag freelancer - simplified: sum all earnings
+  });
+
+  listEl.innerHTML = refs.map(r=>{
+    const refEarned = (earnings||[])
+      .filter(e => {/* would need freelancer_id join */ return false; })
+      .reduce((s,e)=>s+e.betrag,0);
+    const monthsSince = ((Date.now() - new Date(r.created_at)) / (1000*60*60*24*30)).toFixed(0);
+    const referralActive = monthsSince <= 12;
+    return `
+    <div class="oi" style="padding:0.75rem 0;align-items:flex-start">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--red);font-size:0.9rem;flex-shrink:0;margin-top:2px">
         ${(r.full_name||r.email||'?').charAt(0).toUpperCase()}
       </div>
       <div class="oi-info">
         <div class="oi-title">${r.full_name||r.email}</div>
         <div class="oi-meta">${r.role==='freelancer'?'👷 Freelancer':'👤 Kunde'} · Beigetreten ${new Date(r.created_at).toLocaleDateString('de')}</div>
+        ${referralActive
+          ? `<div style="font-size:0.72rem;color:var(--green);margin-top:0.2rem">✅ Referral aktiv – du erhältst 5% für ${12-monthsSince} weitere Monate</div>`
+          : `<div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem">⏰ Referral abgelaufen</div>`
+        }
       </div>
-      <span class="badge badge-green">+5 €</span>
-    </div>`).join('');
+      <span class="badge badge-green" style="flex-shrink:0">+5 € Beitritt</span>
+    </div>`;
+  }).join('');
 }
 
 // Check referral code on signup
