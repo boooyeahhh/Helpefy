@@ -818,7 +818,25 @@ nav{padding:0.75rem 1rem;}
         <input type="text" id="jobStandort2" placeholder="Stadt oder PLZ..." autocomplete="off" oninput="searchLocation(this.value,'jobLocSugg2')">
         <div id="jobLocSugg2" class="loc-sugg" style="display:none"></div>
       </div>
-      <div class="fg"><label>Wann?</label><input type="date" id="jobDatum2"></div>
+      <div class="fg">
+        <label>Wann wird es gebraucht?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.25rem">
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem">Datum</div>
+            <input type="date" id="jobDatum2" style="width:100%">
+          </div>
+          <div></div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem">Frühestens ab</div>
+            <input type="time" id="jobZeitVon2" value="08:00" style="width:100%">
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem">Spätestens bis</div>
+            <input type="time" id="jobZeitBis2" value="20:00" style="width:100%">
+          </div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem">⏰ Der Job wird automatisch nach dem Endzeitpunkt als abgelaufen markiert</div>
+      </div>
       <div class="fg" style="display:flex;align-items:center;gap:0.5rem;flex-direction:row">
         <input type="checkbox" id="jobDringend2" style="width:auto">
         <label style="font-size:0.85rem;color:var(--text);margin:0">🔥 Dringend – ich brauche schnell jemanden</label>
@@ -1317,14 +1335,28 @@ nav{padding:0.75rem 1rem;}
     <button class="modal-close" onclick="closeModal('angebot')">✕</button>
     <div class="modal-title">📝 Angebot senden</div>
     <div id="angebot-job-info" style="background:var(--light);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:var(--muted)"></div>
+    <!-- Job Zeitfenster anzeigen -->
+    <div id="angebot-zeitfenster" style="display:none;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.84rem;color:#92400e">
+      ⏰ Kunde braucht jemanden: <strong id="angebot-zf-text"></strong>
+    </div>
     <div class="fg"><label>Deine Nachricht an den Kunden</label>
-      <textarea id="angebotText" placeholder="z.B. Ich bin verfügbar und habe 5 Jahre Erfahrung. Ich kann den Job am Wochenende erledigen..." style="min-height:100px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
+      <textarea id="angebotText" placeholder="z.B. Ich bin verfügbar und habe 5 Jahre Erfahrung..." style="min-height:90px;resize:vertical;width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-family:Inter,sans-serif;font-size:0.875rem;outline:none;background:var(--light)"></textarea>
     </div>
     <div class="fg"><label>Dein Preis (€)</label>
       <input type="number" id="angebotPreis" placeholder="z.B. 80">
     </div>
-    <div class="fg"><label>Verfügbar ab</label>
-      <input type="date" id="angebotDatum">
+    <div class="fg">
+      <label>Wann kannst du? <span style="color:var(--muted);font-weight:400">(gib deine verfügbare Uhrzeit an)</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-top:0.25rem">
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem">Von</div>
+          <input type="time" id="angebotZeitVon" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem">Bis</div>
+          <input type="time" id="angebotZeitBis" style="width:100%">
+        </div>
+      </div>
     </div>
     <div id="angebot-error" class="error-msg"></div>
     <button class="form-submit" onclick="submitAngebot()">Angebot absenden →</button>
@@ -3197,15 +3229,35 @@ function previewJobImages(input){
 let currentJobData = null;
 function applyForJob(btn){
   if(!currentUser){openModal('auth');return;}
-  // Get job info from card
   const card = btn.closest('.job-card');
   const title = card?.querySelector('.job-title')?.textContent||'Job';
   const budget = card?.querySelector('.job-budget')?.textContent||'';
-  currentJobData = {title, budget};
+  // Get time window from card data
+  const zeitVon = card?.dataset.zeitVon||'';
+  const zeitBis = card?.dataset.zeitBis||'';
+  const datum = card?.dataset.datum||'';
+  currentJobData = {title, budget, zeitVon, zeitBis, datum};
+
   document.getElementById('angebot-job-info').innerHTML = `<strong>📋 ${title}</strong>${budget?' · Budget: '+budget:''}`;
+
+  // Show time window if set
+  const zfEl = document.getElementById('angebot-zeitfenster');
+  const zfText = document.getElementById('angebot-zf-text');
+  if(zeitVon && zeitBis){
+    const datumStr = datum ? new Date(datum).toLocaleDateString('de',{day:'2-digit',month:'2-digit'}) : 'Heute';
+    zfText.textContent = `${datumStr} zwischen ${zeitVon} – ${zeitBis} Uhr`;
+    zfEl.style.display = 'block';
+    // Pre-fill freelancer times within window
+    document.getElementById('angebotZeitVon').value = zeitVon;
+    document.getElementById('angebotZeitBis').value = zeitBis;
+  } else {
+    zfEl.style.display = 'none';
+    document.getElementById('angebotZeitVon').value = '';
+    document.getElementById('angebotZeitBis').value = '';
+  }
+
   document.getElementById('angebotText').value='';
   document.getElementById('angebotPreis').value='';
-  document.getElementById('angebotDatum').value=new Date().toISOString().split('T')[0];
   document.getElementById('angebot-error').style.display='none';
   openModal('angebot');
 }
@@ -3213,19 +3265,19 @@ function applyForJob(btn){
 async function submitAngebot(){
   const text=document.getElementById('angebotText').value.trim();
   const preis=document.getElementById('angebotPreis').value;
-  const datum=document.getElementById('angebotDatum').value;
+  const zeitVon=document.getElementById('angebotZeitVon').value;
+  const zeitBis=document.getElementById('angebotZeitBis').value;
   const err=document.getElementById('angebot-error');
   if(!text){err.style.display='block';err.textContent='Bitte schreib eine Nachricht.';return;}
   const btn=document.querySelector('#modal-angebot .form-submit');
   btn.disabled=true; btn.textContent='Wird gesendet...';
-  // Save to auftraege as pending offer
   const {error}=await sb.from('auftraege').insert({
     kunde_id:currentUser.id,
     titel:currentJobData?.title||'Job-Angebot',
-    beschreibung:text,
+    beschreibung:text+(zeitVon&&zeitBis?`\n\n⏰ Ich bin verfügbar: ${zeitVon} – ${zeitBis} Uhr`:''),
     kategorie:'Angebot',
     preis:parseFloat(preis)||0,
-    datum:datum||null,
+    datum:currentJobData?.datum||null,
     status:'angebot_gesendet',
     created_at:new Date().toISOString()
   });
@@ -3539,16 +3591,44 @@ function renderJobGrid(jobs){
     return;
   }
   const JOB_IMGS={'Reinigung':'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=300&fit=crop','Haushalt':'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=300&fit=crop','Handwerk':'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=300&fit=crop','Garten':'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&h=300&fit=crop','Umzug':'https://images.unsplash.com/photo-1600518464441-9306adb181b3?w=600&h=300&fit=crop','Lernen':'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=300&fit=crop','IT & Digital':'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=300&fit=crop','Kreativ':'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&h=300&fit=crop','Beauty':'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=300&fit=crop','Tiere':'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=300&fit=crop','Transport':'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=600&h=300&fit=crop','Events':'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=300&fit=crop','Sonstiges':'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=300&fit=crop'};
-  grid.innerHTML=jobs.map(j=>`<div class="job-card" style="overflow:hidden;padding:0">
-    <img src="${j.img||JOB_IMGS[j.cat]||JOB_IMGS['Sonstiges']}" class="job-img" loading="lazy" onerror="this.style.display='none'">
-    <div style="padding:1.25rem">
-      <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}</div>
-      <div class="job-title">${j.title}</div>
-      <div class="job-desc">${j.desc}</div>
-      <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
-      <div class="job-footer"><div class="job-budget">${j.budget}</div><button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button></div>
-    </div>
-  </div>`).join('');
+  grid.innerHTML=jobs.map(j=>{
+    // Auto-expire check: if job has datum+zeit_bis in the past, mark as abgelaufen
+    const isExpired = j.datum && j.zeitBis && (() => {
+      const expiry = new Date(`${j.datum}T${j.zeitBis}`);
+      return expiry < new Date();
+    })();
+
+    const zeitBadge = j.zeitVon && j.zeitBis
+      ? `<span style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:500">⏰ ${j.zeitVon} – ${j.zeitBis} Uhr</span>`
+      : '';
+
+    return `<div class="job-card" style="overflow:hidden;padding:0${isExpired?';opacity:0.5':''}"
+      data-zeit-von="${j.zeitVon||''}" data-zeit-bis="${j.zeitBis||''}" data-datum="${j.datum||''}">
+      <img src="${j.img||JOB_IMGS[j.cat]||JOB_IMGS['Sonstiges']}" class="job-img" loading="lazy" onerror="this.style.display='none'">
+      <div style="padding:1.25rem">
+        <div class="job-header">
+          <span class="job-cat">${j.cat}</span>
+          ${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}
+          ${isExpired?'<span style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:0.15rem 0.5rem;font-size:0.72rem">⏰ Abgelaufen</span>':''}
+        </div>
+        <div class="job-title">${j.title}</div>
+        <div class="job-desc">${j.desc}</div>
+        ${zeitBadge ? `<div style="margin:0.4rem 0">${zeitBadge}</div>` : ''}
+        <div class="job-meta">
+          <span class="jmet">📍 ${j.loc}</span>
+          <span class="jmet">📅 ${j.date}</span>
+          ${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}
+        </div>
+        <div class="job-footer">
+          <div class="job-budget">${j.budget}</div>
+          ${isExpired
+            ? `<span style="font-size:0.8rem;color:var(--muted)">Nicht mehr verfügbar</span>`
+            : `<button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button>`
+          }
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function filterJobs(type,el){
@@ -3661,7 +3741,20 @@ async function searchJobs(){
 
 async function loadRealJobs(){
   const{data:jobs}=await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
-  allJobsCache=[...(jobs||[]).map(j=>({cat:j.kategorie||'Sonstiges',title:j.titel,desc:j.beschreibung,loc:j.standort||'Deutschland',date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',urgent:j.dringend,offers:0,poster:j.profiles?.full_name||'Anonym'})),...JOBS];
+  allJobsCache=[...(jobs||[]).map(j=>({
+    cat:j.kategorie||'Sonstiges',
+    title:j.titel,
+    desc:j.beschreibung,
+    loc:j.standort||'Deutschland',
+    date:j.datum?new Date(j.datum).toLocaleDateString('de'):'Flexibel',
+    budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',
+    urgent:j.dringend,
+    offers:0,
+    poster:j.profiles?.full_name||'Anonym',
+    zeitVon:j.zeit_von||'',
+    zeitBis:j.zeit_bis||'',
+    datum:j.datum||''
+  })),...JOBS];
   renderJobGrid(allJobsCache);
 }
 
@@ -3684,7 +3777,22 @@ async function postJob2(){
   const titel=document.getElementById('jobTitel2').value.trim();
   const desc=document.getElementById('jobDesc2').value.trim();
   if(!titel||!desc){showToast('Bitte Titel und Beschreibung ausfüllen!','error');return;}
-  const{error}=await sb.from('jobs').insert({kunde_id:currentUser.id,titel,beschreibung:desc,kategorie:document.getElementById('jobKat2').value,unterkategorie:document.getElementById('jobSubKat2')?.value||null,budget_min:parseFloat(document.getElementById('jobBudgetMin2').value)||0,budget_max:parseFloat(document.getElementById('jobBudgetMax2').value)||0,standort:document.getElementById('jobStandort2').value,datum:document.getElementById('jobDatum2').value||null,dringend:document.getElementById('jobDringend2').checked,status:'offen',created_at:new Date().toISOString()});
+  const{error}=await sb.from('jobs').insert({
+    kunde_id:currentUser.id,
+    titel,
+    beschreibung:desc,
+    kategorie:document.getElementById('jobKat2').value,
+    unterkategorie:document.getElementById('jobSubKat2')?.value||null,
+    budget_min:parseFloat(document.getElementById('jobBudgetMin2').value)||0,
+    budget_max:parseFloat(document.getElementById('jobBudgetMax2').value)||0,
+    standort:document.getElementById('jobStandort2').value,
+    datum:document.getElementById('jobDatum2').value||null,
+    zeit_von:document.getElementById('jobZeitVon2').value||null,
+    zeit_bis:document.getElementById('jobZeitBis2').value||null,
+    dringend:document.getElementById('jobDringend2').checked,
+    status:'offen',
+    created_at:new Date().toISOString()
+  });
   if(error){showToast('Fehler: '+error.message,'error');return;}
   ['jobTitel2','jobDesc2','jobBudgetMin2','jobBudgetMax2','jobStandort2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const suc=document.getElementById('job-posted-success2');
