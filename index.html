@@ -211,8 +211,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content
 .fg{display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.75rem;}
 .fg label{font-size:0.73rem;font-weight:500;color:var(--muted);}
 .fg input,.fg select,.fg textarea{width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.875rem;color:var(--text);font-family:'Inter',sans-serif;background:var(--light);outline:none;transition:border-color 0.2s;}
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;text-align:left;}
 @media(max-width:768px){.fg input,.fg select,.fg textarea,.search-bar input,.chat-input{font-size:16px!important;}
-.fg input[type="date"],.fg input[type="time"],.fg input[type="number"]{width:100%;min-width:0;max-width:100%;}}
+.fg input[type="date"],.fg input[type="time"],.fg input[type="number"]{width:100%;min-width:0;max-width:100%;text-align:left;}
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;text-align:left;padding-left:0.85rem;}}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--red);background:var(--white);}
 .fg textarea{min-height:70px;resize:vertical;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
