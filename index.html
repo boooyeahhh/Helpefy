@@ -3224,12 +3224,18 @@ async function openChat(userId,userName,avatarUrl,role){
   const backBtn=document.getElementById('chatBackBtn');
   if(backBtn) backBtn.style.display=isMobile?'block':'none';
   document.getElementById('chatMsgs').innerHTML='<div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem">Wird geladen...</div>';
+  // Fallback: if loading hangs for 8s, show error
+  const loadTimeout = setTimeout(()=>{
+    const el = document.getElementById('chatMsgs');
+    if(el && el.innerHTML.includes('Wird geladen')) el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Fehler beim Laden. Bitte neu versuchen.</div>';
+  }, 8000);
   // Mark ALL messages from this user as read FIRST
   // Mark all as read (both false and null)
   await sb.from('nachrichten').update({gelesen:true})
     .eq('zu_user_id',currentUser.id)
     .eq('von_user_id',userId);
   await loadMessages();
+  clearTimeout(loadTimeout);
   // Now reload chat list - dots should be gone
   await loadChatUsers();
   if(chatSubscription) chatSubscription.unsubscribe();
@@ -3273,18 +3279,33 @@ async function openChat(userId,userName,avatarUrl,role){
 
 async function loadMessages(){
   if(!currentUser||!activeChatUserId) return;
-  const{data:msgs}=await sb.from('nachrichten').select('*').or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`).order('created_at',{ascending:true});
-  // Mark received messages as read
-  await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId);
-  setMobileChatDot(false);
   const container=document.getElementById('chatMsgs');
   if(!container) return;
-  container.innerHTML='';
-  if(!msgs||!msgs.length){
-    container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';
-    return;
+  
+  try{
+    const{data:msgs,error}=await sb.from('nachrichten').select('*').or(`and(von_user_id.eq.${currentUser.id},zu_user_id.eq.${activeChatUserId}),and(von_user_id.eq.${activeChatUserId},zu_user_id.eq.${currentUser.id})`).order('created_at',{ascending:true});
+    
+    if(error) throw error;
+    
+    // Mark received messages as read
+    await sb.from('nachrichten').update({gelesen:true}).eq('zu_user_id',currentUser.id).eq('von_user_id',activeChatUserId);
+    setMobileChatDot(false);
+    
+    container.innerHTML='';
+    if(!msgs||!msgs.length){
+      container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';
+      return;
+    }
+    msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id,null,m.created_at));
+    
+    // Scroll to bottom after all messages are rendered
+    requestAnimationFrame(()=>{
+      container.scrollTop = container.scrollHeight;
+    });
+  } catch(e){
+    console.error('loadMessages error:',e);
+    container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Fehler beim Laden. Bitte neu versuchen.</div>';
   }
-  msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id,null,m.created_at));
 }
 
 function appendMsg(text,isMe,senderName,timestamp){
@@ -3303,7 +3324,8 @@ function appendMsg(text,isMe,senderName,timestamp){
     ? new Date(timestamp).toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})
     : new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'});
   d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${timeStr}</div></div>`;
-  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+  msgs.appendChild(d);
+  requestAnimationFrame(()=>{ msgs.scrollTop = msgs.scrollHeight; });
 }
 
 async function sendMsg(){
