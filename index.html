@@ -2035,6 +2035,9 @@ async function saveSettings(){
     if(preis) flUpdate.stundenlohn=preis;
     if(bio) flUpdate.beschreibung=bio;
     if(avatarUrl) flUpdate.avatar_url=avatarUrl;
+    // Save selected services from chips
+    const services = document.getElementById('settingsServices')?.value||'';
+    if(services) flUpdate.dienstleistungen=services;
     await sb.from('freelancers').update(flUpdate).eq('user_id',currentUser.id);
   }
 
@@ -2178,7 +2181,9 @@ async function renderHome(){
     };
     const rc=realFL.map(f=>{
       const kat=f.kategorie||'Sonstiges';
-      const extraTags=CAT_TAGS[kat]||[kat];
+      // Use real dienstleistungen if set, otherwise fallback to CAT_TAGS
+      const realTags = f.dienstleistungen ? f.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean) : null;
+      const extraTags = realTags?.length ? realTags : (CAT_TAGS[kat]||[kat]);
       return {name:f.beschreibung?.split('–')[0]?.trim()||f.beschreibung?.split('-')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
     });
     all=[...rc,...FL];
@@ -2367,7 +2372,9 @@ async function renderSearch(q){
     };
     const rc=realFL.map(f=>{
       const kat=f.kategorie||'Sonstiges';
-      const extraTags=CAT_TAGS[kat]||[kat];
+      // Use real dienstleistungen if set, otherwise fallback to CAT_TAGS
+      const realTags = f.dienstleistungen ? f.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean) : null;
+      const extraTags = realTags?.length ? realTags : (CAT_TAGS[kat]||[kat]);
       return {name:f.beschreibung?.split('–')[0]?.trim()||f.beschreibung?.split('-')[0]?.trim()||'Freelancer',emoji:'👤',avatar:f.avatar_url||null,role:kat,tags:extraTags,price:f.stundenlohn||25,rating:f.bewertung_schnitt||5.0,reviews:f.auftraege_count||0,loc:f.standort||'Deutschland',avail:f.verfuegbar!==false,bio:f.beschreibung||`${f.profiles?.full_name||'Freelancer'} – ${kat} Experte auf Helpefy.`,services:extraTags,revs:[],real:true,id:f.user_id,fl_id:f.id};
     });
     all=[...rc,...FL];
@@ -2486,7 +2493,7 @@ async function loadProfileById(userId){
   if(!fl) return;
   const CAT_TAGS={'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],'Handwerk':['Handwerk','Handwerker','Reparatur','Elektrik','Sanitär'],'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen'],'Haushalt':['Haushalt','Reinigung','Putzen'],'Umzug':['Umzug','Transport','Möbel'],'Lernen':['Nachhilfe','Mathe','Englisch','Tutor'],'Kreativ':['Design','Grafik','Logo'],'Beauty':['Beauty','Friseur','Massage'],'Tiere':['Tiere','Hund','Katze'],'Events':['Events','Party','Hochzeit']};
   const kat = fl.kategorie||'Sonstiges';
-  const f = {name:fl.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:fl.avatar_url||null,role:kat,tags:CAT_TAGS[kat]||[kat],price:fl.stundenlohn||25,rating:fl.bewertung_schnitt||5.0,reviews:fl.auftraege_count||0,loc:fl.standort||'Deutschland',avail:fl.verfuegbar!==false,bio:fl.beschreibung||'',services:CAT_TAGS[kat]||[kat],revs:[],real:true,id:fl.user_id};
+  const f = {name:fl.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:fl.avatar_url||null,role:kat,tags:fl.dienstleistungen?fl.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean):(CAT_TAGS[kat]||[kat]),price:fl.stundenlohn||25,rating:fl.bewertung_schnitt||5.0,reviews:fl.auftraege_count||0,loc:fl.standort||'Deutschland',avail:fl.verfuegbar!==false,bio:fl.beschreibung||'',services:fl.dienstleistungen?fl.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean):(CAT_TAGS[kat]||[kat]),revs:[],real:true,id:fl.user_id};
   window._curFL = f;
   if(!window.ALL_FL || !window.ALL_FL.length) window.ALL_FL = [f];
   else window.ALL_FL[0] = f;
@@ -3957,7 +3964,7 @@ async function chatBookFreelancer(){
   if(fl){
     const CAT_TAGS={'IT & Digital':['IT','Computer','PC','WLAN','Software','Internet','Laptop','Tech','Digital'],'Handwerk':['Handwerk','Handwerker','Reparatur','Elektrik','Sanitär'],'Garten':['Garten','Gärtner','Rasen','Hecke','Pflanzen'],'Haushalt':['Haushalt','Reinigung','Putzen'],'Umzug':['Umzug','Transport','Möbel'],'Lernen':['Nachhilfe','Mathe','Englisch','Tutor'],'Kreativ':['Design','Grafik','Logo'],'Beauty':['Beauty','Friseur','Massage'],'Tiere':['Tiere','Hund','Katze'],'Events':['Events','Party','Hochzeit']};
     const kat = fl.kategorie||'Sonstiges';
-    const f = {name:fl.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:fl.avatar_url||null,role:kat,tags:CAT_TAGS[kat]||[kat],price:fl.stundenlohn||25,rating:fl.bewertung_schnitt||5.0,reviews:fl.auftraege_count||0,loc:fl.standort||'Deutschland',avail:fl.verfuegbar!==false,bio:fl.beschreibung||'',services:CAT_TAGS[kat]||[kat],revs:[],real:true,id:fl.user_id};
+    const f = {name:fl.beschreibung?.split('–')[0]?.trim()||'Freelancer',emoji:'👤',avatar:fl.avatar_url||null,role:kat,tags:fl.dienstleistungen?fl.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean):(CAT_TAGS[kat]||[kat]),price:fl.stundenlohn||25,rating:fl.bewertung_schnitt||5.0,reviews:fl.auftraege_count||0,loc:fl.standort||'Deutschland',avail:fl.verfuegbar!==false,bio:fl.beschreibung||'',services:fl.dienstleistungen?fl.dienstleistungen.split(',').map(s=>s.trim()).filter(Boolean):(CAT_TAGS[kat]||[kat]),revs:[],real:true,id:fl.user_id};
     window._curFL = f;
     if(!window.ALL_FL) window.ALL_FL = [f];
     else window.ALL_FL.unshift(f);
