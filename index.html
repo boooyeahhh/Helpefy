@@ -3777,6 +3777,8 @@ async function markAllReceivedAsRead(){
       .lt('created_at', lastChatVisit);
   } catch(e){ console.log('markAllRead error:',e); }
 }
+
+async function sendPushNotification(title, body, url='/dashboard'){
   // Show local notification (works without server)
   if(Notification.permission === 'granted'){
     if(window._swReg){
