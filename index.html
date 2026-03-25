@@ -293,6 +293,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content
 .msg:not(.me) .bubble{border-bottom-left-radius:4px;}
 .msg-time{font-size:0.62rem;color:var(--muted);margin-top:0.2rem;padding:0 0.2rem;}
 .msg.me .msg-time{text-align:right;}
+.typing-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);display:inline-block;animation:typingBounce 1.2s infinite ease-in-out;}
+.typing-dot:nth-child(2){animation-delay:0.2s;}
+.typing-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
 .chat-input-area{padding:0.75rem 1rem;background:var(--white);border-top:1px solid var(--border);display:flex;gap:0.6rem;align-items:center;flex-shrink:0;}
 .chat-input{flex:1;padding:0.6rem 1rem;border:1.5px solid var(--border);border-radius:22px;font-size:0.9rem;resize:none;min-height:40px;max-height:100px;outline:none;font-family:'Inter',sans-serif;background:var(--light);line-height:1.4;transition:border-color 0.2s;}
 .chat-input:focus{border-color:var(--red);background:var(--white);}
@@ -1062,7 +1066,9 @@ nav{padding:0.75rem 1rem;}
           <label style="cursor:pointer;width:40px;height:40px;min-width:40px;border-radius:50%;background:var(--light2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;" title="Bild senden">
             📷<input type="file" accept="image/*" style="display:none" onchange="sendChatImage(this)">
           </label>
-          <textarea class="chat-input" id="chatInput" placeholder="Nachricht schreiben..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
+          <textarea class="chat-input" id="chatInput" placeholder="Nachricht schreiben..." 
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
+            oninput="broadcastTyping()"></textarea>
           <button class="send-btn" onclick="sendMsg()">➤</button>
         </div>
       </div>
@@ -3311,6 +3317,8 @@ async function openChat(userId,userName,avatarUrl,role){
   clearTimeout(loadTimeout);
   // Now reload chat list - dots should be gone
   await loadChatUsers();
+  // Start typing indicator subscription
+  startTypingIndicator(userId);
   if(chatSubscription) chatSubscription.unsubscribe();
   if(window._chatPollInterval) clearInterval(window._chatPollInterval);
   // Realtime subscription
@@ -3322,11 +3330,22 @@ async function openChat(userId,userName,avatarUrl,role){
                         (msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id);
       if(!isOurConv) return;
       if(msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id){
-        appendMsg(msg.inhalt,false,userName,msg.created_at);
+        hideTypingIndicator();
+        appendMsg(msg.inhalt,false,userName,msg.created_at,msg.id,false);
         await sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
         loadChatUsers();
       }
-    }).subscribe();
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'nachrichten'},payload=>{
+      const msg = payload.new;
+      // If other person read our message → make checkmarks blue
+      if(msg.gelesen && msg.von_user_id===currentUser.id && msg.zu_user_id===activeChatUserId){
+        const el = document.querySelector(`[data-msg-id="${msg.id}"] .msg-checks`);
+        if(el){ el.dataset.read='1'; el.innerHTML='<span style="color:#3b82f6">✓✓</span>'; }
+        else markMsgsAsRead();
+      }
+    })
+    .subscribe();
 
   // Poll every 2 seconds as fallback
   let _lastMsgId = null;
@@ -3369,7 +3388,9 @@ async function loadMessages(){
       container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';
       return;
     }
-    msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id,null,m.created_at));
+    msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id,null,m.created_at,m.id,m.gelesen));
+    // Mark all outgoing msgs as read if the other person has read them
+    markMsgsAsRead();
     
     // Scroll to bottom after all messages are rendered
     requestAnimationFrame(()=>{
@@ -3381,11 +3402,12 @@ async function loadMessages(){
   }
 }
 
-function appendMsg(text,isMe,senderName,timestamp){
+function appendMsg(text,isMe,senderName,timestamp,msgId,isRead){
   const msgs=document.getElementById('chatMsgs');
   const init=isMe?(currentProfile?.full_name||'I').charAt(0).toUpperCase():(senderName||document.getElementById('chatName')?.textContent||'?').charAt(0).toUpperCase();
   const d=document.createElement('div');
   d.className='msg'+(isMe?' me':'');
+  if(msgId) d.dataset.msgId=msgId;
   let bubbleContent;
   if(text&&text.startsWith('[IMG]')){
     const src=text.slice(5);
@@ -3396,10 +3418,65 @@ function appendMsg(text,isMe,senderName,timestamp){
   const timeStr = timestamp
     ? new Date(timestamp).toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})
     : new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'});
-  d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${timeStr}</div></div>`;
+  // Checkmarks: ✓ sent, ✓✓ delivered, ✓✓ blue = read
+  const checks = isMe
+    ? `<span class="msg-checks" data-read="${isRead?'1':'0'}">${isRead?'<span style="color:#3b82f6">✓✓</span>':'✓✓'}</span>`
+    : '';
+  d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${timeStr} ${checks}</div></div>`;
   msgs.appendChild(d);
   requestAnimationFrame(()=>{ msgs.scrollTop = msgs.scrollHeight; });
 }
+
+// Update checkmarks to blue when message is read
+function markMsgsAsRead(){
+  document.querySelectorAll('.msg-checks[data-read="0"]').forEach(el=>{
+    el.dataset.read='1';
+    el.innerHTML='<span style="color:#3b82f6">✓✓</span>';
+  });
+}
+
+// Typing indicator
+let _typingTimeout = null;
+let _typingChannel = null;
+
+function startTypingIndicator(userId){
+  // Subscribe to typing events from the other user
+  if(_typingChannel) _typingChannel.unsubscribe();
+  _typingChannel = sb.channel(`typing_${[currentUser.id, userId].sort().join('_')}`)
+    .on('broadcast',{event:'typing'},payload=>{
+      if(payload.payload?.user_id === userId){
+        showTypingIndicator(payload.payload?.name||'...');
+        clearTimeout(window._typingHideTimeout);
+        window._typingHideTimeout = setTimeout(hideTypingIndicator, 2500);
+      }
+    }).subscribe();
+}
+
+function showTypingIndicator(name){
+  let el = document.getElementById('typingIndicator');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'typingIndicator';
+    el.style.cssText='padding:0.4rem 1rem;font-size:0.78rem;color:var(--muted);font-style:italic;display:flex;align-items:center;gap:0.4rem;';
+    el.innerHTML=`<span style="display:inline-flex;gap:3px"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span> schreibt gerade...`;
+    const msgs = document.getElementById('chatMsgs');
+    if(msgs) msgs.appendChild(el);
+  }
+  el.style.display='flex';
+  requestAnimationFrame(()=>{ const m=document.getElementById('chatMsgs'); if(m) m.scrollTop=m.scrollHeight; });
+}
+
+function hideTypingIndicator(){
+  const el = document.getElementById('typingIndicator');
+  if(el) el.style.display='none';
+}
+
+function broadcastTyping(){
+  if(!activeChatUserId||!currentUser) return;
+  const ch = sb.channel(`typing_${[currentUser.id, activeChatUserId].sort().join('_')}`);
+  ch.send({type:'broadcast',event:'typing',payload:{user_id:currentUser.id,name:currentProfile?.full_name||''}});
+}
+
 
 async function sendMsg(){
   if(!currentUser){showToast('Bitte anmelden!','error');openModal('auth');return;}
@@ -3407,10 +3484,14 @@ async function sendMsg(){
   const input=document.getElementById('chatInput');
   const text=input.value.trim();
   if(!text) return;
+  input.value='';
   const now = new Date().toISOString();
-  const{error}=await sb.from('nachrichten').insert({von_user_id:currentUser.id,zu_user_id:activeChatUserId,inhalt:text,created_at:now});
-  if(!error){appendMsg(text,true,null,now);input.value='';}
-  else showToast('Fehler beim Senden','error');
+  const{data,error}=await sb.from('nachrichten').insert({von_user_id:currentUser.id,zu_user_id:activeChatUserId,inhalt:text,gelesen:false,created_at:now}).select().single();
+  if(!error){
+    appendMsg(text,true,null,now,data?.id,false);
+  } else {
+    showToast('Fehler beim Senden','error');
+  }
 }
 
 async function sendChatImage(input){
@@ -3617,7 +3698,13 @@ function startGlobalListener(){
       .order('created_at', {ascending:false})
       .limit(5);
     
-    if(msgs && msgs.length > 0){
+    // Always update dot based on actual unread count
+    const hasUnread = msgs && msgs.length > 0;
+    // Only show dot if not currently in the chat with that person
+    const unreadFromOther = hasUnread && msgs.some(m => m.von_user_id !== activeChatUserId);
+    setMobileChatDot(unreadFromOther);
+    
+    if(hasUnread){
       const newest = msgs[0];
       if(lastMsgId && newest.id !== lastMsgId){
         const name = newest.profiles?.full_name || 'Jemand';
@@ -3626,8 +3713,8 @@ function startGlobalListener(){
         loadChatUsers();
       }
       lastMsgId = newest.id;
-    } else if(lastMsgId === null && msgs) {
-      lastMsgId = msgs[0]?.id || 'none';
+    } else {
+      lastMsgId = lastMsgId || 'none';
     }
 
     // Check order status changes (für Kunden)
