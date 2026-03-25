@@ -956,6 +956,7 @@ nav{padding:0.75rem 1rem;}
                 <div style="font-size:1.8rem;margin-bottom:0.4rem">🎁</div>
                 <div style="font-size:0.82rem;font-weight:600;color:#92400e">Empfehlen</div>
               </div>
+              <div onclick="switchDash('settings')" style="background:var(--light2);border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;border:1.5px solid var(--border)">
                 <div style="font-size:1.8rem;margin-bottom:0.4rem">⚙️</div>
                 <div style="font-size:0.82rem;font-weight:600">Einstellungen</div>
               </div>
@@ -976,12 +977,13 @@ nav{padding:0.75rem 1rem;}
           </div>
         </div>
       </div>
+      <div id="dash-orders" style="display:none"><div class="dash-title">Meine Aufträge</div><div class="dash-sub">Noch keine Aufträge vorhanden.</div></div>
       <div id="dash-referral" style="display:none">
         <div class="dash-title">🎁 Empfehlen & Verdienen</div>
         <div class="dash-sub">Lade Freelancer ein und verdiene für jede erfolgreiche Vermittlung.</div>
 
         <!-- Referral Link Card -->
-        <div class="dcard" style="margin-bottom:1rem;max-width:600px">
+        <div class="dcard" style="margin-bottom:1rem;max-width:680px">
           <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem">
             <div style="width:44px;height:44px;border-radius:12px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">🔗</div>
             <div>
@@ -1000,7 +1002,7 @@ nav{padding:0.75rem 1rem;}
         </div>
 
         <!-- Stats -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;max-width:600px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;max-width:680px">
           <div class="dsc" style="text-align:center">
             <div class="dsc-icon">👥</div>
             <div class="dsc-n" id="ref-count">0</div>
@@ -1019,7 +1021,7 @@ nav{padding:0.75rem 1rem;}
         </div>
 
         <!-- Prämien Erklärung -->
-        <div class="dcard" style="max-width:600px;margin-bottom:1rem">
+        <div class="dcard" style="max-width:680px;margin-bottom:1rem">
           <div style="font-weight:600;margin-bottom:1rem">💰 So funktionieren die Prämien</div>
           <div style="display:flex;flex-direction:column;gap:0.75rem">
             <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:var(--light);border-radius:10px">
@@ -1047,7 +1049,7 @@ nav{padding:0.75rem 1rem;}
         </div>
 
         <!-- Eingeladene Liste -->
-        <div class="dcard" style="max-width:600px">
+        <div class="dcard" style="max-width:680px">
           <div class="dc-title">Deine Einladungen</div>
           <div id="referralList">
             <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.85rem">
