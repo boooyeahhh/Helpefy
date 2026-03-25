@@ -107,7 +107,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content
 .hero-title{font-size:clamp(2rem,5vw,3.5rem);font-weight:700;color:var(--dark);margin-bottom:0.75rem;line-height:1.15;letter-spacing:-1px;}
 .hero-title span{color:var(--red);}
 .hero-sub{font-size:1rem;color:var(--muted);margin-bottom:2.5rem;font-weight:300;}
-.search-outer{max-width:680px;margin:0 auto 1rem;}
+.search-outer{max-width:680px;width:100%;margin:0 auto 1rem;}
 .search-bar{display:flex;align-items:center;gap:0.75rem;background:var(--white);border:2px solid var(--border);border-radius:14px;padding:0.85rem 1.1rem;box-shadow:var(--shadow2);transition:border-color 0.2s;}
 .search-bar:focus-within{border-color:var(--red);}
 .search-bar input{flex:1;min-width:0;border:none;outline:none;font-size:1rem;color:var(--text);font-family:'Inter',sans-serif;background:transparent;}
@@ -243,7 +243,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;justify-content
 .sni{display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0.75rem;border-radius:9px;font-size:0.85rem;color:var(--muted);cursor:pointer;transition:all 0.15s;}
 .sni:hover,.sni.active{background:var(--light2);color:var(--text);}
 .sni.active{color:var(--red);font-weight:500;}
-.dash-content{padding:2rem;background:var(--light);}
+.dash-content{padding:2rem;background:var(--light);overflow-x:hidden;min-width:0;}
 .dash-title{font-size:1.4rem;font-weight:700;margin-bottom:0.25rem;}
 .dash-sub{font-size:0.82rem;color:var(--muted);margin-bottom:1.75rem;}
 .dstats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem;}
@@ -785,7 +785,7 @@ nav{padding:0.75rem 1rem;}
 <div id="view-search" class="view">
   <div class="section">
     <div style="margin-bottom:1.5rem">
-      <div style="position:relative;max-width:680px">
+      <div style="position:relative;max-width:680px;width:100%">
         <div class="search-bar">
           <span>🔍</span>
           <input id="searchInput" autocomplete="off" name="search2" placeholder="Was brauchst du? z.B. Reinigung, Elektriker..."
@@ -983,7 +983,7 @@ nav{padding:0.75rem 1rem;}
         <div class="dash-sub">Lade Freelancer ein und verdiene für jede erfolgreiche Vermittlung.</div>
 
         <!-- Referral Link Card -->
-        <div class="dcard" style="margin-bottom:1rem;max-width:680px">
+        <div class="dcard" style="margin-bottom:1rem;max-width:680px;width:100%">
           <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem">
             <div style="width:44px;height:44px;border-radius:12px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">🔗</div>
             <div>
@@ -991,8 +991,8 @@ nav{padding:0.75rem 1rem;}
               <div style="font-size:0.78rem;color:var(--muted)">Teile diesen Link mit Freunden & Kollegen</div>
             </div>
           </div>
-          <div style="display:flex;gap:0.5rem;align-items:center">
-            <div id="referralLinkBox" style="flex:1;padding:0.7rem 1rem;background:var(--light2);border-radius:9px;font-size:0.82rem;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Wird geladen...</div>
+          <div style="display:flex;gap:0.5rem;align-items:center;min-width:0">
+            <div id="referralLinkBox" style="flex:1;min-width:0;padding:0.7rem 1rem;background:var(--light2);border-radius:9px;font-size:0.78rem;color:var(--muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Wird geladen...</div>
             <button onclick="copyReferralLink()" class="btn-red" style="padding:0.7rem 1.1rem;white-space:nowrap;flex-shrink:0">📋 Kopieren</button>
           </div>
           <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap">
@@ -1002,7 +1002,7 @@ nav{padding:0.75rem 1rem;}
         </div>
 
         <!-- Stats -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;max-width:680px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem;max-width:680px;width:100%">
           <div class="dsc" style="text-align:center">
             <div class="dsc-icon">👥</div>
             <div class="dsc-n" id="ref-count">0</div>
@@ -1021,7 +1021,7 @@ nav{padding:0.75rem 1rem;}
         </div>
 
         <!-- Prämien Erklärung -->
-        <div class="dcard" style="max-width:680px;margin-bottom:1rem">
+        <div class="dcard" style="max-width:680px;width:100%;margin-bottom:1rem">
           <div style="font-weight:600;margin-bottom:1rem">💰 So funktionieren die Prämien</div>
           <div style="display:flex;flex-direction:column;gap:0.75rem">
             <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:var(--light);border-radius:10px">
@@ -1049,7 +1049,7 @@ nav{padding:0.75rem 1rem;}
         </div>
 
         <!-- Eingeladene Liste -->
-        <div class="dcard" style="max-width:680px">
+        <div class="dcard" style="max-width:680px;width:100%">
           <div class="dc-title">Deine Einladungen</div>
           <div id="referralList">
             <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.85rem">
