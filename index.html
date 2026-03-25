@@ -3674,14 +3674,15 @@ function submitAuszahlung(){
   if(!name){ err.style.display='block'; err.textContent='Bitte Kontoinhaber eingeben.'; return; }
   if(!iban || iban.length < 15){ err.style.display='block'; err.textContent='Bitte gültige IBAN eingeben.'; return; }
 
-  // Close modal IMMEDIATELY before anything else
+  // Close modal IMMEDIATELY
   closeModal('auszahlung');
   showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.','success');
 
-  // Everything else in background after UI is already closed
-  setTimeout(()=>{
-    const emailBody = `Auszahlung ${new Date().toLocaleString('de')}\n${currentProfile?.full_name||currentUser?.email} | ${currentUser?.email}\nBETRAG: ${parseFloat(amount).toFixed(2)} €\nIBAN: ${iban}\nBIC: ${bic}\nBank: ${bank}`;
+  // Background tasks
+  setTimeout(async ()=>{
+    const emailBody = `Auszahlungsanfrage Helpefy\n\nZeitpunkt: ${new Date().toLocaleString('de')}\nName: ${currentProfile?.full_name||currentUser?.email}\nE-Mail: ${currentUser?.email}\nBETRAG: ${parseFloat(amount).toFixed(2)} EUR\nIBAN: ${iban}\nBIC: ${bic}\nBank: ${bank}`;
 
+    // Save to DB
     sb.from('auszahlungen').insert({
       user_id:currentUser.id, betrag:amount, iban, kontoinhaber:name,
       bic, bank, email:currentUser.email,
@@ -3689,17 +3690,31 @@ function submitAuszahlung(){
       status:'beantragt', created_at:new Date().toISOString()
     }).catch(()=>{});
 
+    // Send email
     sb.functions.invoke('send-email',{body:{
       to:'christopher_russell@web.de',
-      subject:`💸 Auszahlung ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
+      subject:`Auszahlung ${parseFloat(amount).toFixed(2)}EUR - ${currentProfile?.full_name||currentUser?.email}`,
       text:emailBody
     }}).catch(()=>{});
 
-    sb.from('auftraege').update({status:'ausgezahlt'})
-      .eq('freelancer_id',currentUser.id).eq('status','abgeschlossen').catch(()=>{});
+    // Mark orders as ausgezahlt so balance shows 0
+    await sb.from('auftraege')
+      .update({status:'ausgezahlt'})
+      .eq('freelancer_id',currentUser.id)
+      .eq('status','abgeschlossen')
+      .catch(()=>{});
 
-    setTimeout(()=>loadProfile(), 1500);
-  }, 100);
+    // Also mark referral earnings as paid
+    await sb.from('referral_earnings')
+      .update({paid:true})
+      .eq('referrer_id',currentUser.id)
+      .catch(()=>{});
+
+    // Reload and show payments tab with 0 balance
+    await loadProfile();
+    switchDash('payments', document.querySelector('.sni[onclick*="payments"]'));
+
+  }, 200);
 }
 
 // ── SUPPORT ──
