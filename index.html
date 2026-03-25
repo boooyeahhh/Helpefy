@@ -490,15 +490,34 @@ nav{padding:0.75rem 1rem;}
         <button onclick="toggleRadius()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem">✕</button>
       </div>
     </div>
-    <div class="search-tags">
+    <!-- Schnellsuche Tags - wechseln je nach Modus -->
+    <div id="tags-freelancer" class="search-tags">
+      <span class="stag" onclick="setSearch('Elektriker')">⚡ Elektriker</span>
       <span class="stag" onclick="setSearch('Reinigung')">🧹 Reinigung</span>
-      <span class="stag" onclick="setSearch('Handwerker')">🔧 Handwerker</span>
       <span class="stag" onclick="setSearch('Umzug')">📦 Umzug</span>
       <span class="stag" onclick="setSearch('IT Hilfe')">💻 IT-Hilfe</span>
       <span class="stag" onclick="setSearch('Nachhilfe')">📚 Nachhilfe</span>
       <span class="stag" onclick="setSearch('Garten')">🌿 Garten</span>
-      <span class="stag" onclick="setSearch('Möbelmontage')">🛠 Möbelmontage</span>
-      <span class="stag" onclick="setSearch('Haustiere')">🐕 Haustiere</span>
+      <span class="stag" onclick="setSearch('Möbelmonteur')">🛠 Möbelmontage</span>
+      <span class="stag" onclick="setSearch('Hundesitting')">🐕 Hundesitting</span>
+      <span class="stag" onclick="setSearch('Friseur')">💇 Friseur</span>
+      <span class="stag" onclick="setSearch('Maler')">🖌 Maler</span>
+      <span class="stag" onclick="setSearch('Babysitting')">👶 Babysitting</span>
+      <span class="stag" onclick="setSearch('Personal Trainer')">💪 Personal Trainer</span>
+    </div>
+    <div id="tags-jobs" class="search-tags" style="display:none">
+      <span class="stag" onclick="setJobSearch('Reinigung')">🧹 Reinigung</span>
+      <span class="stag" onclick="setJobSearch('Handwerk')">🔧 Handwerk</span>
+      <span class="stag" onclick="setJobSearch('Umzug')">📦 Umzug</span>
+      <span class="stag" onclick="setJobSearch('IT & Digital')">💻 IT-Hilfe</span>
+      <span class="stag" onclick="setJobSearch('Nachhilfe')">📚 Nachhilfe</span>
+      <span class="stag" onclick="setJobSearch('Garten')">🌿 Garten</span>
+      <span class="stag" onclick="setJobSearch('Möbelmontage')">🛠 Möbelmontage</span>
+      <span class="stag" onclick="setJobSearch('Tiere')">🐕 Haustiere</span>
+      <span class="stag" onclick="setJobSearch('Beauty')">💄 Beauty</span>
+      <span class="stag" onclick="setJobSearch('Events')">🎉 Events</span>
+      <span class="stag" onclick="setJobSearch('Fahrzeuge')">🚗 Fahrzeuge</span>
+      <span class="stag" onclick="setJobSearch('Betreuung')">👶 Betreuung</span>
     </div>
     <div class="hero-stats">
       <div><div class="hstat-n">12k+</div><div class="hstat-l">Freelancer</div></div>
@@ -2146,6 +2165,11 @@ function switchMode(mode,el){
   document.getElementById('hero-jobs').style.display=mode==='jobs'?'block':'none';
   document.getElementById('section-freelancer').style.display=mode==='freelancer'?'block':'none';
   document.getElementById('section-jobs').style.display=mode==='jobs'?'block':'none';
+  // Switch quick search tags
+  const tfl = document.getElementById('tags-freelancer');
+  const tjobs = document.getElementById('tags-jobs');
+  if(tfl) tfl.style.display = mode==='freelancer'?'flex':'none';
+  if(tjobs) tjobs.style.display = mode==='jobs'?'flex':'none';
   if(mode==='jobs'){
     loadRealJobs();
     const h=document.getElementById('job-login-hint');if(h)h.style.display=currentUser?'none':'block';
@@ -2610,6 +2634,16 @@ function doSearch(){
   },50);
 }
 function setSearch(q){const h=document.getElementById('heroSearch');if(h)h.value=q;doSearch();}
+function setJobSearch(q){
+  const h=document.getElementById('heroSearch');
+  if(h) h.value=q;
+  // Filter jobs by category
+  const results = allJobsCache.filter(j=>
+    j.cat===q || (j.title||'').toLowerCase().includes(q.toLowerCase()) || (j.desc||'').toLowerCase().includes(q.toLowerCase())
+  );
+  renderJobGrid(results.length ? results : allJobsCache);
+  document.getElementById('section-jobs')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 // ── KATEGORIE UNTERKATEGORIEN ──
 const SUBCATS = {
   HANDWERK: {
