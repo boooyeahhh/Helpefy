@@ -3057,30 +3057,42 @@ function toggleRadiusSearch(){
 async function getLocationForSearch(btn){
   if(!btn) btn = document.getElementById('locAutoBtn');
   if(btn){ btn.textContent='⏳'; btn.disabled=true; }
+
   if(!navigator.geolocation){
-    showToast('GPS nicht verfügbar — bitte Stadt manuell eingeben','error');
+    showToast('GPS nicht verfügbar — Stadt manuell eingeben','error');
     if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
     return;
   }
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    userLat = pos.coords.latitude;
-    userLon = pos.coords.longitude;
-    try{
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${userLat}&lon=${userLon}&format=json&accept-language=de`);
-      const d = await res.json();
-      userCity = d.address?.city || d.address?.town || d.address?.village || d.address?.municipality || 'Dein Standort';
-      const li = document.getElementById('radiusLocInput');
-      if(li) li.value = userCity;
+
+  navigator.geolocation.getCurrentPosition(
+    async pos=>{
+      userLat = pos.coords.latitude;
+      userLon = pos.coords.longitude;
+      try{
+        const res = await fetch('https://nominatim.openstreetmap.org/reverse?lat='+userLat+'&lon='+userLon+'&format=json',{headers:{'Accept-Language':'de'}});
+        const d = await res.json();
+        userCity = d.address?.city || d.address?.town || d.address?.village || d.address?.municipality || 'Dein Standort';
+      }catch(e){ userCity = 'Dein Standort'; }
+
+      // Update all location inputs
+      const inputs = ['radiusLocInput'];
+      inputs.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=userCity; });
       const cl = document.getElementById('cityLabel');
       if(cl) cl.textContent = '📍 ' + userCity;
-    }catch(e){ userCity = 'Dein Standort'; }
-    if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
-    showToast('📍 ' + userCity,'success');
-    renderSearch(document.getElementById('searchInput')?.value||'');
-  }, err=>{
-    if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
-    showToast('GPS fehlgeschlagen — bitte Stadt eingeben','error');
-  }, {timeout:8000});
+
+      if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
+      showToast('📍 ' + userCity + ' erkannt!','success');
+      // Auto-run search with new location
+      renderSearch(document.getElementById('searchInput')?.value||'');
+    },
+    err=>{
+      if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
+      if(err.code === 1) showToast('GPS-Zugriff verweigert — bitte in Browser-Einstellungen erlauben','error');
+      else if(err.code === 3) showToast('GPS Timeout — bitte Stadt manuell eingeben','error');
+      else showToast('GPS fehlgeschlagen — bitte Stadt eingeben','error');
+    },
+    {timeout:10000, enableHighAccuracy:false}
+  );
 }
 
 async function applyRadiusSearch(){
@@ -4250,21 +4262,33 @@ function toggleJobRadiusPage(){
 }
 
 async function getJobLocationPage(btn){
-  if(btn){btn.textContent='⏳';btn.disabled=true;}
-  if(!navigator.geolocation){ showToast('GPS nicht verfügbar','error'); if(btn){btn.textContent='🎯 Auto';btn.disabled=false;} return; }
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    jobPageUserLat=pos.coords.latitude; jobPageUserLon=pos.coords.longitude;
-    try{
-      const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${jobPageUserLat}&lon=${jobPageUserLon}&format=json`,{headers:{'Accept-Language':'de'}});
-      const d=await res.json();
-      jobPageUserCity=d.address?.city||d.address?.town||d.address?.village||'Dein Standort';
-      const li=document.getElementById('jobRadiusLocPage');
-      if(li) li.value=jobPageUserCity;
-    }catch(e){}
+  if(btn){ btn.textContent='⏳'; btn.disabled=true; }
+  if(!navigator.geolocation){
+    showToast('GPS nicht verfügbar','error');
     if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
-    showToast('📍 '+jobPageUserCity,'success');
-    applyJobRadiusPage();
-  },()=>{ if(btn){btn.textContent='🎯 Auto';btn.disabled=false;} showToast('GPS fehlgeschlagen','error'); },{timeout:8000});
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    async pos=>{
+      jobPageUserLat=pos.coords.latitude; jobPageUserLon=pos.coords.longitude;
+      try{
+        const res=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+jobPageUserLat+'&lon='+jobPageUserLon+'&format=json',{headers:{'Accept-Language':'de'}});
+        const d=await res.json();
+        jobPageUserCity=d.address?.city||d.address?.town||d.address?.village||'Dein Standort';
+        const li=document.getElementById('jobRadiusLocPage');
+        if(li) li.value=jobPageUserCity;
+      }catch(e){ jobPageUserCity='Dein Standort'; }
+      if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
+      showToast('📍 '+jobPageUserCity+' erkannt!','success');
+      applyJobRadiusPage();
+    },
+    err=>{
+      if(btn){btn.textContent='🎯 Auto';btn.disabled=false;}
+      if(err.code===1) showToast('GPS-Zugriff verweigert — in Browser-Einstellungen erlauben','error');
+      else showToast('GPS fehlgeschlagen — Stadt manuell eingeben','error');
+    },
+    {timeout:10000, enableHighAccuracy:false}
+  );
 }
 
 async function applyJobRadiusPage(){
