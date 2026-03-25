@@ -3663,7 +3663,7 @@ async function requestAuszahlung(amount){
   openModal('auszahlung');
 }
 
-async function submitAuszahlung(){
+function submitAuszahlung(){
   const name = document.getElementById('bankName')?.value.trim();
   const iban = document.getElementById('bankIBAN')?.value.replace(/\s/g,'').trim();
   const bic  = document.getElementById('bankBIC')?.value.trim()||'–';
@@ -3673,37 +3673,33 @@ async function submitAuszahlung(){
 
   if(!name){ err.style.display='block'; err.textContent='Bitte Kontoinhaber eingeben.'; return; }
   if(!iban || iban.length < 15){ err.style.display='block'; err.textContent='Bitte gültige IBAN eingeben.'; return; }
-  err.style.display = 'none';
 
-  const btn = document.getElementById('auszahlungSubmitBtn');
-  btn.disabled = true; btn.textContent = '⏳ Wird bearbeitet...';
-
-  // Fire and forget — never await anything that could hang
-  const emailBody = `Auszahlung ${new Date().toLocaleString('de')}\n${currentProfile?.full_name||currentUser?.email} | ${currentUser?.email}\nBETRAG: ${parseFloat(amount).toFixed(2)} €\nIBAN: ${iban}\nBIC: ${bic}\nBank: ${bank}`;
-
-  // No await — fire in background
-  sb.from('auszahlungen').insert({
-    user_id:currentUser.id, betrag:amount, iban, kontoinhaber:name,
-    bic, bank, email:currentUser.email,
-    name:currentProfile?.full_name||currentUser.email,
-    status:'beantragt', created_at:new Date().toISOString()
-  }).catch(()=>{});
-
-  sb.functions.invoke('send-email',{body:{
-    to:'christopher_russell@web.de',
-    subject:`💸 Auszahlung ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
-    text:emailBody
-  }}).catch(()=>{});
-
-  sb.from('auftraege').update({status:'ausgezahlt'})
-    .eq('freelancer_id',currentUser.id).eq('status','abgeschlossen').catch(()=>{});
-
-  // Close immediately — don't wait
-  btn.disabled = false;
-  btn.textContent = '💸 Jetzt auszahlen beantragen';
+  // Close modal IMMEDIATELY before anything else
   closeModal('auszahlung');
   showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.','success');
-  setTimeout(()=>loadProfile(), 1000);
+
+  // Everything else in background after UI is already closed
+  setTimeout(()=>{
+    const emailBody = `Auszahlung ${new Date().toLocaleString('de')}\n${currentProfile?.full_name||currentUser?.email} | ${currentUser?.email}\nBETRAG: ${parseFloat(amount).toFixed(2)} €\nIBAN: ${iban}\nBIC: ${bic}\nBank: ${bank}`;
+
+    sb.from('auszahlungen').insert({
+      user_id:currentUser.id, betrag:amount, iban, kontoinhaber:name,
+      bic, bank, email:currentUser.email,
+      name:currentProfile?.full_name||currentUser.email,
+      status:'beantragt', created_at:new Date().toISOString()
+    }).catch(()=>{});
+
+    sb.functions.invoke('send-email',{body:{
+      to:'christopher_russell@web.de',
+      subject:`💸 Auszahlung ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
+      text:emailBody
+    }}).catch(()=>{});
+
+    sb.from('auftraege').update({status:'ausgezahlt'})
+      .eq('freelancer_id',currentUser.id).eq('status','abgeschlossen').catch(()=>{});
+
+    setTimeout(()=>loadProfile(), 1500);
+  }, 100);
 }
 
 // ── SUPPORT ──
