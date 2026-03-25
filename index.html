@@ -47,7 +47,7 @@
 }
 body{font-family:'Inter',sans-serif;background:var(--light);color:var(--text);overflow-x:hidden;}
 .view{display:none;}.view.active{display:block;min-height:100vh;}
-#view-chat{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;background:var(--light);display:none;flex-direction:column;}
+#view-chat{position:fixed;top:0;left:0;right:0;bottom:0;z-index:400;background:var(--light);display:none;flex-direction:column;}
 #view-chat.active{display:flex;}
 
 /* Mobile Bottom Navigation */
@@ -3238,7 +3238,7 @@ async function openChat(userId,userName,avatarUrl,role){
                         (msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id);
       if(!isOurConv) return;
       if(msg.von_user_id===activeChatUserId && msg.zu_user_id===currentUser.id){
-        appendMsg(msg.inhalt,false,userName);
+        appendMsg(msg.inhalt,false,userName,msg.created_at);
         await sb.from('nachrichten').update({gelesen:true}).eq('id',msg.id);
         loadChatUsers();
       }
@@ -3279,10 +3279,10 @@ async function loadMessages(){
     container.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem">Noch keine Nachrichten. Schreib etwas! 👋</div>';
     return;
   }
-  msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id));
+  msgs.forEach(m=>appendMsg(m.inhalt,m.von_user_id===currentUser.id,null,m.created_at));
 }
 
-function appendMsg(text,isMe,senderName){
+function appendMsg(text,isMe,senderName,timestamp){
   const msgs=document.getElementById('chatMsgs');
   const init=isMe?(currentProfile?.full_name||'I').charAt(0).toUpperCase():(senderName||document.getElementById('chatName')?.textContent||'?').charAt(0).toUpperCase();
   const d=document.createElement('div');
@@ -3294,7 +3294,10 @@ function appendMsg(text,isMe,senderName){
   } else {
     bubbleContent=`<div class="bubble">${text}</div>`;
   }
-  d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+  const timeStr = timestamp
+    ? new Date(timestamp).toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'})
+    : new Date().toLocaleTimeString('de',{hour:'2-digit',minute:'2-digit'});
+  d.innerHTML=`<div class="msg-av">${init}</div><div>${bubbleContent}<div class="msg-time">${timeStr}</div></div>`;
   msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
 }
 
@@ -3304,8 +3307,9 @@ async function sendMsg(){
   const input=document.getElementById('chatInput');
   const text=input.value.trim();
   if(!text) return;
-  const{error}=await sb.from('nachrichten').insert({von_user_id:currentUser.id,zu_user_id:activeChatUserId,inhalt:text,created_at:new Date().toISOString()});
-  if(!error){appendMsg(text,true);input.value='';}
+  const now = new Date().toISOString();
+  const{error}=await sb.from('nachrichten').insert({von_user_id:currentUser.id,zu_user_id:activeChatUserId,inhalt:text,created_at:now});
+  if(!error){appendMsg(text,true,null,now);input.value='';}
   else showToast('Fehler beim Senden','error');
 }
 
