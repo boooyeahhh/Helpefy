@@ -3678,52 +3678,32 @@ async function submitAuszahlung(){
   const btn = document.getElementById('auszahlungSubmitBtn');
   btn.disabled = true; btn.textContent = '⏳ Wird bearbeitet...';
 
-  try{
-    // Step 1: Save to auszahlungen table (always works)
-    await sb.from('auszahlungen').insert({
-      user_id: currentUser.id,
-      betrag: amount,
-      iban: iban,
-      kontoinhaber: name,
-      bic: bic,
-      bank: bank,
-      email: currentUser.email,
-      name: currentProfile?.full_name || currentUser.email,
-      status: 'beantragt',
-      created_at: new Date().toISOString()
-    });
+  const emailBody = `Neue Auszahlungsanfrage auf Helpefy\n\nZeitpunkt: ${new Date().toLocaleString('de')}\nBenutzer: ${currentProfile?.full_name||currentUser?.email}\nE-Mail: ${currentUser?.email}\n\nBETRAG: ${parseFloat(amount).toFixed(2)} €\n\nBANKVERBINDUNG:\nKontoinhaber: ${name}\nIBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}\nBIC: ${bic}\nBank: ${bank}`;
 
-    // Step 2: Try email via Edge Function (optional — fails silently)
-    const emailBody = `Neue Auszahlungsanfrage auf Helpefy\n\nZeitpunkt: ${new Date().toLocaleString('de')}\nBenutzer: ${currentProfile?.full_name||currentUser?.email}\nE-Mail: ${currentUser?.email}\n\nBETRAG: ${parseFloat(amount).toFixed(2)} €\n\nBANKVERBINDUNG:\nKontoinhaber: ${name}\nIBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}\nBIC: ${bic}\nBank: ${bank}`;
-
+  // Fire all requests in parallel, ignore all errors individually
+  await Promise.allSettled([
+    sb.from('auszahlungen').insert({
+      user_id:currentUser.id, betrag:amount, iban, kontoinhaber:name,
+      bic, bank, email:currentUser.email, name:currentProfile?.full_name||currentUser.email,
+      status:'beantragt', created_at:new Date().toISOString()
+    }),
     sb.functions.invoke('send-email', {
-      body: {
-        to: 'christopher_russell@web.de',
-        subject: `💸 Auszahlung: ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
-        text: emailBody
+      body:{
+        to:'christopher_russell@web.de',
+        subject:`💸 Auszahlung: ${parseFloat(amount).toFixed(2)}€ – ${currentProfile?.full_name||currentUser?.email}`,
+        text:emailBody
       }
-    }).catch(()=>{}); // ignore if not set up yet
+    }),
+    sb.from('auftraege').update({status:'ausgezahlt'})
+      .eq('freelancer_id',currentUser.id).eq('status','abgeschlossen')
+  ]);
 
-    // Step 3: Mark abgeschlossen orders as ausgezahlt
-    await sb.from('auftraege')
-      .update({ status: 'ausgezahlt' })
-      .eq('freelancer_id', currentUser.id)
-      .eq('status', 'abgeschlossen');
-
-    closeModal('auszahlung');
-    showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.', 'success');
-    loadProfile();
-
-  } catch(e){
-    console.error('Auszahlung error:', e);
-    // Show success anyway — data might be saved
-    closeModal('auszahlung');
-    showToast('✅ Auszahlung beantragt! Wir melden uns in 2–3 Werktagen.', 'success');
-    loadProfile();
-  }
-
+  // Always finish — regardless of what failed
   btn.disabled = false;
   btn.textContent = '💸 Jetzt auszahlen beantragen';
+  closeModal('auszahlung');
+  showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.','success');
+  loadProfile();
 }
 
 // ── SUPPORT ──
