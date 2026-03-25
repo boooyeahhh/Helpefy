@@ -3190,34 +3190,36 @@ function switchRegType(type,el){
 // ── CHAT ──
 async function loadChatUsers(){
   if(!currentUser) return;
-  // Update last_chat_visit so on next restart we know what was seen
-  localStorage.setItem('hlf_last_chat_visit', new Date().toISOString());
   const chatList=document.getElementById('chatUserList');
   if(!chatList) return;
-  const{data:msgs}=await sb.from('nachrichten').select('von_user_id,zu_user_id,gelesen').or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`).limit(100);
-  let partnerIds=new Set();
-  let unreadIds=new Set(); // partners who sent unread messages
-  if(msgs) msgs.forEach(m=>{
-    if(m.von_user_id!==currentUser.id) partnerIds.add(m.von_user_id);
-    if(m.zu_user_id!==currentUser.id) partnerIds.add(m.zu_user_id);
-    // Unread = message sent TO me, not yet read
-    if(m.zu_user_id===currentUser.id && !m.gelesen) unreadIds.add(m.von_user_id);
-  });
-  const{data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
-  if(!allUsers||!allUsers.length){chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.</div>`;return;}
-  // Sort: unread first, then by most recent message
+
+  // Load recent messages to detect partners and last message times
   const {data:recentMsgs} = await sb.from('nachrichten')
-    .select('von_user_id,zu_user_id,created_at')
+    .select('id,von_user_id,zu_user_id,created_at')
     .or(`von_user_id.eq.${currentUser.id},zu_user_id.eq.${currentUser.id}`)
     .order('created_at',{ascending:false})
-    .limit(50);
-  
+    .limit(100);
+
+  let partnerIds = new Set();
   const lastMsgTime = {};
+  // Track newest message FROM each partner TO me
+  const newestFromPartner = {};
+
   if(recentMsgs) recentMsgs.forEach(m=>{
     const partner = m.von_user_id===currentUser.id ? m.zu_user_id : m.von_user_id;
+    partnerIds.add(partner);
     if(!lastMsgTime[partner]) lastMsgTime[partner] = m.created_at;
+    // Track newest incoming message per partner
+    if(m.von_user_id !== currentUser.id && m.zu_user_id === currentUser.id){
+      if(!newestFromPartner[m.von_user_id] || m.created_at > newestFromPartner[m.von_user_id].time){
+        newestFromPartner[m.von_user_id] = {id:m.id, time:m.created_at};
+      }
+    }
   });
-  
+
+  const {data:allUsers}=await sb.from('profiles').select('*').neq('id',currentUser.id);
+  if(!allUsers||!allUsers.length){chatList.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">Noch keine Kontakte.</div>`;return;}
+
   const sorted=[...allUsers].sort((a,b)=>{
     const aTime = lastMsgTime[a.id]||'';
     const bTime = lastMsgTime[b.id]||'';
@@ -3227,14 +3229,23 @@ async function loadChatUsers(){
     return 0;
   });
   window._chatUsers=sorted;
+
+  // Use localStorage last-seen to determine dots - 100% reliable across restarts
+  const ls = getLastSeen();
   chatList.innerHTML=sorted.map((u,idx)=>{
     const init=(u.full_name||u.email||'?').charAt(0).toUpperCase();
     const hasMsg=partnerIds.has(u.id);
     const avatarHtml=u.avatar_url?`<img src="${u.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:init;
+    // Show dot only if there's a message from this user newer than last seen time
+    const newest = newestFromPartner[u.id];
+    const lastSeen = ls[u.id];
+    const hasUnread = newest && u.id !== activeChatUserId && (
+      !lastSeen || newest.time > lastSeen.time
+    );
     return `<div class="ci ${activeChatUserId===u.id?'active':''}" onclick="startChatWithUser(${idx})" style="cursor:pointer">
       <div class="ci-av" style="overflow:hidden">${avatarHtml}</div>
       <div class="ci-info"><div class="ci-name">${u.full_name||u.email}</div><div class="ci-msg">${u.role==='freelancer'?'👷 Freelancer':'👤 Kunde'}${hasMsg?' · Unterhaltung':''}</div></div>
-      ${unreadIds.has(u.id)&&u.id!==activeChatUserId&&!(window._openedChats?.has(u.id))?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
+      ${hasUnread?'<div style="width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:0.25rem;flex-shrink:0"></div>':''}
     </div>`;
   }).join('');
 }
@@ -3287,9 +3298,11 @@ async function chatBookFreelancer(){
 
 async function openChat(userId,userName,avatarUrl,role){
   activeChatUserId=userId;
-  // Track as opened - never show dot for opened chats
+  // Track as opened - update last_seen so dot disappears immediately and persists across restarts
   if(!window._openedChats) window._openedChats = new Set();
   window._openedChats.add(userId);
+  // Save current time as last-seen for this user
+  setLastSeen(userId, 'open_'+Date.now(), new Date().toISOString());
   avatarUrl=avatarUrl||''; role=role||'';
   const chatName=document.getElementById('chatName');
   const chatStatus=document.getElementById('chatStatus');
@@ -3703,11 +3716,13 @@ function startGlobalListener(){
       .order('created_at', {ascending:false})
       .limit(5);
     
-    // Always update dot based on actual unread count
-    const hasUnread = msgs && msgs.length > 0;
-    // Only show dot if not currently in the chat with that person
-    const unreadFromOther = hasUnread && msgs.some(m => m.von_user_id !== activeChatUserId);
-    setMobileChatDot(unreadFromOther);
+    // Always update dot based on localStorage last-seen (reliable across restarts)
+    const hasUnread = msgs && msgs.length > 0 && msgs.some(m => {
+      const ls = getLastSeen();
+      const lastSeen = ls[m.von_user_id];
+      return m.von_user_id !== activeChatUserId && (!lastSeen || m.created_at > lastSeen.time);
+    });
+    setMobileChatDot(hasUnread);
     
     if(hasUnread){
       const newest = msgs[0];
@@ -3763,18 +3778,48 @@ function startGlobalListener(){
   window._pollInterval = setInterval(checkNotifications, 20000);
 }
 
+// ── LAST SEEN MESSAGES (local, no DB dependency for dots) ──
+function getLastSeen(){
+  try{ return JSON.parse(localStorage.getItem('hlf_last_seen')||'{}'); }
+  catch(e){ return {}; }
+}
+function setLastSeen(userId, msgId, msgTime){
+  const ls = getLastSeen();
+  ls[userId] = {id: msgId, time: msgTime};
+  localStorage.setItem('hlf_last_seen', JSON.stringify(ls));
+}
+function hasUnseenFrom(userId, msgs){
+  if(!msgs||!msgs.length) return false;
+  const ls = getLastSeen();
+  const last = ls[userId];
+  if(!last) return true; // never opened this chat
+  // Check if any message from userId is newer than last seen
+  return msgs.some(m => m.von_user_id === userId && m.created_at > last.time);
+}
+
 async function markAllReceivedAsRead(){
-  // On app start: mark as read all messages that arrived before last time user opened chat
-  // This prevents dots reappearing after app restart for already-seen messages
+  // Mark in DB (best effort) and update local last_seen
   if(!currentUser) return;
-  const lastChatVisit = localStorage.getItem('hlf_last_chat_visit');
-  if(!lastChatVisit) return;
   try{
+    // Get all unread messages
+    const {data:unread} = await sb.from('nachrichten')
+      .select('id,von_user_id,created_at')
+      .eq('zu_user_id', currentUser.id)
+      .eq('gelesen', false);
+    if(!unread||!unread.length) return;
+    // Update DB
     await sb.from('nachrichten')
       .update({gelesen:true})
       .eq('zu_user_id', currentUser.id)
-      .eq('gelesen', false)
-      .lt('created_at', lastChatVisit);
+      .eq('gelesen', false);
+    // Also update local last_seen for each sender
+    const byUser = {};
+    unread.forEach(m=>{
+      if(!byUser[m.von_user_id] || m.created_at > byUser[m.von_user_id].time){
+        byUser[m.von_user_id] = {id:m.id, time:m.created_at};
+      }
+    });
+    Object.entries(byUser).forEach(([uid,data])=> setLastSeen(uid, data.id, data.time));
   } catch(e){ console.log('markAllRead error:',e); }
 }
 
