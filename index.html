@@ -1212,6 +1212,15 @@ nav{padding:0.75rem 1rem;}
   </div>
 </div>
 
+<!-- LIGHTBOX -->
+<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;align-items:center;justify-content:center;flex-direction:column;" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" style="max-width:95vw;max-height:80vh;object-fit:contain;border-radius:8px;">
+  <div style="display:flex;gap:1rem;margin-top:1rem;" onclick="event.stopPropagation()">
+    <a id="lightboxDownload" download="helpefy-bild.jpg" style="padding:0.65rem 1.5rem;background:white;color:#111;border-radius:10px;font-size:0.9rem;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:0.4rem;">⬇️ Speichern</a>
+    <button onclick="closeLightbox()" style="padding:0.65rem 1.5rem;background:rgba(255,255,255,0.15);color:white;border:none;border-radius:10px;font-size:0.9rem;cursor:pointer;">✕ Schließen</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -2910,6 +2919,23 @@ function updateMobileNav(view){
   });
 }
 
+function openLightbox(src){
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  const dl = document.getElementById('lightboxDownload');
+  img.src = src;
+  dl.href = src;
+  lb.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox(){
+  document.getElementById('lightbox').style.display = 'none';
+  document.getElementById('lightboxImg').src = '';
+  document.body.style.overflow = '';
+}
+// Close on Escape key
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
+
 function setMobileChatDot(show){
   const el = document.getElementById('mbn-chat-icon');
   if(el) el.classList.toggle('has-dot', show);
@@ -3417,7 +3443,7 @@ async function loadMessages(){
       let bubbleContent;
       if(m.inhalt&&m.inhalt.startsWith('[IMG]')){
         const src=m.inhalt.slice(5);
-        bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="window.open('${src}','_blank')">`;
+        bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="openLightbox('${src}')">`;
       } else {
         bubbleContent=`<div class="bubble">${m.inhalt}</div>`;
       }
@@ -3454,7 +3480,7 @@ function appendMsg(text,isMe,senderName,timestamp,msgId,isRead){
   let bubbleContent;
   if(text&&text.startsWith('[IMG]')){
     const src=text.slice(5);
-    bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="window.open('${src}','_blank')">`;
+    bubbleContent=`<img src="${src}" style="max-width:220px;max-height:220px;border-radius:10px;display:block;cursor:pointer" onclick="openLightbox('${src}')">`;
   } else {
     bubbleContent=`<div class="bubble">${text}</div>`;
   }
