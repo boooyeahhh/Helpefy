@@ -365,7 +365,7 @@ footer{background:var(--dark);padding:4rem 2.5rem 2rem;}
 .sugg-item strong{color:var(--dark);}
 
 /* LOCATION AUTOCOMPLETE */
-.loc-sugg{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--shadow2);z-index:999;max-height:200px;overflow-y:auto;margin-top:2px;}
+.loc-sugg{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:9999;max-height:220px;overflow-y:auto;margin-top:2px;}
 .loc-item{padding:0.65rem 1rem;cursor:pointer;font-size:0.85rem;border-bottom:1px solid var(--border);transition:background 0.15s;}
 .loc-item:last-child{border-bottom:none;}
 .loc-item:hover{background:var(--light2);}
@@ -3075,8 +3075,10 @@ async function getLocationForSearch(btn){
       }catch(e){ userCity = 'Dein Standort'; }
 
       // Update all location inputs
-      const inputs = ['radiusLocInput'];
-      inputs.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=userCity; });
+      ['radiusLocInput','jobRadiusLocInput','jobRadiusLocPage'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.value = userCity;
+      });
       const cl = document.getElementById('cityLabel');
       if(cl) cl.textContent = '📍 ' + userCity;
 
