@@ -2387,13 +2387,17 @@ async function geocodeCity(city){
 }
 
 async function geocodeFreelancers(list){
-  // Geocode all real freelancers that have a standort but no lat/lon
-  // Also check the persistent window._coordCache
   if(!window._coordCache) window._coordCache = {};
-  const toGeocode = list.filter(f=>f.real && f.loc && f.loc!=='Deutschland' && !f.lat && !f.loc.toLowerCase().includes('online'));
+  const vague = ['deutschland','germany','bundesweit','online',''];
+  const toGeocode = list.filter(f=>
+    f.loc &&
+    !vague.includes(f.loc.toLowerCase().trim()) &&
+    !f.lat &&
+    !f.loc.toLowerCase().includes('online') &&
+    (f.real !== false) // allow jobs (no real flag) and real freelancers
+  );
   await Promise.all(toGeocode.map(async f=>{
     const key = f.loc.toLowerCase().trim();
-    // Check persistent cache first
     if(window._coordCache[key]){
       f.lat = window._coordCache[key].lat;
       f.lon = window._coordCache[key].lon;
@@ -4047,6 +4051,11 @@ async function applyJobRadiusPage(){
   }
   const km=parseInt(document.getElementById('jobRadiusSliderPage')?.value||25);
   const vague=['deutschland','germany','bundesweit',''];
+
+  // Geocode jobs that don't have coordinates yet
+  const needGeo = _jobPageResults.filter(j => j.loc && !vague.includes((j.loc||'').toLowerCase().trim()) && !j.lat);
+  if(needGeo.length) await geocodeFreelancers(needGeo);
+
   const inRadius=_jobPageResults.filter(j=>{
     if(vague.includes((j.loc||'').toLowerCase().trim())) return false;
     if(!j.lat||!j.lon) return false;
