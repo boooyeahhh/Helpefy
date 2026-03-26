@@ -3314,6 +3314,9 @@ async function confirmPayment(){
       await sb.from('auftraege').update({
         status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:chargeData.paymentIntentId
       }).eq('id',window._payAuftragId);
+      // Mark the job as vergeben so it disappears from search
+      const {data:auftrag} = await sb.from('auftraege').select('titel,kunde_id').eq('id',window._payAuftragId).single();
+      if(auftrag) await sb.from('jobs').update({status:'vergeben'}).eq('titel',auftrag.titel).eq('kunde_id',auftrag.kunde_id);
       window._payAuftragId=null;
     }
   } catch(chargeErr){
@@ -3323,6 +3326,8 @@ async function confirmPayment(){
       await sb.from('auftraege').update({
         status:'bezahlt', abschluss_code:completionCode, stripe_payment_id:paymentMethod.id
       }).eq('id',window._payAuftragId);
+      const {data:auftrag2} = await sb.from('auftraege').select('titel,kunde_id').eq('id',window._payAuftragId).single();
+      if(auftrag2) await sb.from('jobs').update({status:'vergeben'}).eq('titel',auftrag2.titel).eq('kunde_id',auftrag2.kunde_id);
       window._payAuftragId=null;
     }
   }
@@ -3884,9 +3889,8 @@ function submitAuszahlung(){
 
   // Generate invoice immediately
   const rechnungNr = 'HLF-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-6);
-  setTimeout(()=>generateRechnung(name, iban, bic, bank, amount, rechnungNr), 500);
 
-  // Background tasks - each step independent
+  // Background tasks first, then invoice
   const _rNr = rechnungNr;
   const _name = currentProfile?.full_name || currentUser?.email;
   const _email = currentUser?.email;
@@ -3900,20 +3904,40 @@ function submitAuszahlung(){
       '\nIBAN: ' + iban + '\nBIC: ' + bic + '\nBank: ' + bank +
       '\nVerwendungszweck: Helpefy Auszahlung ' + _rNr;
 
-    // Step 1: Save to DB
-    try{ await sb.from('auszahlungen').insert({user_id:_uid,betrag:amount,iban,kontoinhaber:name,bic,bank,email:_email,name:_name,status:'beantragt',created_at:new Date().toISOString()}); }catch(e){ console.log('DB:',e.message); }
+    // Step 1: Save to DB FIRST
+    try{
+      const {error:dbErr} = await sb.from('auszahlungen').insert({
+        user_id:_uid, betrag:amount, iban, kontoinhaber:name,
+        bic, bank, email:_email, name:_name,
+        status:'beantragt', created_at:new Date().toISOString()
+      });
+      if(dbErr) console.log('DB error:', dbErr.message);
+      else console.log('DB saved OK');
+    }catch(e){ console.log('DB:',e.message); }
 
     // Step 2: Send email
-    try{ await sb.functions.invoke('send-email',{body:{to:'christopher_russell@web.de',subject:'Auszahlung '+parseFloat(amount).toFixed(2)+'EUR - '+_name+' ('+_rNr+')',text:emailBody}}); }catch(e){ console.log('Email:',e.message); }
+    try{
+      await sb.functions.invoke('send-email',{body:{
+        to:'christopher_russell@web.de',
+        subject:'Auszahlung '+parseFloat(amount).toFixed(2)+'EUR - '+_name+' ('+_rNr+')',
+        text:emailBody
+      }});
+    }catch(e){ console.log('Email:',e.message); }
 
     // Step 3: Mark auftraege as ausgezahlt
-    try{ await sb.from('auftraege').update({status:'ausgezahlt'}).eq('freelancer_id',_uid).eq('status','abgeschlossen'); }catch(e){ console.log('Auftraege:',e.message); }
+    try{
+      await sb.from('auftraege').update({status:'ausgezahlt'})
+        .eq('freelancer_id',_uid).eq('status','abgeschlossen');
+    }catch(e){ console.log('Auftraege:',e.message); }
 
-    // Step 4: Update payments UI to show 0
+    // Step 4: Update payments UI
     const paymentsEl = document.getElementById('dash-payments');
     if(paymentsEl) paymentsEl.innerHTML = '<div class="dash-title">Zahlungen & Auszahlung</div><div class="dcard" style="max-width:500px;margin-top:1rem"><div style="padding:0.5rem 0"><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border)"><div><div style="font-size:0.875rem;font-weight:500">✅ Auszahlung beantragt</div><div style="font-size:0.75rem;color:var(--muted)">' + new Date().toLocaleDateString('de') + ' – ' + parseFloat(amount).toFixed(2) + ' €</div></div><div style="color:#16a34a;font-weight:600">Beantragt</div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0"><div style="font-size:1rem;font-weight:700">Verfügbares Guthaben</div><div style="font-size:1.5rem;font-weight:700;color:var(--red)">0,00 €</div></div></div></div>';
 
-    // Step 5: Success overlay then dashboard
+    // Step 5: NOW open invoice (after all DB work is done)
+    generateRechnung(name, iban, bic, bank, amount, _rNr);
+
+    // Step 6: Success overlay
     const sv = document.getElementById('view-auszahlung-success');
     if(sv){ sv.style.display='flex'; setTimeout(()=>{ const bar=document.getElementById('successProgressBar'); if(bar) bar.style.width='100%'; },100); }
     setTimeout(()=>{
