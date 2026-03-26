@@ -2393,6 +2393,15 @@ function switchMode(mode,el){
 
 // ── RENDER ──
 async function renderHome(){
+  // Use cache if available (avoid reload on every navigation)
+  if(window._homeFL && window._homeFL.length > 0){
+    _renderHomeGrid(window._homeFL);
+  } else {
+    // Show instantly with demo data while loading
+    _renderHomeGrid([...FL]);
+  }
+
+  // Always refresh in background
   const {data:realFL}=await sb.from('freelancers').select('*').limit(20);
   let all=[...FL];
   if(realFL&&realFL.length){
@@ -2419,11 +2428,19 @@ async function renderHome(){
     all=[...rc,...FL];
   }
   window.ALL_FL=all;
+  window._homeFL=all; // cache for fast reload
   // Geocode for radius filter
   await geocodeFreelancers(all);
   // Apply radius filter if active
   const filtered = applyRadiusFilter(all, 'radiusSlider', 'radiusRow');
   document.getElementById('homeGrid').innerHTML=filtered.map((f,i)=>flCard(f,all.indexOf(f))).join('');
+}
+
+function _renderHomeGrid(all){
+  window.ALL_FL=all;
+  const filtered = applyRadiusFilter(all, 'radiusSlider', 'radiusRow');
+  const grid = document.getElementById('homeGrid');
+  if(grid) grid.innerHTML=filtered.map((f,i)=>flCard(f,all.indexOf(f))).join('');
 }
 
 // ── GEOCODING CACHE ──
@@ -3360,6 +3377,12 @@ async function renderDashOrders(){
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
             ${badge(o.status)}
+            ${o.status==='angebot_gesendet'&&!o._asFreelancer?`
+              <div style="display:flex;gap:0.35rem;margin-top:0.25rem;flex-wrap:wrap">
+                <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
+                <button onclick="updateAuftrag('${o.id}','abgelehnt')" style="padding:0.3rem 0.75rem;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✕ Ablehnen</button>
+                <button onclick="openChatWithOrder('${o.id}','${o.freelancer_id}')" style="padding:0.3rem 0.75rem;background:var(--light2);color:var(--dark);border:1.5px solid var(--border);border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">💬 Chat</button>
+              </div>`:``}
             ${(o.status==='anfrage'||o.status==='offen'||o.status==='angebot_gesendet')&&o._asFreelancer?`
               <div style="display:flex;gap:0.35rem;margin-top:0.25rem;flex-wrap:wrap">
                 <button onclick="updateAuftrag('${o.id}','angenommen')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:7px;font-size:0.75rem;cursor:pointer;font-family:Inter,sans-serif;font-weight:500">✓ Annehmen</button>
@@ -3400,7 +3423,7 @@ async function renderDashOrders(){
                   ⭐ Bewertung abgeben
                 </button>`}
               </div>`:''}
-            ${(o.status==='abgeschlossen'||o.status==='abgelehnt'||o.status==='ausgezahlt')?`
+            ${(o.status==='abgeschlossen'||o.status==='abgelehnt'||o.status==='ausgezahlt'||o.status==='angebot_gesendet')?`
               <button onclick="deleteAuftrag('${o.id}')" style="padding:0.25rem 0.6rem;background:none;color:#dc2626;border:1px solid #dc2626;border-radius:6px;font-size:0.72rem;cursor:pointer;font-family:Inter,sans-serif;margin-top:0.35rem;display:block">
                 🗑 Löschen
               </button>`:''}
@@ -3410,9 +3433,13 @@ async function renderDashOrders(){
 }
 
 async function deleteAuftrag(id){
-  if(!confirm('Auftrag wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return;
-  const {error} = await sb.from('auftraege').delete().eq('id', id);
-  if(error){ showToast('Fehler beim Löschen','error'); return; }
+  if(!confirm('Auftrag wirklich löschen?')) return;
+  // Try as kunde first, then as freelancer (RLS)
+  let {error} = await sb.from('auftraege').delete().eq('id', id).eq('kunde_id', currentUser.id);
+  if(error || !error){
+    // Also try as freelancer
+    await sb.from('auftraege').delete().eq('id', id).eq('freelancer_id', currentUser.id);
+  }
   showToast('Auftrag gelöscht','success');
   renderDashOrders();
 }
