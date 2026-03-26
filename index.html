@@ -3773,103 +3773,52 @@ async function requestAuszahlung(amount){
 function generateRechnung(name, iban, bic, bank, amount, rechnungNr){
   const datum = new Date().toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
   const faellig = new Date(Date.now() + 14*24*60*60*1000).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const netto = (amount / 1.0).toFixed(2); // Kleinunternehmer - keine MwSt
-  
-  const html = `<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<style>
-  body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;color:#1a1a1a;font-size:14px;line-height:1.5}
-  .logo{font-size:24px;font-weight:800;color:#E8352A;margin-bottom:4px}
-  .header{display:flex;justify-content:space-between;margin-bottom:40px}
-  .label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
-  .value{font-weight:600}
-  table{width:100%;border-collapse:collapse;margin:24px 0}
-  th{background:#f5f5f5;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#666}
-  td{padding:10px 12px;border-bottom:1px solid #eee}
-  .total-row td{font-weight:700;font-size:16px;border-top:2px solid #1a1a1a;border-bottom:none}
-  .footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;font-size:12px;color:#666}
-  .badge{background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
-  h1{font-size:28px;font-weight:800;margin:0 0 4px}
-</style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="logo">Helpefy</div>
-      <div style="font-size:12px;color:#666">helpefy.de<br>Freelancer Marktplatz</div>
-    </div>
-    <div style="text-align:right">
-      <div class="label">Rechnungsdatum</div>
-      <div class="value">${datum}</div>
-      <div class="label" style="margin-top:8px">Rechnungsnummer</div>
-      <div class="value">${rechnungNr}</div>
-      <div style="margin-top:8px"><span class="badge">✓ Auszahlung beantragt</span></div>
-    </div>
-  </div>
 
-  <div style="margin-bottom:32px">
-    <div class="label">Empfänger / Freelancer</div>
-    <div class="value" style="font-size:16px">${name}</div>
-    <div style="color:#666">IBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}</div>
-    ${bic !== '–' ? `<div style="color:#666">BIC: ${bic}</div>` : ''}
-    ${bank !== '–' ? `<div style="color:#666">Bank: ${bank}</div>` : ''}
-  </div>
+  const html = '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">' +
+    '<style>body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;color:#1a1a1a;font-size:14px;line-height:1.5;padding:0 20px}' +
+    '.logo{font-size:24px;font-weight:800;color:#E8352A}.label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}' +
+    '.value{font-weight:600}table{width:100%;border-collapse:collapse;margin:24px 0}' +
+    'th{background:#f5f5f5;padding:10px 12px;text-align:left;font-size:12px;color:#666}' +
+    'td{padding:10px 12px;border-bottom:1px solid #eee}.total-row td{font-weight:700;font-size:16px;border-top:2px solid #1a1a1a;border-bottom:none}' +
+    '@media print{.noprint{display:none}}</style></head><body>' +
+    '<div style="display:flex;justify-content:space-between;margin-bottom:40px;flex-wrap:wrap;gap:1rem">' +
+    '<div><div class="logo">Helpefy</div><div style="font-size:12px;color:#666">helpefy.de</div></div>' +
+    '<div style="text-align:right"><div class="label">Rechnungsdatum</div><div class="value">' + datum + '</div>' +
+    '<div class="label" style="margin-top:8px">Rechnungsnummer</div><div class="value">' + rechnungNr + '</div></div></div>' +
+    '<div style="margin-bottom:24px"><div class="label">Freelancer</div>' +
+    '<div class="value" style="font-size:16px">' + name + '</div>' +
+    '<div style="color:#666">IBAN: ' + iban.replace(/(.{4})/g,'$1 ').trim() + '</div></div>' +
+    '<h1 style="font-size:28px;font-weight:800;margin:0 0 4px">Rechnung</h1>' +
+    '<p style="color:#666;margin-bottom:24px">Vergütung über die Helpefy-Plattform</p>' +
+    '<table><tr><th>Beschreibung</th><th style="text-align:right">Betrag</th></tr>' +
+    '<tr><td><strong>Freelancer-Vergütung</strong><br><span style="color:#666;font-size:12px">Nach Helpefy-Provision (15%) — ' + datum + '</span></td>' +
+    '<td style="text-align:right">' + parseFloat(amount).toFixed(2) + ' €</td></tr>' +
+    '<tr style="font-weight:700;font-size:16px"><td style="border-top:2px solid #1a1a1a;padding:10px 12px">Gesamtbetrag (§19 UStG)</td>' +
+    '<td style="border-top:2px solid #1a1a1a;padding:10px 12px;text-align:right">' + parseFloat(amount).toFixed(2) + ' €</td></tr></table>' +
+    '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-top:16px">' +
+    '<div style="font-weight:600;margin-bottom:8px">Zahlungsdetails</div>' +
+    '<div>Betrag: <strong>' + parseFloat(amount).toFixed(2) + ' €</strong></div>' +
+    '<div>Empfänger: <strong>' + name + '</strong></div>' +
+    '<div>IBAN: <strong>' + iban.replace(/(.{4})/g,'$1 ').trim() + '</strong></div>' +
+    '<div>Fällig bis: <strong>' + faellig + '</strong></div>' +
+    '<div>Verwendungszweck: <strong>Helpefy Auszahlung ' + rechnungNr + '</strong></div></div>' +
+    '<div class="noprint" style="margin-top:24px;text-align:right">' +
+    '<button onclick="window.print()" style="padding:0.6rem 1.5rem;background:#E8352A;color:white;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;font-weight:600">PDF speichern</button></div>' +
+    '<div style="margin-top:40px;padding-top:20px;border-top:1px solid #eee;font-size:12px;color:#666">' +
+    '<p>§19 UStG — keine Umsatzsteuer (Kleinunternehmerregelung)</p>' +
+    '<p>Helpefy | helpefy.de | Automatisch generiert</p></div>' +
+    '</body></html>';
 
-  <div style="margin-bottom:32px">
-    <div class="label">Auftraggeber / Plattform</div>
-    <div class="value">Helpefy</div>
-    <div style="color:#666">helpefy.de</div>
-  </div>
-
-  <h1>Rechnung</h1>
-  <p style="color:#666;margin-bottom:24px">Vergütung für erbrachte Dienstleistungen über die Helpefy-Plattform</p>
-
-  <table>
-    <tr>
-      <th>Beschreibung</th>
-      <th style="text-align:right">Betrag</th>
-    </tr>
-    <tr>
-      <td>
-        <strong>Freelancer-Vergütung</strong><br>
-        <span style="color:#666;font-size:12px">Abzüglich Helpefy-Provision (15%) — Zeitraum bis ${datum}</span>
-      </td>
-      <td style="text-align:right">${parseFloat(netto).toFixed(2)} €</td>
-    </tr>
-    <tr class="total-row">
-      <td>Gesamtbetrag (inkl. Kleinunternehmerregelung §19 UStG)</td>
-      <td style="text-align:right">${parseFloat(netto).toFixed(2)} €</td>
-    </tr>
-  </table>
-
-  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-top:16px">
-    <div style="font-weight:600;margin-bottom:8px">💳 Zahlungsdetails</div>
-    <div>Betrag: <strong>${parseFloat(netto).toFixed(2)} €</strong></div>
-    <div>Empfänger: <strong>${name}</strong></div>
-    <div>IBAN: <strong>${iban.replace(/(.{4})/g,'$1 ').trim()}</strong></div>
-    <div>Fällig bis: <strong>${faellig}</strong></div>
-    <div>Verwendungszweck: <strong>Helpefy Auszahlung ${rechnungNr}</strong></div>
-  </div>
-
-  <div class="footer">
-    <p>Gemäß §19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
-    <p>Helpefy | helpefy.de | Diese Rechnung wurde automatisch generiert.</p>
-  </div>
-</body>
-</html>`;
-
-  // Open in new tab and trigger print/save as PDF
-  const win = window.open('', '_blank');
-  win.document.write(html.replace('</body>', `
-  <div style="position:fixed;bottom:0;left:0;right:0;background:white;padding:1rem 2rem;border-top:1px solid #e5e7eb;display:flex;gap:1rem;justify-content:flex-end;box-shadow:0 -4px 12px rgba(0,0,0,0.08)">
-    <button onclick="window.close()" style="padding:0.6rem 1.5rem;border:1.5px solid #e5e7eb;background:white;border-radius:8px;font-size:0.9rem;cursor:pointer;font-family:Arial,sans-serif">✕ Schließen</button>
-    <button onclick="window.print()" style="padding:0.6rem 1.5rem;background:#E8352A;color:white;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;font-weight:600;font-family:Arial,sans-serif">📥 Als PDF speichern</button>
-  </div>
-  <div style="height:80px"></div>
-  </body>`));
-  win.document.close();
+  // Download as HTML file — works reliably on all devices including iOS
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Rechnung-Helpefy-' + rechnungNr + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
 }
 
 function submitAuszahlung(){
@@ -3906,14 +3855,21 @@ function submitAuszahlung(){
 
     // Step 1: Save to DB FIRST
     try{
-      const {error:dbErr} = await sb.from('auszahlungen').insert({
+      const {data:inserted, error:dbErr} = await sb.from('auszahlungen').insert({
         user_id:_uid, betrag:amount, iban, kontoinhaber:name,
         bic, bank, email:_email, name:_name,
         status:'beantragt', created_at:new Date().toISOString()
-      });
-      if(dbErr) console.log('DB error:', dbErr.message);
-      else console.log('DB saved OK');
-    }catch(e){ console.log('DB:',e.message); }
+      }).select();
+      if(dbErr){
+        console.log('DB error:', dbErr.message, dbErr.code, dbErr.hint);
+        showToast('Fehler: ' + dbErr.message, 'error');
+      } else {
+        console.log('DB saved OK', inserted);
+      }
+    }catch(e){
+      console.log('DB exception:', e.message);
+      showToast('Exception: ' + e.message, 'error');
+    }
 
     // Step 2: Send email
     try{
