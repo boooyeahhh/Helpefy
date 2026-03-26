@@ -2354,23 +2354,19 @@ window.addEventListener('pageshow', e=>{
   if(valid.includes(path)) showView(path,false);
 });
 
-function switchMode(mode,el){
-  curMode=mode;
-  const heroInput = document.getElementById('heroSearch');
-  if(heroInput){
-    if(mode === 'jobs'){
-      heroInput.placeholder = 'Welchen Job suchst du? z.B. Garten, Umzug, Reparatur...';
-    } else {
-      heroInput.placeholder = 'Was brauchst du? z.B. Elektriker, Reinigung...';
-    }
+function switchMode(mode,el){\
+  curMode=mode;\
+  // Directly navigate to the right search page\
+  if(mode==='jobs'){\
+    showView('job-search');\
+    setTimeout(()=>renderJobSearchPage(''),50);\
+    return;\
+  }\
+  if(mode==='freelancer'){\
+    showView('search');\
+    setTimeout(()=>renderSearch(''),50);\
+    return;\
   }
-  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
-  if(el) el.classList.add('active');
-  else document.getElementById('tab-'+mode)?.classList.add('active');
-  document.getElementById('hero-freelancer').style.display=mode==='freelancer'?'block':'none';
-  document.getElementById('hero-jobs').style.display=mode==='jobs'?'block':'none';
-  document.getElementById('section-freelancer').style.display=mode==='freelancer'?'block':'none';
-  document.getElementById('section-jobs').style.display=mode==='jobs'?'block':'none';
   // Switch quick search tags
   const tfl = document.getElementById('tags-freelancer');
   const tjobs = document.getElementById('tags-jobs');
