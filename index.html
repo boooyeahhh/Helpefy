@@ -578,6 +578,10 @@ nav{padding:0.75rem 1rem;}
         <div>
           <div id="jobSugg" class="search-sugg" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:100;margin-top:4px"></div>
           </div>
+          <div style="margin-bottom:1.25rem">
+            <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;color:var(--red);text-transform:uppercase;margin-bottom:0.4rem">AKTUELL</div>
+            <h2 style="font-size:1.75rem;font-weight:800;color:var(--dark);margin:0;letter-spacing:-0.5px">Jobs in deiner Nähe</h2>
+          </div>
           <!-- Results count + radius button -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">
             <div id="jobCount" style="font-size:0.82rem;color:var(--muted)"></div>
@@ -611,10 +615,6 @@ nav{padding:0.75rem 1rem;}
             <button class="fpill active" onclick="filterJobs('alle',this)">Alle</button>
             <button class="fpill" onclick="filterJobs('dringend',this)">🔥 Dringend</button>
             <button class="fpill" onclick="filterJobs('bezahlt',this)">💰 Gut bezahlt</button>
-          </div>
-          <div style="margin:1rem 0 0.75rem">
-            <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;color:var(--red);text-transform:uppercase;margin-bottom:0.4rem">AKTUELL</div>
-            <h2 style="font-size:1.75rem;font-weight:800;color:var(--dark);margin:0;letter-spacing:-0.5px">Jobs in deiner Nähe</h2>
           </div>
           <div class="job-grid" id="jobGrid"></div>
         </div>
