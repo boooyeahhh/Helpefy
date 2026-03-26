@@ -672,6 +672,37 @@ nav{padding:0.75rem 1rem;}
   </footer>
 </div>
 
+<!-- ══ ADMIN ══ -->
+<div id="view-admin" class="view">
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:1.5px;color:var(--red);text-transform:uppercase;margin-bottom:0.25rem">HELPEFY</div>
+        <h1 style="font-size:1.75rem;font-weight:800;margin:0">Admin — Auszahlungen</h1>
+      </div>
+      <button onclick="exportAuszahlungenCSV()" class="btn-red" style="padding:0.6rem 1.25rem">📥 CSV exportieren</button>
+    </div>
+    <div id="admin-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem"></div>
+    <div class="dcard" style="overflow:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+        <thead>
+          <tr style="background:var(--light)">
+            <th style="padding:0.75rem 1rem;text-align:left;font-weight:600;white-space:nowrap">Datum</th>
+            <th style="padding:0.75rem 1rem;text-align:left;font-weight:600">Name</th>
+            <th style="padding:0.75rem 1rem;text-align:left;font-weight:600">E-Mail</th>
+            <th style="padding:0.75rem 1rem;text-align:left;font-weight:600">IBAN</th>
+            <th style="padding:0.75rem 1rem;text-align:left;font-weight:600">Bank</th>
+            <th style="padding:0.75rem 1rem;text-align:right;font-weight:600">Betrag</th>
+            <th style="padding:0.75rem 1rem;text-align:center;font-weight:600">Status</th>
+            <th style="padding:0.75rem 1rem;text-align:center;font-weight:600">Aktion</th>
+          </tr>
+        </thead>
+        <tbody id="admin-auszahlungen-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ══ IMPRESSUM ══ -->
 <div id="view-impressum" class="view">
   <div style="max-width:800px;margin:0 auto;padding:3rem 1.5rem">
@@ -2292,7 +2323,8 @@ function updateNav(){
     const avatarHtml=avatar
       ?`<div class="user-badge" onclick="showView('dashboard')" style="overflow:hidden"><img src="${avatar}" style="width:100%;height:100%;object-fit:cover"></div>`
       :`<div class="user-badge" onclick="showView('dashboard')">${init}</div>`;
-    nr.innerHTML=`<div class="user-nav"><span style="font-size:0.82rem;color:var(--muted)">${n}</span>${avatarHtml}</div>`;
+    const adminLink = currentUser?.email==='christopher_russell@web.de' ? '<span onclick="showView(\'admin\')" style="font-size:0.78rem;color:var(--red);cursor:pointer;font-weight:600;padding:0.2rem 0.5rem;border:1px solid var(--red);border-radius:6px">⚙️ Admin</span>' : '';
+    nr.innerHTML=`<div class="user-nav">${adminLink}<span style="font-size:0.82rem;color:var(--muted)">${n}</span>${avatarHtml}</div>`;
     if(nrm) nrm.innerHTML=avatarHtml;
   } else {
     nr.innerHTML=`<button class="btn-ghost" onclick="openModal('auth')">Anmelden</button><button class="btn-red" onclick="openModal('auth')">Registrieren</button>`;
@@ -2313,6 +2345,7 @@ function showView(n, push=true){
   if(n==='home') renderHome();
   if(n==='job-posten') setTimeout(()=>updateJobChips(), 50);
   if(n==='job-search') setTimeout(()=>renderJobSearchPage(''), 50);
+  if(n==='admin') loadAdminAuszahlungen();
   if(n==='dashboard'){
     if(!currentUser){
       // Wait briefly for session to load before showing login
@@ -2354,7 +2387,7 @@ window.addEventListener('popstate',e=>{
 window.addEventListener('pageshow', e=>{
   if(e.persisted) return; // back/forward cache
   const path=window.location.pathname.replace('/','').trim();
-  const valid=['home','search','job-search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
+  const valid=['home','search','job-search','profile','dashboard','chat','job-posten','admin','impressum','datenschutz','agb'];
   if(valid.includes(path)) showView(path,false);
 });
 
@@ -3732,6 +3765,103 @@ async function requestAuszahlung(amount){
   openModal('auszahlung');
 }
 
+function generateRechnung(name, iban, bic, bank, amount, rechnungNr){
+  const datum = new Date().toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'});
+  const faellig = new Date(Date.now() + 14*24*60*60*1000).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const netto = (amount / 1.0).toFixed(2); // Kleinunternehmer - keine MwSt
+  
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;color:#1a1a1a;font-size:14px;line-height:1.5}
+  .logo{font-size:24px;font-weight:800;color:#E8352A;margin-bottom:4px}
+  .header{display:flex;justify-content:space-between;margin-bottom:40px}
+  .label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px}
+  .value{font-weight:600}
+  table{width:100%;border-collapse:collapse;margin:24px 0}
+  th{background:#f5f5f5;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#666}
+  td{padding:10px 12px;border-bottom:1px solid #eee}
+  .total-row td{font-weight:700;font-size:16px;border-top:2px solid #1a1a1a;border-bottom:none}
+  .footer{margin-top:40px;padding-top:20px;border-top:1px solid #eee;font-size:12px;color:#666}
+  .badge{background:#dcfce7;color:#15803d;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+  h1{font-size:28px;font-weight:800;margin:0 0 4px}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="logo">Helpefy</div>
+      <div style="font-size:12px;color:#666">helpefy.de<br>Freelancer Marktplatz</div>
+    </div>
+    <div style="text-align:right">
+      <div class="label">Rechnungsdatum</div>
+      <div class="value">${datum}</div>
+      <div class="label" style="margin-top:8px">Rechnungsnummer</div>
+      <div class="value">${rechnungNr}</div>
+      <div style="margin-top:8px"><span class="badge">✓ Auszahlung beantragt</span></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:32px">
+    <div class="label">Empfänger / Freelancer</div>
+    <div class="value" style="font-size:16px">${name}</div>
+    <div style="color:#666">IBAN: ${iban.replace(/(.{4})/g,'$1 ').trim()}</div>
+    ${bic !== '–' ? `<div style="color:#666">BIC: ${bic}</div>` : ''}
+    ${bank !== '–' ? `<div style="color:#666">Bank: ${bank}</div>` : ''}
+  </div>
+
+  <div style="margin-bottom:32px">
+    <div class="label">Auftraggeber / Plattform</div>
+    <div class="value">Helpefy</div>
+    <div style="color:#666">helpefy.de</div>
+  </div>
+
+  <h1>Rechnung</h1>
+  <p style="color:#666;margin-bottom:24px">Vergütung für erbrachte Dienstleistungen über die Helpefy-Plattform</p>
+
+  <table>
+    <tr>
+      <th>Beschreibung</th>
+      <th style="text-align:right">Betrag</th>
+    </tr>
+    <tr>
+      <td>
+        <strong>Freelancer-Vergütung</strong><br>
+        <span style="color:#666;font-size:12px">Abzüglich Helpefy-Provision (15%) — Zeitraum bis ${datum}</span>
+      </td>
+      <td style="text-align:right">${parseFloat(netto).toFixed(2)} €</td>
+    </tr>
+    <tr class="total-row">
+      <td>Gesamtbetrag (inkl. Kleinunternehmerregelung §19 UStG)</td>
+      <td style="text-align:right">${parseFloat(netto).toFixed(2)} €</td>
+    </tr>
+  </table>
+
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-top:16px">
+    <div style="font-weight:600;margin-bottom:8px">💳 Zahlungsdetails</div>
+    <div>Betrag: <strong>${parseFloat(netto).toFixed(2)} €</strong></div>
+    <div>Empfänger: <strong>${name}</strong></div>
+    <div>IBAN: <strong>${iban.replace(/(.{4})/g,'$1 ').trim()}</strong></div>
+    <div>Fällig bis: <strong>${faellig}</strong></div>
+    <div>Verwendungszweck: <strong>Helpefy Auszahlung ${rechnungNr}</strong></div>
+  </div>
+
+  <div class="footer">
+    <p>Gemäß §19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+    <p>Helpefy | helpefy.de | Diese Rechnung wurde automatisch generiert.</p>
+  </div>
+</body>
+</html>`;
+
+  // Open in new tab and trigger print/save as PDF
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.print(), 500);
+}
+
 function submitAuszahlung(){
   const name = document.getElementById('bankName')?.value.trim();
   const iban = document.getElementById('bankIBAN')?.value.replace(/\s/g,'').trim();
@@ -3747,28 +3877,14 @@ function submitAuszahlung(){
   closeModal('auszahlung');
   showToast('✅ Auszahlung beantragt! Wir überweisen in 2–3 Werktagen.','success');
 
+  // Generate invoice immediately
+  const rechnungNr = 'HLF-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-6);
+  setTimeout(()=>generateRechnung(name, iban, bic, bank, amount, rechnungNr), 500);
+
   // Background tasks - each step independent
+  const _rNr = rechnungNr; // capture for async scope
   setTimeout(async ()=>{
-    const emailBody = 'Auszahlungsanfrage Helpefy\n\nZeitpunkt: ' + new Date().toLocaleString('de') + '\nName: ' + (currentProfile?.full_name||currentUser?.email) + '\nE-Mail: ' + currentUser?.email + '\nBETRAG: ' + parseFloat(amount).toFixed(2) + ' EUR\nIBAN: ' + iban + '\nBIC: ' + bic + '\nBank: ' + bank;
-
-    // Step 1: Save to DB
-    try{ await sb.from('auszahlungen').insert({user_id:currentUser.id,betrag:amount,iban,kontoinhaber:name,bic,bank,email:currentUser.email,name:currentProfile?.full_name||currentUser.email,status:'beantragt',created_at:new Date().toISOString()}); }catch(e){ console.log('DB save failed:',e.message); }
-
-    // Step 2: Send email
-    try{ await sb.functions.invoke('send-email',{body:{to:'christopher_russell@web.de',subject:'Auszahlung '+parseFloat(amount).toFixed(2)+'EUR - '+(currentProfile?.full_name||currentUser?.email),text:emailBody}}); }catch(e){ console.log('Email failed:',e.message); }
-
-    // Step 3: Mark auftraege as ausgezahlt
-    try{
-      const {error} = await sb.from('auftraege').update({status:'ausgezahlt'}).eq('freelancer_id',currentUser.id).eq('status','abgeschlossen');
-      if(error) console.log('Update error:', error.message);
-      else console.log('Orders marked ausgezahlt OK');
-    }catch(e){ console.log('Auftraege update failed:',e.message); }
-
-    // Step 4: Show 0 balance immediately
-    const paymentsEl = document.getElementById('dash-payments');
-    if(paymentsEl){
-      paymentsEl.innerHTML = '<div class="dash-title">Zahlungen & Auszahlung</div><div class="dcard" style="max-width:500px;margin-top:1rem"><div style="padding:0.5rem 0"><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border)"><div><div style="font-size:0.875rem;font-weight:500">✅ Auszahlung beantragt</div><div style="font-size:0.75rem;color:var(--muted)">' + new Date().toLocaleDateString('de') + ' – ' + parseFloat(amount).toFixed(2) + ' €</div></div><div style="color:#16a34a;font-weight:600">Beantragt</div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0"><div style="font-size:1rem;font-weight:700">Verfügbares Guthaben</div><div style="font-size:1.5rem;font-weight:700;color:var(--red)">0,00 €</div></div><div style="font-size:0.8rem;color:var(--muted);text-align:center;padding:0.5rem 0">💸 Überweisung erfolgt innerhalb von 2–3 Werktagen</div></div></div>';
-    }
+    const emailBody = 'HELPEFY AUSZAHLUNG\nRechnungsnummer: ' + _rNr + '\nDatum: ' + new Date().toLocaleString('de') + '\nName: ' + (currentProfile?.full_name||currentUser?.email) + '\nEmail: ' + currentUser?.email + '\nBetrag: ' + parseFloat(amount).toFixed(2) + ' EUR\nIBAN: ' + iban + '\nBIC: ' + bic + '\nBank: ' + bank + '\nVerwendungszweck: Helpefy Auszahlung ' + _rNr;
 
     // Show success page then redirect to dashboard
     const sv = document.getElementById('view-auszahlung-success');
@@ -3787,7 +3903,86 @@ function submitAuszahlung(){
   }, 200);
 }
 
-// ── SUPPORT ──
+// ── ADMIN ──
+const ADMIN_ID = 'christopher_russell@web.de';
+
+async function loadAdminAuszahlungen(){
+  // Only accessible for admin
+  if(currentUser?.email !== 'christopher_russell@web.de'){
+    showView('home'); showToast('Kein Zugriff','error'); return;
+  }
+
+  const {data:rows} = await sb.from('auszahlungen').select('*').order('created_at',{ascending:false});
+  const all = rows||[];
+
+  // Stats
+  const total = all.reduce((s,r)=>s+(r.betrag||0),0);
+  const pending = all.filter(r=>r.status==='beantragt');
+  const done = all.filter(r=>r.status==='überwiesen');
+  document.getElementById('admin-stats').innerHTML = [
+    {label:'Gesamt ausstehend', value: pending.reduce((s,r)=>s+(r.betrag||0),0).toFixed(2)+' €', color:'var(--red)'},
+    {label:'Gesamt ausgezahlt', value: done.reduce((s,r)=>s+(r.betrag||0),0).toFixed(2)+' €', color:'#16a34a'},
+    {label:'Offene Anfragen', value: pending.length, color:'var(--red)'},
+    {label:'Gesamt alle', value: total.toFixed(2)+' €', color:'var(--dark)'},
+  ].map(s=>`<div class="dcard" style="padding:1rem">
+    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.4rem">${s.label}</div>
+    <div style="font-size:1.5rem;font-weight:800;color:${s.color}">${s.value}</div>
+  </div>`).join('');
+
+  const tbody = document.getElementById('admin-auszahlungen-table');
+  if(!all.length){
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:2rem;text-align:center;color:var(--muted)">Noch keine Auszahlungen</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = all.map(r=>`
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:0.75rem 1rem;white-space:nowrap">${new Date(r.created_at).toLocaleDateString('de')}</td>
+      <td style="padding:0.75rem 1rem;font-weight:500">${r.kontoinhaber||r.name||'–'}</td>
+      <td style="padding:0.75rem 1rem;color:var(--muted);font-size:0.8rem">${r.email||'–'}</td>
+      <td style="padding:0.75rem 1rem;font-family:monospace;font-size:0.8rem">${(r.iban||'').replace(/(.{4})/g,'$1 ').trim()}</td>
+      <td style="padding:0.75rem 1rem;color:var(--muted)">${r.bank||'–'}</td>
+      <td style="padding:0.75rem 1rem;text-align:right;font-weight:700;color:var(--red)">${parseFloat(r.betrag||0).toFixed(2)} €</td>
+      <td style="padding:0.75rem 1rem;text-align:center">
+        ${r.status==='überwiesen'
+          ? '<span style="background:#dcfce7;color:#15803d;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:600">✓ Überwiesen</span>'
+          : '<span style="background:#fef9c3;color:#854d0e;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:600">⏳ Ausstehend</span>'}
+      </td>
+      <td style="padding:0.75rem 1rem;text-align:center">
+        ${r.status!=='überwiesen' ? `<button onclick="markAuszahlungDone('${r.id}')" style="padding:0.3rem 0.75rem;background:var(--green);color:white;border:none;border-radius:6px;font-size:0.75rem;cursor:pointer;font-weight:600">✓ Erledigt</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+async function markAuszahlungDone(id){
+  await sb.from('auszahlungen').update({status:'überwiesen'}).eq('id',id);
+  showToast('Als überwiesen markiert ✓','success');
+  loadAdminAuszahlungen();
+}
+
+function exportAuszahlungenCSV(){
+  sb.from('auszahlungen').select('*').order('created_at',{ascending:false}).then(({data})=>{
+    if(!data?.length){ showToast('Keine Daten','error'); return; }
+    const headers = ['Datum','Name','Email','IBAN','BIC','Bank','Betrag','Status'];
+    const rows = data.map(r=>[
+      new Date(r.created_at).toLocaleDateString('de'),
+      r.kontoinhaber||r.name||'',
+      r.email||'',
+      r.iban||'',
+      r.bic||'',
+      r.bank||'',
+      parseFloat(r.betrag||0).toFixed(2),
+      r.status||''
+    ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url;
+    a.download = 'helpefy-auszahlungen-'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click(); URL.revokeObjectURL(url);
+    showToast('CSV exportiert ✓','success');
+  });
+}
 async function sendSupport(){
   const name = document.getElementById('supportName').value.trim();
   const email = document.getElementById('supportEmail').value.trim();
@@ -5381,7 +5576,7 @@ async function init(){
   });
   
   const path=window.location.pathname.replace('/','').trim()||'home';
-  const valid=['home','search','job-search','profile','dashboard','auftraege','gespeichert','zahlungen','einstellungen','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
+  const valid=['home','search','job-search','profile','dashboard','auftraege','gespeichert','zahlungen','einstellungen','chat','job-posten','admin','impressum','datenschutz','agb','pay','kontakt'];
   const start=valid.includes(path)?path:'home';
   if(path==='pay'){ setTimeout(initPayPage, 800); }
   // Check if we have a saved view from before refresh
