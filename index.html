@@ -1541,7 +1541,7 @@ nav{padding:0.75rem 1rem;}
 </div>
 
 <!-- AUSZAHLUNG SUCCESS VIEW -->
-<div id="view-auszahlung-success" class="view" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--light)">
+<div id="view-auszahlung-success" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9000;align-items:center;justify-content:center;background:var(--light)">
   <div style="text-align:center;padding:2rem;max-width:420px">
     <div style="width:90px;height:90px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 1.5rem">✅</div>
     <h2 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;margin-bottom:0.75rem;color:var(--dark)">Zahlung unterwegs! 🎉</h2>
@@ -2350,7 +2350,7 @@ window.addEventListener('popstate',e=>{
 window.addEventListener('pageshow', e=>{
   if(e.persisted) return; // back/forward cache
   const path=window.location.pathname.replace('/','').trim();
-  const valid=['home','search','job-search','auszahlung-success','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
+  const valid=['home','search','job-search','profile','dashboard','chat','job-posten','impressum','datenschutz','agb'];
   if(valid.includes(path)) showView(path,false);
 });
 
@@ -3312,13 +3312,12 @@ async function renderDashOrders(){
     .eq('freelancer_id',currentUser.id)
     .order('created_at',{ascending:false});
   
-  // Merge and deduplicate
+  // Merge, deduplicate and sort by newest first
   const allOrders = [...(asKunde||[]), ...(asFreelancer||[])];
   const seen = new Set();
-  const orders = allOrders.filter(o => {
-    if(seen.has(o.id)) return false;
-    seen.add(o.id); return true;
-  });
+  const orders = allOrders
+    .filter(o => { if(seen.has(o.id)) return false; seen.add(o.id); return true; })
+    .sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   
   // Tag each order with perspective
   orders.forEach(o => {
@@ -3401,10 +3400,21 @@ async function renderDashOrders(){
                   ⭐ Bewertung abgeben
                 </button>`}
               </div>`:''}
-            ${o.status==='abgeschlossen'&&o._asFreelancer?`<div style="font-size:0.72rem;color:var(--green);text-align:right;font-weight:500">✅ Abgeschlossen</div>`:''}
+            ${(o.status==='abgeschlossen'||o.status==='abgelehnt'||o.status==='ausgezahlt')?`
+              <button onclick="deleteAuftrag('${o.id}')" style="padding:0.25rem 0.6rem;background:none;color:#dc2626;border:1px solid #dc2626;border-radius:6px;font-size:0.72rem;cursor:pointer;font-family:Inter,sans-serif;margin-top:0.35rem;display:block">
+                🗑 Löschen
+              </button>`:''}
           </div>
         </div>`).join('')}
     </div>`;
+}
+
+async function deleteAuftrag(id){
+  if(!confirm('Auftrag wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return;
+  const {error} = await sb.from('auftraege').delete().eq('id', id);
+  if(error){ showToast('Fehler beim Löschen','error'); return; }
+  showToast('Auftrag gelöscht','success');
+  renderDashOrders();
 }
 
 function payAuftrag(id, titel, preis){
@@ -3496,11 +3506,11 @@ function applyForJob(btn){
   const card = btn.closest('.job-card');
   const title = card?.querySelector('.job-title')?.textContent||'Job';
   const budget = card?.querySelector('.job-budget')?.textContent||'';
-  // Get time window from card data
   const zeitVon = card?.dataset.zeitVon||'';
   const zeitBis = card?.dataset.zeitBis||'';
   const datum = card?.dataset.datum||'';
-  currentJobData = {title, budget, zeitVon, zeitBis, datum};
+  const kundeId = card?.dataset.kundeId||null;
+  currentJobData = {title, budget, zeitVon, zeitBis, datum, kunde_id: kundeId};
 
   document.getElementById('angebot-job-info').innerHTML = `<strong>📋 ${title}</strong>${budget?' · Budget: '+budget:''}`;
 
@@ -3535,21 +3545,25 @@ async function submitAngebot(){
   if(!text){err.style.display='block';err.textContent='Bitte schreib eine Nachricht.';return;}
   const btn=document.querySelector('#modal-angebot .form-submit');
   btn.disabled=true; btn.textContent='Wird gesendet...';
+
+  // The freelancer (currentUser) sends offer to the job poster
+  // kunde_id = job poster, freelancer_id = current user
+  const jobKundeId = currentJobData?.kunde_id || null;
+
   const {error}=await sb.from('auftraege').insert({
-    kunde_id:currentUser.id,
-    titel:currentJobData?.title||'Job-Angebot',
-    beschreibung:text+(zeitVon&&zeitBis?`\n\n⏰ Ich bin verfügbar: ${zeitVon} – ${zeitBis} Uhr`:''),
-    kategorie:'Angebot',
-    preis:parseFloat(preis)||0,
-    datum:currentJobData?.datum||null,
-    status:'angebot_gesendet',
-    created_at:new Date().toISOString()
+    kunde_id: jobKundeId,          // job poster is the customer
+    freelancer_id: currentUser.id,  // I am the freelancer applying
+    titel: currentJobData?.title||'Job-Angebot',
+    beschreibung: text+(zeitVon&&zeitBis?'\n\n⏰ Ich bin verfügbar: '+zeitVon+' – '+zeitBis+' Uhr':''),
+    preis: parseFloat(preis)||0,
+    datum: currentJobData?.datum||null,
+    status: 'angebot_gesendet',
+    created_at: new Date().toISOString()
   });
   btn.disabled=false; btn.textContent='Angebot absenden →';
   if(error){err.style.display='block';err.textContent='Fehler: '+error.message;return;}
   closeModal('angebot');
   showToast('Angebot erfolgreich gesendet! 🎉','success');
-  // Refresh dashboard orders if open
   if(document.getElementById('view-dashboard').classList.contains('active')) loadProfile();
 }
 
@@ -3719,12 +3733,15 @@ function submitAuszahlung(){
     }
 
     // Show success page then redirect to dashboard
-    showView('auszahlung-success');
+    const sv = document.getElementById('view-auszahlung-success');
+    if(sv){ sv.style.display='flex'; setTimeout(()=>{ const bar=document.getElementById('successProgressBar'); if(bar) bar.style.width='100%'; },100); }
     setTimeout(()=>{
       const bar = document.getElementById('successProgressBar');
       if(bar) bar.style.width = '100%';
     }, 100);
     setTimeout(()=>{
+      const sv2 = document.getElementById('view-auszahlung-success');
+      if(sv2) sv2.style.display='none';
       showView('dashboard');
       switchDash('overview', document.querySelector('.sni[onclick*="overview"]'));
     }, 3500);
@@ -3962,7 +3979,7 @@ function renderJobGrid(jobs){
       : '';
 
     return `<div class="job-card" style="overflow:hidden;padding:0${isExpired?';opacity:0.5':''}"
-      data-zeit-von="${j.zeitVon||''}" data-zeit-bis="${j.zeitBis||''}" data-datum="${j.datum||''}">
+      data-zeit-von="${j.zeitVon||''}" data-zeit-bis="${j.zeitBis||''}" data-datum="${j.datum||''}" data-kunde-id="${j.kunde_id||''}">
       <img src="${j.img||JOB_IMGS[j.cat]||JOB_IMGS['Sonstiges']}" class="job-img" loading="lazy" onerror="this.style.display='none'">
       <div style="padding:1.25rem">
         <div class="job-header">
@@ -4036,7 +4053,7 @@ async function renderJobSearchPage(q){
     budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',
     urgent:j.dringend, poster:j.profiles?.full_name||'Anonym',
     zeitVon:j.zeit_von||'', zeitBis:j.zeit_bis||'', datum:j.datum||'',
-    id:j.id
+    id:j.id, kunde_id:j.kunde_id||null
   }));
 
   let results = _jobPageCache;
@@ -4182,7 +4199,7 @@ function renderJobPageGrid(jobs){
   grid.innerHTML = jobs.map(j=>{
     const isExpired = j.datum && j.zeitBis && new Date(`${j.datum}T${j.zeitBis}`) < new Date();
     const zeitBadge = j.zeitVon && j.zeitBis ? `<span style="background:#fff7ed;color:#92400e;border:1px solid #fed7aa;border-radius:6px;padding:0.15rem 0.5rem;font-size:0.72rem;font-weight:500">⏰ ${j.zeitVon} – ${j.zeitBis} Uhr</span>` : '';
-    return `<div class="job-card" style="overflow:hidden;padding:0${isExpired?';opacity:0.5':''}" data-zeit-von="${j.zeitVon||''}" data-zeit-bis="${j.zeitBis||''}" data-datum="${j.datum||''}">
+    return `<div class="job-card" style="overflow:hidden;padding:0${isExpired?';opacity:0.5':''}" data-zeit-von="${j.zeitVon||''}" data-zeit-bis="${j.zeitBis||''}" data-datum="${j.datum||''}" data-kunde-id="${j.kunde_id||''}">
       <img src="${JOB_IMGS[j.cat]||JOB_IMGS['Sonstiges']}" class="job-img" loading="lazy" onerror="this.style.display='none'">
       <div style="padding:1.25rem">
         <div class="job-header"><span class="job-cat">${j.cat}</span>${j.urgent?'<span class="job-urgent">🔥 Dringend</span>':''}${isExpired?'<span style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:0.15rem 0.5rem;font-size:0.72rem">⏰ Abgelaufen</span>':''}</div>
@@ -5305,7 +5322,7 @@ async function init(){
   });
   
   const path=window.location.pathname.replace('/','').trim()||'home';
-  const valid=['home','search','job-search','auszahlung-success','profile','dashboard','auftraege','gespeichert','zahlungen','einstellungen','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
+  const valid=['home','search','job-search','profile','dashboard','auftraege','gespeichert','zahlungen','einstellungen','chat','job-posten','impressum','datenschutz','agb','pay','kontakt'];
   const start=valid.includes(path)?path:'home';
   if(path==='pay'){ setTimeout(initPayPage, 800); }
   // Check if we have a saved view from before refresh
