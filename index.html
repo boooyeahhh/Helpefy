@@ -3547,8 +3547,18 @@ async function submitAngebot(){
   btn.disabled=true; btn.textContent='Wird gesendet...';
 
   // The freelancer (currentUser) sends offer to the job poster
-  // kunde_id = job poster, freelancer_id = current user
-  const jobKundeId = currentJobData?.kunde_id || null;
+  let jobKundeId = currentJobData?.kunde_id || null;
+
+  // If kunde_id missing, look it up from the job title in jobs table
+  if(!jobKundeId && currentJobData?.title){
+    const {data:jobRow} = await sb.from('jobs')
+      .select('kunde_id')
+      .eq('titel', currentJobData.title)
+      .eq('status','offen')
+      .limit(1)
+      .single();
+    if(jobRow) jobKundeId = jobRow.kunde_id;
+  }
 
   const {error}=await sb.from('auftraege').insert({
     kunde_id: jobKundeId,          // job poster is the customer
@@ -4533,7 +4543,8 @@ async function loadRealJobs(){
     poster:j.profiles?.full_name||'Anonym',
     zeitVon:j.zeit_von||'',
     zeitBis:j.zeit_bis||'',
-    datum:j.datum||''
+    datum:j.datum||'',
+    kunde_id:j.kunde_id||null
   })),...JOBS];
   renderJobGrid(allJobsCache);
 }
