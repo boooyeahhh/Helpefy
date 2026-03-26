@@ -3857,9 +3857,14 @@ function generateRechnung(name, iban, bic, bank, amount, rechnungNr){
 
   // Open in new tab and trigger print/save as PDF
   const win = window.open('', '_blank');
-  win.document.write(html);
+  win.document.write(html.replace('</body>', `
+  <div style="position:fixed;bottom:0;left:0;right:0;background:white;padding:1rem 2rem;border-top:1px solid #e5e7eb;display:flex;gap:1rem;justify-content:flex-end;box-shadow:0 -4px 12px rgba(0,0,0,0.08)">
+    <button onclick="window.close()" style="padding:0.6rem 1.5rem;border:1.5px solid #e5e7eb;background:white;border-radius:8px;font-size:0.9rem;cursor:pointer;font-family:Arial,sans-serif">✕ Schließen</button>
+    <button onclick="window.print()" style="padding:0.6rem 1.5rem;background:#E8352A;color:white;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;font-weight:600;font-family:Arial,sans-serif">📥 Als PDF speichern</button>
+  </div>
+  <div style="height:80px"></div>
+  </body>`));
   win.document.close();
-  setTimeout(()=>win.print(), 500);
 }
 
 function submitAuszahlung(){
@@ -3882,17 +3887,35 @@ function submitAuszahlung(){
   setTimeout(()=>generateRechnung(name, iban, bic, bank, amount, rechnungNr), 500);
 
   // Background tasks - each step independent
-  const _rNr = rechnungNr; // capture for async scope
-  setTimeout(async ()=>{
-    const emailBody = 'HELPEFY AUSZAHLUNG\nRechnungsnummer: ' + _rNr + '\nDatum: ' + new Date().toLocaleString('de') + '\nName: ' + (currentProfile?.full_name||currentUser?.email) + '\nEmail: ' + currentUser?.email + '\nBetrag: ' + parseFloat(amount).toFixed(2) + ' EUR\nIBAN: ' + iban + '\nBIC: ' + bic + '\nBank: ' + bank + '\nVerwendungszweck: Helpefy Auszahlung ' + _rNr;
+  const _rNr = rechnungNr;
+  const _name = currentProfile?.full_name || currentUser?.email;
+  const _email = currentUser?.email;
+  const _uid = currentUser?.id;
 
-    // Show success page then redirect to dashboard
+  setTimeout(async ()=>{
+    const emailBody = 'HELPEFY AUSZAHLUNG\nRechnungsnummer: ' + _rNr +
+      '\nDatum: ' + new Date().toLocaleString('de') +
+      '\nName: ' + _name + '\nEmail: ' + _email +
+      '\nBetrag: ' + parseFloat(amount).toFixed(2) + ' EUR' +
+      '\nIBAN: ' + iban + '\nBIC: ' + bic + '\nBank: ' + bank +
+      '\nVerwendungszweck: Helpefy Auszahlung ' + _rNr;
+
+    // Step 1: Save to DB
+    try{ await sb.from('auszahlungen').insert({user_id:_uid,betrag:amount,iban,kontoinhaber:name,bic,bank,email:_email,name:_name,status:'beantragt',created_at:new Date().toISOString()}); }catch(e){ console.log('DB:',e.message); }
+
+    // Step 2: Send email
+    try{ await sb.functions.invoke('send-email',{body:{to:'christopher_russell@web.de',subject:'Auszahlung '+parseFloat(amount).toFixed(2)+'EUR - '+_name+' ('+_rNr+')',text:emailBody}}); }catch(e){ console.log('Email:',e.message); }
+
+    // Step 3: Mark auftraege as ausgezahlt
+    try{ await sb.from('auftraege').update({status:'ausgezahlt'}).eq('freelancer_id',_uid).eq('status','abgeschlossen'); }catch(e){ console.log('Auftraege:',e.message); }
+
+    // Step 4: Update payments UI to show 0
+    const paymentsEl = document.getElementById('dash-payments');
+    if(paymentsEl) paymentsEl.innerHTML = '<div class="dash-title">Zahlungen & Auszahlung</div><div class="dcard" style="max-width:500px;margin-top:1rem"><div style="padding:0.5rem 0"><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border)"><div><div style="font-size:0.875rem;font-weight:500">✅ Auszahlung beantragt</div><div style="font-size:0.75rem;color:var(--muted)">' + new Date().toLocaleDateString('de') + ' – ' + parseFloat(amount).toFixed(2) + ' €</div></div><div style="color:#16a34a;font-weight:600">Beantragt</div></div><div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0"><div style="font-size:1rem;font-weight:700">Verfügbares Guthaben</div><div style="font-size:1.5rem;font-weight:700;color:var(--red)">0,00 €</div></div></div></div>';
+
+    // Step 5: Success overlay then dashboard
     const sv = document.getElementById('view-auszahlung-success');
     if(sv){ sv.style.display='flex'; setTimeout(()=>{ const bar=document.getElementById('successProgressBar'); if(bar) bar.style.width='100%'; },100); }
-    setTimeout(()=>{
-      const bar = document.getElementById('successProgressBar');
-      if(bar) bar.style.width = '100%';
-    }, 100);
     setTimeout(()=>{
       const sv2 = document.getElementById('view-auszahlung-success');
       if(sv2) sv2.style.display='none';
