@@ -4036,7 +4036,7 @@ function renderJobGrid(jobs){
           <div class="job-budget">${j.budget}</div>
           ${isExpired
             ? `<span style="font-size:0.8rem;color:var(--muted)">Nicht mehr verfügbar</span>`
-            : `<button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button>`
+            : `${j.applied ? '<span style="background:#dcfce7;color:#15803d;border:1.5px solid #15803d;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.82rem;font-weight:600">✅ Beworben</span>' : '<button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button>'}`
           }
         </div>
       </div>
@@ -4083,6 +4083,17 @@ async function renderJobSearchPage(q){
 
   // Load from Supabase
   const {data:jobs} = await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
+
+  // Check which jobs current user already applied to
+  let appliedJobTitles = new Set();
+  if(currentUser){
+    const {data:myOffers} = await sb.from('auftraege')
+      .select('titel')
+      .eq('freelancer_id', currentUser.id)
+      .in('status',['angebot_gesendet','angenommen','bezahlt','abgeschlossen']);
+    (myOffers||[]).forEach(o => appliedJobTitles.add(o.titel));
+  }
+
   _jobPageCache = (jobs||[]).map(j=>({
     cat:j.kategorie||'Sonstiges', title:j.titel, desc:j.beschreibung,
     loc:j.standort||'Deutschland',
@@ -4090,7 +4101,8 @@ async function renderJobSearchPage(q){
     budget:(j.budget_min&&j.budget_max)?`${j.budget_min}–${j.budget_max} €`:'Verhandelbar',
     urgent:j.dringend, poster:j.profiles?.full_name||'Anonym',
     zeitVon:j.zeit_von||'', zeitBis:j.zeit_bis||'', datum:j.datum||'',
-    id:j.id, kunde_id:j.kunde_id||null
+    id:j.id, kunde_id:j.kunde_id||null,
+    applied: appliedJobTitles.has(j.titel)
   }));
 
   let results = _jobPageCache;
@@ -4244,7 +4256,7 @@ function renderJobPageGrid(jobs){
         <div class="job-desc">${j.desc||''}</div>
         ${zeitBadge?`<div style="margin:0.4rem 0">${zeitBadge}</div>`:''}
         <div class="job-meta"><span class="jmet">📍 ${j.loc}</span><span class="jmet">📅 ${j.date}</span>${j.poster?`<span class="jmet">👤 ${j.poster}</span>`:''}</div>
-        <div class="job-footer"><div class="job-budget">${j.budget}</div>${isExpired?`<span style="font-size:0.8rem;color:var(--muted)">Nicht mehr verfügbar</span>`:`<button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button>`}</div>
+        <div class="job-footer"><div class="job-budget">${j.budget}</div>${isExpired?`<span style="font-size:0.8rem;color:var(--muted)">Nicht mehr verfügbar</span>`:`${j.applied ? '<span style="background:#dcfce7;color:#15803d;border:1.5px solid #15803d;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.82rem;font-weight:600">✅ Beworben</span>' : '<button class="apply-btn" onclick="applyForJob(this)">Angebot senden</button>'}`}</div>
       </div>
     </div>`;
   }).join('');
@@ -4558,6 +4570,13 @@ async function searchJobs(){
 
 async function loadRealJobs(){
   const{data:jobs}=await sb.from('jobs').select('*, profiles(full_name)').eq('status','offen').order('created_at',{ascending:false});
+
+  let appliedTitles = new Set();
+  if(currentUser){
+    const {data:myOffers} = await sb.from('auftraege').select('titel').eq('freelancer_id',currentUser.id).in('status',['angebot_gesendet','angenommen','bezahlt','abgeschlossen']);
+    (myOffers||[]).forEach(o=>appliedTitles.add(o.titel));
+  }
+
   allJobsCache=[...(jobs||[]).map(j=>({
     cat:j.kategorie||'Sonstiges',
     title:j.titel,
@@ -4571,7 +4590,8 @@ async function loadRealJobs(){
     zeitVon:j.zeit_von||'',
     zeitBis:j.zeit_bis||'',
     datum:j.datum||'',
-    kunde_id:j.kunde_id||null
+    kunde_id:j.kunde_id||null,
+    applied: appliedTitles.has(j.titel)
   })),...JOBS];
   renderJobGrid(allJobsCache);
 }
