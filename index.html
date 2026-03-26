@@ -2354,18 +2354,17 @@ window.addEventListener('pageshow', e=>{
   if(valid.includes(path)) showView(path,false);
 });
 
-function switchMode(mode,el){\
-  curMode=mode;\
-  // Directly navigate to the right search page\
-  if(mode==='jobs'){\
-    showView('job-search');\
-    setTimeout(()=>renderJobSearchPage(''),50);\
-    return;\
-  }\
-  if(mode==='freelancer'){\
-    showView('search');\
-    setTimeout(()=>renderSearch(''),50);\
-    return;\
+function switchMode(mode,el){
+  curMode=mode;
+  if(mode==='jobs'){
+    showView('job-search');
+    setTimeout(()=>renderJobSearchPage(''),50);
+    return;
+  }
+  if(mode==='freelancer'){
+    showView('search');
+    setTimeout(()=>renderSearch(''),50);
+    return;
   }
   // Switch quick search tags
   const tfl = document.getElementById('tags-freelancer');
